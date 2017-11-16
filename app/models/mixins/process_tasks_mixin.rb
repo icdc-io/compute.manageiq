@@ -10,10 +10,18 @@ module ProcessTasksMixin
         msg = "'#{options[:task]}' initiated for #{options[:ids].length} #{ui_lookup(:table => base_class.name).pluralize}"
         task_audit_event(:success, options, :message => msg)
       else
-        assert_known_task(options)
+        assert_known_task(options) unless options[:args] && options[:args]["task"]
         options[:userid] ||= User.current_user.try(:userid) || "system"
         invoke_tasks_queue(options)
       end
+    end
+
+    def invoke_remote_action(id, options)
+      options[:ids] = [id]
+      options[:userid] ||= "system"
+      region = id_to_region(id)
+      remote_connection = api_client_connection_for_region(region, options[:userid])
+      invoke_api_tasks(remote_connection, options)
     end
 
     def invoke_tasks_queue(options)

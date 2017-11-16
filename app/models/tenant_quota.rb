@@ -1,119 +1,38 @@
-class TenantQuota < ApplicationRecord
+class TenantQuota < Quota
+
   belongs_to :tenant
-
-  QUOTA_BASE = {
-    :cpu_allocated       => {
-      :unit          => :fixnum,
-      :format        => :general_number_precision_0,
-      :text_modifier => "Count".freeze
-    },
-    :mem_allocated       => {
-      :unit          => :bytes,
-      :format        => :gigabytes_human,
-      :text_modifier => "GB".freeze
-    },
-    :storage_allocated   => {
-      :unit          => :bytes,
-      :format        => :gigabytes_human,
-      :text_modifier => "GB".freeze
-    },
-    :vms_allocated       => {
-      :unit          => :fixnum,
-      :format        => :general_number_precision_0,
-      :text_modifier => "Count".freeze
-    },
-    :templates_allocated => {
-      :unit          => :fixnum,
-      :format        => :general_number_precision_0,
-      :text_modifier => "Count".freeze
-    }
-  }
-
-  DEFAULT_TEXT_FOR_ZERO_VALUES = {
-    :total     => "Not defined".freeze,
-    :available => "Not applicable".freeze
-  }
-
-  NAMES = QUOTA_BASE.keys.map(&:to_s)
 
   validates :name,
             :inclusion  => {:in => NAMES},
             :uniqueness => {:scope => :tenant_id, :message => "should be unique per tenant"}
-  validates :unit, :value, :presence => true
-  validates :value, :numericality => {:greater_than => 0}
-  validates :warn_value, :numericality => {:greater_than => 0}, :if => "warn_value.present?"
-
-  validate :check_for_over_allocation
-
-  scope :cpu_allocated,       -> { where(:name => :cpu_allocated) }
-  scope :mem_allocated,       -> { where(:name => :mem_allocated) }
-  scope :storage_allocated,   -> { where(:name => :storage_allocated) }
-  scope :vms_allocated,       -> { where(:name => :vms_allocated) }
-  scope :templates_allocated, -> { where(:name => :templates_allocated) }
-
-  virtual_column :name, :type => :string
-  virtual_column :total, :type => :integer
-  virtual_column :used, :type => :float
-  virtual_column :allocated, :type => :float
-  virtual_column :available, :type => :float
-
-  alias_attribute :total, :value
-
-  before_validation(:on => :create) do
-    self.unit = default_unit unless unit.present?
-  end
 
   def self.format_quota_value(field, field_value, tenant_quota_name)
     if field == "tenant_quotas.name"
-      TenantQuota.tenant_quota_description(tenant_quota_name.to_sym)
+      TenantQuota.quota_description(tenant_quota_name.to_sym)
     else
       row = QUOTA_BASE[tenant_quota_name.to_sym]
       OpsHelper::TextualSummary.convert_to_format(row[:format], row[:text_modifier], field_value)
     end
   end
 
-  def self.can_format_field?(field, tenant_quota_name)
-    table_field, = field.split(".")
-    to_s.tableize == table_field ? NAMES.include?(tenant_quota_name) : false
-  end
-
-  def self.default_text_for(metric)
-    DEFAULT_TEXT_FOR_ZERO_VALUES[metric]
-  end
-
-  def self.quota_definitions
-    @quota_definitions ||= QUOTA_BASE.each_with_object({}) do |(name, value), h|
-      h[name] = value.merge(:description => tenant_quota_description(name), :value => nil, :warn_value => nil)
-    end
-  end
-
-  def self.tenant_quota_description(name)
-    case name
-    when :cpu_allocated
-      _("Allocated Virtual CPUs")
-    when :mem_allocated
-      _("Allocated Memory in GB")
-    when :storage_allocated
-      _("Allocated Storage in GB")
-    when :vms_allocated
-      _("Allocated Number of Virtual Machines")
-    when :templates_allocated
-      _("Allocated Number of Templates")
-    end
-  end
-
   def allocated
-    tenant.children.includes(:tenant_quotas).map do |c|
+    tenants_allocated = tenant.children.includes(:tenant_quotas).map do |c|
       cq = c.tenant_quotas.send(name).take
+      cq.value if cq
+    end.compact.sum
+    return tenants_allocated + allocated_by_groups
+  end
+
+  def allocated_by_groups
+    tenant.miq_groups.includes(:miq_group_quotas).map do |c|
+      next unless c.miq_group_quotas.respond_to?(name)
+      cq = c.miq_group_quotas.send(name).take
       cq.value if cq
     end.compact.sum
   end
 
   def available
-    value - tenant.children.includes(:tenant_quotas).map do |c|
-      cq = c.tenant_quotas.send(name).take
-      cq.value if cq
-    end.compact.sum - used
+    value - used - allocated
   end
 
   def used
@@ -121,20 +40,63 @@ class TenantQuota < ApplicationRecord
     @used ||= send(method)
   end
 
+  def used_by_groups
+    tenant.miq_groups.includes(:miq_group_quotas).map do |c|
+      cq = c.miq_group_quotas.available_quotas
+      cq.value if cq
+    end.compact.sum
+  end
+
+  def svm_used
+    [ cpu_used, (mem_used.to_f / 1.gigabyte).ceil ].max
+  end
+
   def cpu_used
-    tenant.allocated_vcpu
+    res = 0
+    for ten in tenant.subtree do
+      next if !ten.tenant_quotas.empty? && ten != tenant
+      for group in ten.miq_groups
+        res += group.allocated_vcpu if group.quota_holder == tenant
+      end
+    end
+    res  
   end
 
   def mem_used
-    tenant.allocated_memory
+    res = 0
+    for ten in tenant.subtree do
+      next if !ten.tenant_quotas.empty? && ten != tenant
+      for group in ten.miq_groups
+        res += group.allocated_memory if group.quota_holder == tenant
+      end
+    end
+    res
   end
 
   def storage_used
-    tenant.allocated_storage
+    res = 0
+    for ten in tenant.subtree do
+      next if !ten.tenant_quotas.empty? && ten != tenant
+      for group in ten.miq_groups
+        res += group.allocated_storage if group.quota_holder == tenant
+      end
+    end
+    res
   end
 
   def vms_used
     tenant.active_vms.count
+  end
+
+  def hours_used
+    res = 0
+    for ten in tenant.subtree do
+      next if !ten.tenant_quotas.empty? && ten != tenant
+      for group in ten.miq_groups
+        res += group.svmh_used if group.quota_holder == tenant
+      end
+    end
+    res
   end
 
   def templates_used
@@ -154,43 +116,12 @@ class TenantQuota < ApplicationRecord
     self.class.quota_definitions[name.to_sym].merge(:unit => unit, :value => value, :warn_value => warn_value, :format => format) # attributes
   end
 
-  def format
-    self.class.quota_definitions.fetch_path(name.to_sym, :format).to_s
-  end
-
   def default_unit
     self.class.quota_definitions.fetch_path(name.to_sym, :unit).to_s
   end
 
-  def check_for_over_allocation
-    return unless value_changed?
-
-    # Root tenant has no (unlimited) quota
-    # First level tenant can also have unlimited quota
+  def validate_quota
     return if tenant.root? || tenant.parent.root?
-
-    oval, nval = changes["value"]
-
-    # Check that the new value is >= the amount that was already allocated to child tenants
-    if nval < allocated
-      errors.add(name, "quota is over allocated, #{nval} was requested but only #{nval - allocated} is available")
-      return
-    end
-
-    # Check that new quota is a least as much as was already used
-    if nval < used
-      errors.add(name, "quota is under allocated, #{nval} was requested but #{used} has already been used")
-      return
-    end
-
-    diff = (nval || 0) - (oval || 0)
-
-    # Check if the parent has enough quota available to give to the child
-    parent_quota = tenant.parent.tenant_quotas.send(name).take
-    unless parent_quota.nil?
-      if parent_quota.available < diff
-        errors.add(name, "quota is over allocated, parent tenant does not have enough quota")
-      end
-    end
+    validate_quota_base(tenant.parent)
   end
 end

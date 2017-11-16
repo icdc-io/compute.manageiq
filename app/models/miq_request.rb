@@ -1,5 +1,6 @@
 class MiqRequest < ApplicationRecord
   extend InterRegionApiMethodRelay
+  include QuotaApproveRequestMixin
 
   ACTIVE_STATES = %w(active queued)
   REQUEST_UNIQUE_KEYS = %w(id state status created_on updated_on type).freeze

@@ -1,11 +1,17 @@
 class User < ApplicationRecord
   include RelationshipMixin
+  include IbaRelationshipMixin
   acts_as_miq_taggable
   has_secure_password
   include CustomAttributeMixin
   include ActiveVmAggregationMixin
   include TimezoneMixin
   include CustomActionsMixin
+  include UserQuotaMixin
+  include UserAccountChargebackMixin
+  include AccountChargebackMixin
+  include SvmMetricMixin
+  include ProcessTasksMixin
 
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
@@ -30,6 +36,9 @@ class User < ApplicationRecord
 
   virtual_has_many :active_vms, :class_name => "VmOrTemplate"
 
+  virtual_has_one  :quota
+  virtual_has_one  :tenant_quota
+  virtual_column :get_user_subnets, :type => :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
   delegate   :super_admin_user?, :admin_user?, :self_service?, :limited_self_service?, :disallowed_roles,
@@ -56,7 +65,11 @@ class User < ApplicationRecord
     true
   end
 
-  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:descendant_ids => :descendants, :ancestor_ids => :ancestors}.freeze
+  def self.admin
+    @admin ||= self.find_by(name: 'admin')
+  end
+
+  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors}.freeze
 
   def self.tenant_id_clause(user_or_group)
     strategy = Rbac.accessible_tenant_ids_strategy(self)
@@ -67,9 +80,16 @@ class User < ApplicationRecord
 
     users_ids = accessible_tenants.collect(&:user_ids).flatten + tenant.user_ids
 
+    ids = []
+    for users_id in users_ids
+      m_id = users_id % 100000
+      t_ids = User.where("id % 100000 = ?", m_id)
+      ids = ids + t_ids
+    end
+
     return if users_ids.empty?
 
-    {table_name => {:id => users_ids}}
+    {table_name => {:id => ids}}
   end
 
   def self.find_by_userid(userid)
@@ -150,6 +170,41 @@ class User < ApplicationRecord
 
   def miq_user_role_name
     miq_user_role.try(:name)
+  end
+
+  def quota
+    personal_quotas
+  end
+
+  def tenant_quota
+    user_name = User.current_user.userid.downcase.gsub(/[^a-z]/i, '_')
+    if self.current_tenant.tags.collect(&:name).include? "/managed/manager/#{user_name}"
+      self.current_tenant.quota
+    elsif self.current_group.tags.collect(&:name).include? "/managed/manager/#{user_name}"
+      self.current_group.quota
+    else
+      {}
+    end
+  end
+
+  def get_user_subnets
+    networks = tags(:networks).to_a #fix #3447
+    networks.push(*current_group.tags(:networks))
+    networks.push(*current_group.tenant.tags(:networks))  
+    for tenant_id in current_group.tenant.ancestry.split('/')
+      networks.push(*Tenant.find_by_id(tenant_id).tags(:networks))
+    end
+    networks = networks.uniq()
+    nets = []
+    networks.each do |tag|
+      tag_info = {}
+      if /\/managed\/networks\// =~ tag.name 
+        tag_info["subnet"] = tag.categorization["name"]
+        tag_info["description"] = tag.categorization["description"]
+        nets.push(tag_info)
+      end
+    end
+    nets
   end
 
   def self.authenticator(username = nil)

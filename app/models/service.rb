@@ -17,18 +17,21 @@ class Service < ApplicationRecord
     :start          => "on",
     :stop           => "off",
     :suspend        => "off",
-    :shutdown_guest => "off"
+    :shutdown_guest => "off",
+    :partial_one    => "partial_one"
   }.freeze
 
   has_ancestry :orphan_strategy => :destroy
 
   belongs_to :tenant
+  belongs_to :miq_group
   belongs_to :service_template               # Template this service was cloned from
 
   has_many :dialogs, -> { distinct }, :through => :service_template
   has_many :metrics, :as => :resource
   has_many :metric_rollups, :as => :resource
   has_many :vim_performance_states, :as => :resource
+  has_many :virtual_ips
 
   has_one :miq_request_task, :dependent => :nullify, :as => :destination
   has_one :miq_request, :through => :miq_request_task
@@ -43,6 +46,7 @@ class Service < ApplicationRecord
   virtual_has_many   :orchestration_stacks
   virtual_has_many   :generic_objects
   virtual_total      :v_total_vms, :vms
+  virtual_has_many   :custom_attributes
 
   virtual_has_one    :custom_actions
   virtual_has_one    :custom_action_buttons
@@ -50,6 +54,8 @@ class Service < ApplicationRecord
   virtual_has_one    :user
   virtual_has_one    :chargeback_report
   virtual_has_one    :configuration_script
+  virtual_has_one    :total_costs_bydate
+  virtual_has_one    :backup_scheduler
 
   before_validation :set_tenant_from_group
 
@@ -65,6 +71,8 @@ class Service < ApplicationRecord
   include TenancyMixin
   include SupportsFeatureMixin
   include Metric::CiMixin
+  include ServiceScheduleMixin
+  include CustomActionMixin
 
   include_concern 'RetirementManagement'
   include_concern 'Aggregation'
@@ -73,6 +81,8 @@ class Service < ApplicationRecord
   virtual_column :has_parent,                               :type => :boolean
   virtual_column :power_state,                              :type => :string
   virtual_column :power_status,                             :type => :string
+  virtual_column :location,                                 :type => :string
+  virtual_column :miq_request_state,                        :type => :string
 
   validates_presence_of :name
 
@@ -99,18 +109,32 @@ class Service < ApplicationRecord
   end
 
   def power_state
-    if options[:power_status] == "starting"
+    if options[:power_status] == 'partial_on'
+      return 'partial_on'
+    elsif options[:power_status] == "starting"
       return 'on'  if power_states_match?(:start)
     elsif options[:power_status] == "stopping"
       return 'off' if power_states_match?(:stop)
+    elsif options[:power_status] == "suspending"
+      return 'suspend' if power_states_match?(:suspend)
     else
       return 'on'  if power_states_match?(:start)
       return 'off' if power_states_match?(:stop)
+      return 'suspend' if power_states_match?(:suspend)
     end
   end
 
   def power_status
-    options[:power_status]
+    if (power_states.include?("on") &&  power_states.include?("off"))
+      update_progress(:power_status => 'partial_on')
+    end
+  end
+
+  def miq_request_state
+    unless miq_request.nil?
+      return miq_request.request_state
+    end
+    nil
   end
 
   def service_id
@@ -156,6 +180,10 @@ class Service < ApplicationRecord
     MiqPreloader.preload_and_map(subtree, :direct_vms)
   end
 
+  def backup_scheduler
+    BackupScheduler.where("resource_id = ?", self.id)
+  end
+
   def vms
     all_vms
   end
@@ -180,6 +208,7 @@ class Service < ApplicationRecord
   end
 
   def shutdown_guest
+    raise_request_stop_event
     queue_group_action(:shutdown_guest, last_index, -1, delay_for_action(last_index, :stop))
   end
 
@@ -349,8 +378,27 @@ class Service < ApplicationRecord
     user
   end
 
+  def total_costs_bydate
+    results = chargeback_report[:results]
+    grouped_results = results.group_by { |r| r["start_date"] }
+    rolled_results = grouped_results.map do |start_date, one_date_results|
+      sum = 0
+      one_date_results.each do |res|
+        res.each do |key, value|
+          match = /allocated_cost/ =~ key
+          if !(match.nil?) && !(value.nil?)
+            sum += value
+          end
+        end
+      end
+      {"start_date"=> start_date,"cost"=>sum}
+    end
+    _log.info("DBG cost for #{name} is #{rolled_results}")
+    rolled_results
+  end
+
   def chargeback_report
-    report_result = MiqReportResult.find_by(:name => chargeback_report_name)
+    report_result = MiqReportResult.where(name: chargeback_report_name).order("last_run_on DESC").first
     if report_result.nil?
       {:results => []}
     else
@@ -365,7 +413,7 @@ class Service < ApplicationRecord
   end
 
   def chargeback_report_name
-    "Chargeback-Vm-Monthly-#{name}"
+    "Chargeback-Vm-Monthly-#{id}"
   end
 
   def generate_chargeback_report(options = {})
@@ -426,5 +474,23 @@ class Service < ApplicationRecord
   def remove_from_service(parenent_service)
     update(:parent => nil)
     parenent_service.remove_resource(self)
+  end
+
+  def region
+    MiqRegion.find_by_region(region_id)
+  end
+
+  def location
+    reg = region.as_json
+    reg["full_name"]  = region.full_name
+    reg
+  end
+
+  def backups
+    backups_with_states.select{|b| /BACKUP_([0-9_])+/ =~ b.name }
+  end
+
+  def backups_with_states
+    custom_attributes.where("name LIKE ?", "BACKUP_%")
   end
 end

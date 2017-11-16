@@ -7,6 +7,12 @@ class Tenant < ApplicationRecord
 
   include ActiveVmAggregationMixin
   include CustomActionsMixin
+  include SvmMetricMixin
+  include AccountChargebackMixin
+  include QuotableMixin
+  include IbaRelationshipMixin 
+  include ServiceChargebackMixin
+  include ProcessTasksMixin
 
   acts_as_miq_taggable
 
@@ -34,6 +40,10 @@ class Tenant < ApplicationRecord
   has_many :services, :dependent => :destroy
   has_many :shares
 
+  virtual_has_one  :quota
+  virtual_has_one  :services_in_regions
+  virtual_has_one  :account
+
   belongs_to :default_miq_group, :class_name => "MiqGroup", :dependent => :destroy
   belongs_to :source, :polymorphic => true
 
@@ -50,10 +60,53 @@ class Tenant < ApplicationRecord
 
   virtual_column :parent_name,  :type => :string
   virtual_column :display_type, :type => :string
+  virtual_column :get_account_users, :type => :string
+  virtual_column :get_account, :type => :string
+  virtual_column :get_account_subnet, :type => :string
 
   before_save :nil_blanks
   after_create :create_tenant_group
   before_destroy :ensure_can_be_destroyed
+
+  def get_account_users
+    account_users = []
+    account_users = get_account.users if get_account.descendants.empty?
+    get_account.descendants.each do |descendant| 
+      account_users += descendant.users
+    end        
+    account_users.map do |account_user|  
+      group = MiqGroup.find_by_id(account_user.current_group_id)
+      user = account_user.as_json
+      user["tags"] = account_user.tags
+      user["group"] = group.description
+      user
+    end  
+  end  
+
+  def get_account
+    ancestors.each do |ancestor| 
+      return ancestor if check_account(ancestor.tags) == 0
+    end  
+    self
+  end
+  alias_method :account, :get_account
+
+  def check_account(tags)
+    return 0 if tags.find_index { |tag| /\/managed\/account\// =~ tag.name }
+  end
+
+  def get_account_subnet    
+    network = []
+    get_account.tags.each do |tag|
+      tag_info = {}
+      if /\/managed\/networks\// =~ tag.name
+        tag_info["subnet"] = tag.categorization["name"]
+        tag_info["description"] = tag.categorization["description"]
+        network.push(tag_info)
+      end  
+    end 
+    network    
+  end  
 
   def self.scope_by_tenant?
     true
@@ -160,6 +213,63 @@ class Tenant < ApplicationRecord
       h[q.name.to_sym][:available]   = q.available unless q.new_record?
       h[q.name.to_sym][:used]        = q.used
     end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def build_quota_tree
+    region, id = Tenant.split_id(self.id)
+    if MiqRegion.default? region
+      root_tenant_node = {
+          "type" => "tenant",
+          "name" => self.name,
+          "edit_action" => "order",
+          "service_template_id" => Quota.service_template.id,
+          "children" => tenant_subtenants_nodes,
+          "locations" => []
+      }
+      manage_locations(root_tenant_node)
+      set_edit_action_to_children(root_tenant_node)
+    end
+    root_tenant_node
+  end
+
+  def tenant_subtenants_nodes
+    children_nodes = []
+    for subtenant in self.children
+      region, id = Tenant.split_id(subtenant.id)
+      subtenant_node = {
+          "name" => subtenant.name,
+          "type" => "tenant",
+          "quota" => subtenant.combined_quotas,
+          "children" => subtenant.tenant_subtenants_nodes,
+          "locations" => []
+      }
+      set_edit_action_to_children(subtenant_node)
+      manage_locations(subtenant_node, id)
+      children_nodes.push(subtenant_node)
+    end
+
+    for miq_group in self.miq_groups
+      unless miq_group.tenant_group?
+        children_nodes.push(miq_group.build_quota_tree)
+      end
+    end
+    children_nodes
+  end
+
+  def services_in_regions
+    get_services_in_regions do |tenant_in_region|
+      tenant_in_region.subtree.inject([]) { |services, desc| services + desc.services }
+    end
+  end
+
+  def quota
+    self.build_quota_tree
+  end
+
+  def quota_holder
+    return self unless self.tenant_quotas.empty?
+    return nil if self.root?
+    return self.parent.quota_holder
   end
 
   # @return [Boolean] Is this a default tenant?

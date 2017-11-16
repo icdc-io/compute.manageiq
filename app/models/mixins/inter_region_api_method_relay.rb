@@ -63,7 +63,8 @@ module InterRegionApiMethodRelay
       _log.error("The remote region [#{region_number}] does not have a web service address.")
       raise "Failed to establish API connection to region #{region_number}"
     end
-
+    
+    user ||= 'admin'  
     ManageIQ::API::Client.new(
       :url      => url,
       :miqtoken => region.api_system_auth_token(user),
