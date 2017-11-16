@@ -7,7 +7,8 @@ class ServiceTemplate < ApplicationRecord
     "playbook"        => _("Playbook"),
     "hosted_database" => _("Hosted Database"),
     "load_balancer"   => _("Load Balancer"),
-    "storage"         => _("Storage")
+    "storage"         => _("Storage"),
+    "quota"           => "Quota" 
   }.freeze
 
   CATALOG_ITEM_TYPES = {

@@ -20,7 +20,7 @@ module CustomActionsMixin
   end
 
   def custom_action_buttons
-    filter_by_visibility(custom_buttons + custom_button_sets_with_generics.collect(&:children).flatten)
+    filter_by_visibility(all_custom_buttons + custom_button_sets_with_generics.collect(&:children).flatten)
   end
 
   def generic_button_group
@@ -33,6 +33,10 @@ module CustomActionsMixin
 
   def custom_buttons
     generic_custom_buttons.select { |button| button.parent.nil? } + direct_custom_buttons
+  end
+
+  def all_custom_buttons
+    generic_custom_buttons.select { |button| button } + direct_custom_buttons
   end
 
   def direct_custom_buttons

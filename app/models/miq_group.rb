@@ -4,6 +4,7 @@ class MiqGroup < ApplicationRecord
   TENANT_GROUP = "tenant"
 
   belongs_to :tenant
+  has_many   :services
   has_one    :entitlement, :dependent => :destroy, :autosave => true
   has_one    :miq_user_role, :through => :entitlement
   has_and_belongs_to_many :users
@@ -16,6 +17,8 @@ class MiqGroup < ApplicationRecord
 
   virtual_column :miq_user_role_name, :type => :string,  :uses => :miq_user_role
   virtual_column :read_only,          :type => :boolean
+  virtual_has_one  :quota
+  virtual_has_one   :services_in_regions
 
   delegate :self_service?, :limited_self_service?, :disallowed_roles, :to => :miq_user_role, :allow_nil => true
 
@@ -37,6 +40,11 @@ class MiqGroup < ApplicationRecord
   include TimezoneMixin
   include TenancyMixin
   include CustomActionsMixin
+  include MiqGroupQuotaMixin
+  include AccountChargebackMixin
+  include SvmMetricMixin
+  include ServiceChargebackMixin
+  include ProcessTasksMixin
 
   alias_method :current_tenant, :tenant
 
@@ -213,6 +221,10 @@ class MiqGroup < ApplicationRecord
     end
   end
 
+  def quota
+    self.build_quota_tree(true)
+  end
+
   def self.create_tenant_group(tenant)
     tenant_full_name = (tenant.ancestors.map(&:name) + [tenant.name]).join("/")
 
@@ -248,6 +260,12 @@ class MiqGroup < ApplicationRecord
     group_user_ids = user_ids
     return false if group_user_ids.empty?
     users.includes(:miq_groups).where(:id => group_user_ids).where.not(:miq_groups => {:id => id}).count != group_user_ids.size
+  end
+
+  def services_in_regions
+    get_services_in_regions do |group_in_region|
+      group_in_region.services
+    end
   end
 
   private

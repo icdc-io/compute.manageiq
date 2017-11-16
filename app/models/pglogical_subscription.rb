@@ -105,6 +105,14 @@ class PglogicalSubscription < ActsAsArModel
     connection.xlog_location_diff(remote_node_lsn, remote_replication_lsn)
   end
 
+  def find_pass
+    s = pglogical.subscription_show_status(id).symbolize_keys
+    dsn_hash = PG::DSNParser.parse(s.delete(:provider_dsn))
+    self.password = dsn_hash[:password]
+    self
+  end
+
+
   # translate the output from the pglogical stored proc to our object columns
   def self.subscription_to_columns(sub)
     cols = sub.symbolize_keys

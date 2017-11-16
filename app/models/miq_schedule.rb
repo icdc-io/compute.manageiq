@@ -12,6 +12,7 @@ class MiqSchedule < ApplicationRecord
   belongs_to :file_depot
   belongs_to :miq_search
   belongs_to :zone
+  belongs_to :schedulable, polymorphic: true
 
   scope :in_zone, lambda { |zone_name|
     includes(:zone).where("zones.name" => zone_name)
@@ -33,7 +34,7 @@ class MiqSchedule < ApplicationRecord
 
   SYSTEM_SCHEDULE_CLASSES = %w(MiqReport MiqAlert MiqWidget).freeze
   VALID_INTERVAL_UNITS = %w(minutely hourly daily weekly monthly once).freeze
-  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request).freeze
+  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request  collect_svm delete_backups).freeze
 
   default_value_for :userid,  "system"
   default_value_for :enabled, true
@@ -190,6 +191,17 @@ class MiqSchedule < ApplicationRecord
     _log.info("Action [#{name}] has been run for target: [#{obj.name}]")
   end
 
+  def action_collect_svm(obj, _at)
+    sched_action[:options] ||= {}
+    obj.collect_svm
+    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
+  end
+
+  def action_delete_backups(klass, _at)
+    klass.delete_outdated_backups
+    _log.info("Action [#{name}] has been run for target type: [#{klass}]")
+  end
+
   def action_scan(obj, _at)
     sched_action[:options] ||= {}
     obj.scan
@@ -209,6 +221,21 @@ class MiqSchedule < ApplicationRecord
   def action_generate_widget(obj, _at)
     obj.queue_generate_content
     _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.title}]")
+  end
+
+  def action_service_power_op(obj, at)
+    op = sched_action[:options]["power"]
+    if op == 'off'
+      obj.shutdown_guest
+    else
+      obj.start
+    end
+    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
+  end
+
+  def action_service_backup(obj, at)
+    obj.invoke_custom_action('backup_now')
+    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
   end
 
   def action_check_compliance(obj, _at)

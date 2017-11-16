@@ -1,4 +1,6 @@
 class MiqRegion < ApplicationRecord
+  DEFAULT = 99
+
   has_many :metrics,        :as => :resource # Destroy will be handled by purger
   has_many :metric_rollups, :as => :resource # Destroy will be handled by purger
   has_many :vim_performance_states, :as => :resource # Destroy will be handled by purger
@@ -295,6 +297,23 @@ class MiqRegion < ApplicationRecord
       options[type] = self.is_tagged_with?("capture_enabled", :ns => "/performance/#{type}")
     end
     @perf_capture_always = options.freeze
+  end
+
+  def default?
+    region == DEFAULT
+  end
+
+  def self.default? region
+    region == DEFAULT
+  end
+
+  def full_name
+    tag = Tag.where("name ~* ?", ".*/#{name}$").first
+    (tag.nil?) ? name : Classification.find_by(tag_id: tag.id).description
+  end
+
+  def self.slaves_only
+    self.all.reject(&:default?)
   end
 
   private
