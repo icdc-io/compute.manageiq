@@ -1,4 +1,6 @@
 require 'bundler/setup'
+#require 'rubygems'
+#gem 'activeresource'
 require 'active_resource' unless defined?(ActiveResource)
 require 'net/http'
 require 'json'
@@ -99,6 +101,9 @@ class Issue < ActiveResource::Base
   def self.count
   end
 
+  def count
+  end
+
   def keys
   end
 
@@ -178,7 +183,6 @@ class Issue < ActiveResource::Base
     issues.each do |issue|
       self.format_issue(issue)
     end
-
     issues
   end
 
