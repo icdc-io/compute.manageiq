@@ -1,0 +1,9 @@
+1:
+  :foreman_url: 'https://foreman.icdc.io'
+  :user: 'admin'
+  :password: 'B1gb0sss'
+
+2:
+  :foreman_url: 'https://foreman2d.iba'
+  :user: 'admin'
+  :password: 'B1gb0sss'

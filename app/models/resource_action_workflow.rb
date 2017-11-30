@@ -50,6 +50,7 @@ class ResourceActionWorkflow < MiqRequestWorkflow
   end
 
   def generate_request(state, values)
+    $log.info("DBG generate request #{values}")
     make_request(nil, values.merge(:cart_state => state))
   end
 

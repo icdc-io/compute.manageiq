@@ -17,6 +17,7 @@ module ProcessTasksMixin
     end
 
     def invoke_remote_action(id, options)
+      $log.info("DBG remote task")
       options[:ids] = [id]
       options[:userid] ||= "system"
       region = id_to_region(id)

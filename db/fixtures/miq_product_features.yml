@@ -5737,6 +5737,14 @@
         :description: Perform SmartState Analysis on VMs
         :feature_type: control
         :identifier: vm_scan
+      - :name: Reconfiguration
+        :description: Reconfigure VMs
+        :feature_type: control
+        :identifier: vm_reconfigure
+      - :name: Last metrics
+        :description: Get last metrics
+        :feature_type: control
+        :identifier: vm_last_metrics
       - :name: Check Compliance
         :description: Check Compliance of Last Known Configuration
         :feature_type: control

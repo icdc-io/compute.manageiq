@@ -24,4 +24,9 @@ module ArRegion
   def region_description
     miq_region.description if miq_region
   end
+
+  def in_all_regions
+    self.class.where("id % ? = ?", self.class.rails_sequence_factor,  split_id.second)
+  end
+
 end

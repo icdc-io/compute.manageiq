@@ -1,0 +1,12 @@
+:api_key: 96db8225c27f111754b8fa81d49133fe16fabb1e
+:project_id: 5
+:tracker_id: 3
+:project_url: 'https://support.icdc.io'
+:user: 'admin'
+
+:status_map:
+  :comment:
+    :from: 10
+    :to: 16
+
+

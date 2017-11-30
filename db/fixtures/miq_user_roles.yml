@@ -311,6 +311,7 @@
   - vm_show
   - vm_show_list
   - vm_guest_shutdown
+  - vm_reconfigure
   - vm_start
   - vm_stop
   - vm_suspend
