@@ -110,17 +110,17 @@ module Rbac
       'CloudVolume'            => :descendant_ids,
       'ExtManagementSystem'    => :ancestor_ids,
       'MiqAeNamespace'         => :ancestor_ids,
-      'MiqGroup'               => :descendant_ids,
-      'MiqRequest'             => :descendant_ids,
+      'MiqGroup'               => :iba_descendant_ids,
+      'MiqRequest'             => :iba_descendant_ids,
       'MiqRequestTask'         => nil, # tenant only
       'MiqTemplate'            => :ancestor_ids,
       'Provider'               => :ancestor_ids,
       'Service'                => :descendant_ids,
-      'ServiceTemplate'        => :ancestor_ids,
-      'ServiceTemplateCatalog' => :ancestor_ids,
-      'Tenant'                 => :descendant_ids,
-      'User'                   => :descendant_ids,
-      'Vm'                     => :descendant_ids
+      'ServiceTemplate'        => :iba_ancestor_ids,
+      'ServiceTemplateCatalog' => :iba_ancestor_ids,
+      'Tenant'                 => :iba_descendant_ids,
+      'User'                   => :iba_descendant_ids,
+      'Vm'                     => :iba_descendant_ids
     }
 
     include Vmdb::Logging
