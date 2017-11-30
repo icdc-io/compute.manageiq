@@ -59,8 +59,6 @@ module InterRegionApiMethodRelay
     region = MiqRegion.find_by(:region => region_number)
 
     url = region.remote_ws_url
-    url = 'https://172.20.234.82:8443'
-    $log.info("DBG url #{url}")
     if url.nil?
       _log.error("The remote region [#{region_number}] does not have a web service address.")
       raise "Failed to establish API connection to region #{region_number}"
@@ -76,7 +74,6 @@ module InterRegionApiMethodRelay
 
   def self.exec_api_call(region, collection_name, action, api_args = nil, &resource_block)
     api_args ||= {}
-    $log.info("DBG run api relay for region #{region} collection #{collection_name} action #{action}")
     collection = api_client_connection_for_region(region).public_send(collection_name)
     result = if resource_block
                collection.public_send(action, api_args, &resource_block)
