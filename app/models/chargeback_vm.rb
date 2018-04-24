@@ -6,6 +6,7 @@ class ChargebackVm < Chargeback
     :vm_guid                  => :string,
     :owner_name               => :string,
     :provider_name            => :string,
+    :tenant_name              => :string,
     :provider_uid             => :string,
     :cpu_allocated_metric     => :float,
     :cpu_allocated_cost       => :float,
@@ -32,6 +33,22 @@ class ChargebackVm < Chargeback
     :storage_cost             => :float,
     :total_cost               => :float,
   )
+
+  DEFAULT_STORAGE_METRICS = %w(
+    storage_allocated_unclassified_metric
+    storage_allocated_unclassified_cost
+    storage_allocated_metric
+    storage_allocated_cost
+  ).freeze
+
+  def self.attribute_names
+    loaded_attribute_names = super
+    loaded_storage_allocated_attributes = loaded_attribute_names.select { |x| x.starts_with?('storage_allocated_') }
+    loaded_sub_metric_fields            = loaded_storage_allocated_attributes - DEFAULT_STORAGE_METRICS
+    non_existing_sub_metric_fields      = loaded_sub_metric_fields - dynamic_columns_for(:float).keys
+
+    loaded_attribute_names - non_existing_sub_metric_fields
+  end
 
   # example:
   #  dynamic_columns_for(:group => [:total])
@@ -127,7 +144,7 @@ class ChargebackVm < Chargeback
 
   def self.vm_owner(consumption)
     @vm_owners ||= vms.each_with_object({}) { |vm, res| res[vm.id] = vm.evm_owner_name }
-    @vm_owners[consumption.resource_id] ||= consumption.resource.evm_owner_name
+    @vm_owners[consumption.resource_id] ||= consumption.resource.try(:evm_owner_name)
   end
 
   def self.vms
@@ -172,7 +189,7 @@ class ChargebackVm < Chargeback
   def init_extra_fields(consumption)
     self.vm_id         = consumption.resource_id
     self.vm_name       = consumption.resource_name
-    self.vm_uid        = consumption.resource.ems_ref
+    self.vm_uid        = consumption.resource.try(:ems_ref)
     self.vm_guid       = consumption.resource.try(:guid)
     self.owner_name    = self.class.vm_owner(consumption)
     self.provider_name = consumption.parent_ems.try(:name)

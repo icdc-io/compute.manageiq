@@ -32,7 +32,7 @@ class MiqWorker < ApplicationRecord
   STATUSES_STOPPED  = [STATUS_STOPPED, STATUS_KILLED, STATUS_ABORTED]
   STATUSES_CURRENT_OR_STARTING = STATUSES_CURRENT + STATUSES_STARTING
   STATUSES_ALIVE    = STATUSES_CURRENT_OR_STARTING + [STATUS_STOPPING]
-  PROCESS_INFO_FIELDS = %i(priority memory_usage percent_memory percent_cpu memory_size cpu_time proportional_set_size)
+  PROCESS_INFO_FIELDS = %i(priority memory_usage percent_memory percent_cpu memory_size cpu_time proportional_set_size unique_set_size)
 
   PROCESS_TITLE_PREFIX = "MIQ:".freeze
 
@@ -314,6 +314,7 @@ class MiqWorker < ApplicationRecord
   def self.after_fork
     close_pg_sockets_inherited_from_parent
     DRb.stop_service
+    close_drb_pool_connections
     renice(Process.pid)
   end
 
@@ -327,6 +328,24 @@ class MiqWorker < ApplicationRecord
         _log.info("Closing socket: #{socket}")
         IO.for_fd(socket).close
       end
+    end
+  end
+
+  # Close all open DRb connections so that connections in the parent's memory space
+  # which is shared due to forking the child process do not pollute the child's DRb
+  # connection pool.  This can lead to errors when the children connect to a server
+  # and get an incorrect response back.
+  #
+  # ref: https://bugs.ruby-lang.org/issues/2718
+  def self.close_drb_pool_connections
+    require 'drb'
+
+    # HACK: DRb doesn't provide an interface to close open pool connections.
+    #
+    # Once that is added this should be replaced.
+    DRb::DRbConn.instance_variable_get(:@mutex).synchronize do
+      DRb::DRbConn.instance_variable_get(:@pool).each(&:close)
+      DRb::DRbConn.instance_variable_set(:@pool, [])
     end
   end
 
@@ -415,6 +434,10 @@ class MiqWorker < ApplicationRecord
       begin
         _log.info("Killing worker: ID [#{id}], PID [#{pid}], GUID [#{guid}], status [#{status}]")
         Process.kill(9, pid)
+        loop do
+          break unless is_alive?
+          sleep(0.01)
+        end
       rescue Errno::ESRCH
         _log.warn("Worker ID [#{id}] PID [#{pid}] GUID [#{guid}] has been killed")
       rescue => err
@@ -496,7 +519,7 @@ class MiqWorker < ApplicationRecord
   end
 
   def log_status(level = :info)
-    _log.send(level, "[#{friendly_name}] Worker ID [#{id}], PID [#{pid}], GUID [#{guid}], Last Heartbeat [#{last_heartbeat}], Process Info: Memory Usage [#{memory_usage}], Memory Size [#{memory_size}], Proportional Set Size: [#{proportional_set_size}], Memory % [#{percent_memory}], CPU Time [#{cpu_time}], CPU % [#{percent_cpu}], Priority [#{os_priority}]")
+    _log.send(level, "[#{friendly_name}] Worker ID [#{id}], PID [#{pid}], GUID [#{guid}], Last Heartbeat [#{last_heartbeat}], Process Info: Memory Usage [#{memory_usage}], Memory Size [#{memory_size}], Proportional Set Size: [#{proportional_set_size}], Unique Set Size: [#{unique_set_size}], Memory % [#{percent_memory}], CPU Time [#{cpu_time}], CPU % [#{percent_cpu}], Priority [#{os_priority}]")
   end
 
   def current_timeout

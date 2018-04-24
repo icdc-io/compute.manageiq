@@ -37,6 +37,7 @@ describe EmbeddedAnsibleWorker do
         expect(cred_collection).to receive(:create!).and_return(cred_resource)
         expect(inv_collection).to receive(:create!).and_return(inv_resource)
         expect(host_collection).to receive(:create!).and_return(host_resource)
+        expect(subject).to receive(:ensure_plugin_playbooks_project_seeded)
 
         subject.ensure_initial_objects(provider, api_connection)
       end
@@ -135,13 +136,69 @@ describe EmbeddedAnsibleWorker do
       end
     end
 
+    describe "#ensure_plugin_playbooks_project_seeded" do
+      let!(:tmp_dir) { Pathname.new(Dir.mktmpdir("consolidated_ansible_playbooks")) }
+      let!(:expected_attributes) do
+        {
+          :name                 => "ManageIQ Default Project",
+          :scm_type             => "git",
+          :scm_url              => "file://#{tmp_dir}",
+          :scm_update_on_launch => false,
+          :organization         => 42
+        }
+      end
+
+      before do
+        provider.default_organization = 42
+        allow(EmbeddedAnsibleWorker).to receive(:consolidated_plugin_directory).and_return(tmp_dir)
+        allow(subject).to receive(:chown_playbooks_tempdir)
+      end
+
+      after do
+        FileUtils.rm_rf(tmp_dir)
+      end
+
+      it "creates a git project as the provider's default project" do
+        expect(proj_collection).to receive(:create!)
+          .with(expected_attributes.to_json)
+          .and_return(double(:id => 1234))
+
+        subject.ensure_plugin_playbooks_project_seeded(provider, api_connection)
+        expect(Dir.exist?(tmp_dir.join(".git"))).to be_truthy
+        expect(provider.default_project).to eq(1234)
+      end
+
+      it "updates an existing project" do
+        project = double(:id => 1234)
+        expect(subject).to receive(:find_default_project).and_return(project)
+        expect(project).to receive(:update_attributes!)
+          .with(expected_attributes)
+          .and_return(double(:id => 1234))
+
+        subject.ensure_plugin_playbooks_project_seeded(provider, api_connection)
+      end
+    end
+
     describe "#start_monitor_thread" do
-      it "sets worker class and id in thread object" do
+      let(:pool) { double("ConnectionPool") }
+
+      before do
         allow(Thread).to receive(:new).and_return({})
         allow(described_class::Runner).to receive(:start_worker)
+      end
+
+      it "sets worker class and id in thread object" do
         thread = subject.start_monitor_thread
         expect(thread[:worker_class]).to eq subject.class.name
         expect(thread[:worker_id]).to    eq subject.id
+      end
+
+      it "adds a connection to the pool if there is only one" do
+        allow(ActiveRecord::Base).to receive(:connection_pool).and_return(pool)
+
+        expect(pool).to receive(:instance_variable_get).with(:@size).and_return(1)
+        expect(pool).to receive(:instance_variable_set).with(:@size, 2)
+        subject.start_monitor_thread
       end
     end
 

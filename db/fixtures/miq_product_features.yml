@@ -970,6 +970,10 @@
       :description: Import Virtual Machine from other Infrastructure Provider
       :feature_type: admin
       :identifier: ems_infra_import_vm
+    - :name: Admin UI
+      :description: Open Admin UI for Infrastructure Providers
+      :feature_type: control
+      :identifier: ems_infra_admin_ui
   - :name: Modify
     :description: Modify Infrastructure Providers
     :feature_type: admin
@@ -2351,7 +2355,7 @@
         :description: Copy Dialog
         :feature_type: admin
         :hidden: true
-        :identifier: dialog_copy
+        :identifier: dialog_copy_editor
       - :name: Delete
         :description: Delete Dialog
         :feature_type: admin
@@ -2861,6 +2865,43 @@
           :feature_type: admin
           :hidden: true
           :identifier: zone_delete
+    - :name: LDAP
+      :description: LDAP
+      :feature_type: node
+      :hidden: true
+      :identifier: ldap
+      :children:
+      - :name: Modify
+        :description: Modify a LDAP
+        :feature_type: admin
+        :identifier: ldap_admin
+        :hidden: true
+        :children:
+        - :name: Add
+          :description: Add a LDAP domain
+          :feature_type: admin
+          :hidden: true
+          :identifier: ldap_domain_add
+        - :name: Edit
+          :description: Edit a LDAP domain
+          :feature_type: admin
+          :hidden: true
+          :identifier: ldap_domain_edit
+        - :name: Delete
+          :description: Delete a LDAP domain
+          :feature_type: admin
+          :hidden: true
+          :identifier: ldap_domain_delete
+        - :name: Edit
+          :description: Edit a LDAP region
+          :feature_type: admin
+          :hidden: true
+          :identifier: ldap_region_edit
+        - :name: Delete
+          :description: Delete a LDAP region
+          :feature_type: admin
+          :hidden: true
+          :identifier: ldap_region_delete
     - :name: Regions
       :description: Regions
       :feature_type: node
@@ -3836,10 +3877,6 @@
       :description: Edit Tags of Middleware Servers
       :feature_type: control
       :identifier: middleware_server_tag
-    - :name: Check Compliance
-      :description: Check Compliance of Last Known Configuration
-      :feature_type: control
-      :identifier: middleware_server_check_compliance
     - :name: Reload middleware server
       :description: Trigger reload operation for Middleware Server
       :feature_type: admin
@@ -4845,6 +4882,10 @@
       :description: Edit Tags of Container Build
       :feature_type: control
       :identifier: container_build_tag
+    - :name: Container Build Scan
+      :description: Perform SmartState Analysis
+      :feature_type: control
+      :identifier: container_build_scan
 
 # ContainerTemplate
 - :name: Templates
@@ -5007,6 +5048,10 @@
         :description: Display Lists of Containers
         :feature_type: view
         :identifier: container_show_list
+      - :name: Show
+        :description: Display Individual Containers
+        :feature_type: view
+        :identifier: container_show
       - :name: Timeline
         :description: Display Timelines for Containers
         :feature_type: view
@@ -5197,6 +5242,10 @@
         :description: Ansible Repositories Refresh
         :feature_type: control
         :identifier: embedded_configuration_script_source_refresh
+      - :name: Edit Tags
+        :description: Edit Tags for the selected Ansible Repositories
+        :feature_type: control
+        :identifier: ansible_repository_tag
   - :name: Playbooks
     :description: Everything under Playbooks
     :feature_type: node
@@ -5223,6 +5272,10 @@
         :description: Ansible Playbooks Refresh
         :feature_type: control
         :identifier: embedded_configuration_script_payload_refresh
+      - :name: Edit Tags
+        :description: Edit Tags for the selected Ansible Playbooks
+        :feature_type: control
+        :identifier: embedded_configuration_script_payload_tag
 
   - :name: Credentials
     :description: Everything under Credentials
@@ -5254,6 +5307,10 @@
         :description: Ansible Credentials Refresh
         :feature_type: control
         :identifier: embedded_automation_manager_credentials_refresh
+      - :name: Edit Tags
+        :description: Edit Tags for the selected Ansible Credentials
+        :feature_type: control
+        :identifier: ansible_credential_tag
 
 # Automation Manager
 - :name: Ansible Tower
@@ -5504,6 +5561,10 @@
         :description: Pause Instance
         :feature_type: control
         :identifier: instance_pause
+      - :name: Resume
+        :description: Resume Instance
+        :feature_type: control
+        :identifier: instance_resume
       - :name: Suspend
         :description: Suspend Instance
         :feature_type: control
@@ -5654,6 +5715,14 @@
         :description: Refresh relationships and power states for all items related of Images
         :feature_type: control
         :identifier: image_refresh
+      - :name: Right Size Recommendations
+        :description: CPU/Memory Recommendations of Images
+        :feature_type: control
+        :identifier: image_right_size
+      - :name: Reconfigure
+        :description: Reconfigure the Memory/CPUs of  Images
+        :feature_type: control
+        :identifier: image_reconfigure
       - :name: Edit Tags
         :description: Edit Image Tags
         :feature_type: control
@@ -5862,6 +5931,10 @@
         :description: Transform VM
         :feature_type: admin
         :identifier: vm_transform
+      - :name: Mass Transform
+        :description: Transform tagged VMs
+        :feature_type: admin
+        :identifier: vm_transform_mass
       - :name: Edit EVM Server Relationship
         :description: Edit EVM Server Relationship
         :feature_type: admin
@@ -6460,28 +6533,23 @@
     :identifier: physical_infra_topology_view
 
 # Monitor
-- :name: Monitor
-  :description: Everything under Monitor
+- :name: Alerts
+  :description: Alerts
   :feature_type: node
-  :identifier: monitor
+  :identifier: monitor_alerts
   :children:
-  - :name: Alerts
-    :description: Alerts
-    :feature_type: node
-    :identifier: monitor_alerts
-    :children:
-    - :name: Overview
-      :description: Alerts Overview
-      :feature_type: view
-      :identifier: monitor_alerts_overview
-    - :name: All Alerts
-      :description: Show Alerts List
-      :feature_type: view
-      :identifier: monitor_alerts_list
-    - :name: Most Recent Alerts
-      :description: Show Most Recent Alerts
-      :feature_type: view
-      :identifier: monitor_alerts_most_recent
+  - :name: Overview
+    :description: Alerts Overview
+    :feature_type: view
+    :identifier: monitor_alerts_overview
+  - :name: All Alerts
+    :description: Show Alerts List
+    :feature_type: view
+    :identifier: monitor_alerts_list
+  - :name: Most Recent Alerts
+    :description: Show Most Recent Alerts
+    :feature_type: view
+    :identifier: monitor_alerts_most_recent
 
 # API
 - :name: API
@@ -6534,7 +6602,7 @@
     - :name: Switch Language
       :description: Display Language options
       :feature_type: view
-      :identifier: sui_language 
+      :identifier: sui_language
     - :name: Notifications
       :description: Display notifications
       :feature_type: view
@@ -6544,10 +6612,10 @@
     :feature_type: node
     :identifier: sui_dashboard
     :children:
-     - :name: Monthly Charge view
-       :description: Display monthly charges
-       :feature_type: view
-       :identifier: sui_dashboard_monthly_charge_view
+    - :name: Monthly Charge view
+      :description: Display monthly charges
+      :feature_type: view
+      :identifier: sui_dashboard_monthly_charge_view
   - :name: My Services
     :description: My Services features
     :feature_type: node
@@ -6676,7 +6744,7 @@
       :description: View Orders
       :feature_type: node
       :identifier: sui_orders_display
-      :children:  
+      :children:
       - :name: Show
         :description: Display Orders
         :feature_type: view
@@ -6703,7 +6771,7 @@
     :description: Service Catalog features
     :feature_type: node
     :identifier: sui_svc_catalog
-    :children:   
+    :children:
     - :name: View
       :description: Display Service Catalog
       :feature_type: node
@@ -6717,7 +6785,7 @@
       :description: Catalog operations
       :feature_type: node
       :identifier: sui_svc_catalog_operations
-      :children:  
+      :children:
       - :name: Add to Shopping Cart
         :description: Add to Shopping Cart
         :feature_type: control
@@ -6740,7 +6808,7 @@
       :description: Shopping Cart operations
       :feature_type: node
       :identifier: sui_cart_operations
-      :children:    
+      :children:
       - :name: Clear
         :description: Clear cart
         :feature_type: control

@@ -1,6 +1,13 @@
 describe MiqServer do
   include_examples ".seed called multiple times"
 
+  context "#hostname" do
+    it("with a valid hostname")    { expect(MiqServer.new(:hostname => "test").hostname).to eq("test") }
+    it("with a valid fqdn")        { expect(MiqServer.new(:hostname => "test.example.com").hostname).to eq("test.example.com") }
+    it("with an invalid hostname") { expect(MiqServer.new(:hostname => "test_host").hostname).to be_nil }
+    it("without a hostname")       { expect(MiqServer.new.hostname).to be_nil }
+  end
+
   context ".my_guid" do
     let(:guid_file) { Rails.root.join("GUID") }
 
@@ -33,6 +40,30 @@ describe MiqServer do
   context "instance" do
     before do
       @guid, @miq_server, @zone = EvmSpecHelper.create_guid_miq_server_zone
+    end
+
+    describe "#monitor_myself" do
+      it "does not exit with nil memory_usage" do
+        @miq_server.update(:memory_usage => nil)
+        expect(@miq_server).to receive(:exit).never
+        @miq_server.monitor_myself
+        expect(Notification.count).to eq(0)
+      end
+
+      it "creates a notification and exits with memory usage > limit" do
+        NotificationType.seed
+        @miq_server.update(:memory_usage => 3.gigabytes)
+        expect(@miq_server).to receive(:exit).once
+        @miq_server.monitor_myself
+        expect(Notification.count).to eq(1)
+      end
+
+      it "does not exit with memory_usage < limit" do
+        @miq_server.update(:memory_usage => 1.gigabyte)
+        expect(@miq_server).to receive(:exit).never
+        @miq_server.monitor_myself
+        expect(Notification.count).to eq(0)
+      end
     end
 
     describe "#monitor_loop" do
@@ -174,32 +205,17 @@ describe MiqServer do
           @miq_server.ntp_reload
         end
 
-        it "syncs with server settings with zone and server configured" do
-          @zone.update_attribute(:settings, :ntp => zone_ntp)
-          stub_settings(:ntp => server_ntp)
-
-          expect(LinuxAdmin::Chrony).to receive(:new).and_return(chrony)
-          expect(chrony).to receive(:clear_servers)
-          expect(chrony).to receive(:add_servers).with(*server_ntp[:server])
-          @miq_server.ntp_reload
-        end
-
-        it "syncs with zone settings if server not configured" do
-          @zone.update_attribute(:settings, :ntp => zone_ntp)
-          stub_settings({})
-
-          expect(LinuxAdmin::Chrony).to receive(:new).and_return(chrony)
-          expect(chrony).to receive(:clear_servers)
-          expect(chrony).to receive(:add_servers).with(*zone_ntp[:server])
-          @miq_server.ntp_reload
-        end
-
-        it "syncs with default zone settings if server and zone not configured" do
-          @zone.update_attribute(:settings, {})
-
+        it "syncs the settings" do
           expect(LinuxAdmin::Chrony).to receive(:new).and_return(chrony)
           expect(chrony).to receive(:clear_servers)
           expect(chrony).to receive(:add_servers).with("0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org")
+          @miq_server.ntp_reload
+        end
+
+        it "only changes the config file if there are changes" do
+          expect(@miq_server).to receive(:apply_ntp_server_settings).once
+
+          @miq_server.ntp_reload
           @miq_server.ntp_reload
         end
       end

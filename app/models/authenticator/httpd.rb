@@ -60,8 +60,7 @@ module Authenticator
       user_attrs, _membership_list = identity
       return super if user_attrs[:domain].nil?
 
-      upn_username = "#{user_attrs[:username]}@#{user_attrs[:domain]}".downcase
-
+      upn_username = username_to_upn_name(user_attrs)
       user = find_userid_as_upn(upn_username)
       user ||= find_userid_as_distinguished_name(user_attrs)
       user ||= find_userid_as_username(identity, username)
@@ -73,8 +72,7 @@ module Authenticator
     def lookup_by_identity(username, request = nil)
       if request
         user_attrs, _membership_list = user_details_from_headers(username, request)
-        upn_username = "#{user_attrs[:username]}@#{user_attrs[:domain]}".downcase
-
+        upn_username = username_to_upn_name(user_attrs)
         user =   find_userid_as_upn(upn_username)
         user ||= find_userid_as_distinguished_name(user_attrs)
       end
@@ -97,6 +95,13 @@ module Authenticator
       user
     end
 
+    def username_to_upn_name(user_attrs)
+      return user_attrs[:username] if user_attrs[:domain].nil?
+
+      user_name = user_attrs[:username].split("@").first
+      "#{user_name}@#{user_attrs[:domain]}".downcase
+    end
+
     def user_details_from_external_directory(username)
       ext_user_attrs = user_attrs_from_external_directory(username)
       user_attrs = {:username  => username,
@@ -115,7 +120,7 @@ module Authenticator
                     :lastname  => request.headers['X-REMOTE-USER-LASTNAME'],
                     :email     => request.headers['X-REMOTE-USER-EMAIL'],
                     :domain    => request.headers['X-REMOTE-USER-DOMAIN']}
-      [user_attrs, (request.headers['X-REMOTE-USER-GROUPS'] || '').split(/[;:]/)]
+      [user_attrs, (CGI.unescape(request.headers['X-REMOTE-USER-GROUPS'] || '')).split(/[;:]/)]
     end
 
     def user_attrs_from_external_directory(username)

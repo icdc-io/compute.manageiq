@@ -248,7 +248,7 @@ class VmScan < Job
                 (vm.kind_of?(ManageIQ::Providers::Azure::CloudManager::Vm) && vm.require_snapshot_for_scan?)
             vm.ext_management_system.vm_delete_evm_snapshot(vm, :snMor => mor)
           else
-            delete_snapshot(mor)
+            delete_snapshot(mor, vm)
           end
         rescue => err
           _log.error(err.to_s)
@@ -393,7 +393,14 @@ class VmScan < Job
             delete_snapshot_by_description(mor, vm)
           else
             user_event = end_user_event_message(vm, false)
-            vm.ext_management_system.vm_remove_snapshot(vm, :snMor => mor, :user_event => user_event)
+            if vm.kind_of?(ManageIQ::Providers::Openstack::CloudManager::Vm)
+              vm.ext_management_system.vm_delete_evm_snapshot(vm, mor)
+            elsif vm.kind_of?(ManageIQ::Providers::Microsoft::InfraManager::Vm) ||
+                  (vm.kind_of?(ManageIQ::Providers::Azure::CloudManager::Vm) && vm.require_snapshot_for_scan?)
+              vm.ext_management_system.vm_delete_evm_snapshot(vm, :snMor => mor)
+            else
+              vm.ext_management_system.vm_remove_snapshot(vm, :snMor => mor, :user_event => user_event)
+            end
           end
         else
           raise _("No Providers available to delete snapshot")
@@ -416,14 +423,15 @@ class VmScan < Job
       miqVim = nil
       # Make sure we were given a host to connect to and have a non-nil encrypted password
       if miqVimHost && !miqVimHost[:password].nil?
+        server = miqVimHost[:hostname] || miqVimHost[:ipaddress]
         begin
           password_decrypt = MiqPassword.decrypt(miqVimHost[:password])
           if MiqServer.use_broker_for_embedded_proxy?(ems_type)
             $vim_broker_client ||= MiqVimBroker.new(:client, MiqVimBrokerWorker.drb_port)
-            miqVim = $vim_broker_client.getMiqVim(miqVimHost[:address], miqVimHost[:username], password_decrypt)
+            miqVim = $vim_broker_client.getMiqVim(server, miqVimHost[:username], password_decrypt)
           else
             require 'VMwareWebService/MiqVim'
-            miqVim = MiqVim.new(miqVimHost[:address], miqVimHost[:username], password_decrypt)
+            miqVim = MiqVim.new(server, miqVimHost[:username], password_decrypt)
           end
 
           vimVm = miqVim.getVimVm(vm.path)
@@ -497,14 +505,7 @@ class VmScan < Job
         mor = context[:snapshot_mor]
         context[:snapshot_mor] = nil
         set_status("Deleting snapshot before aborting job")
-        if vm.kind_of?(ManageIQ::Providers::Openstack::CloudManager::Vm)
-          vm.ext_management_system.vm_delete_evm_snapshot(vm, mor)
-        elsif vm.kind_of?(ManageIQ::Providers::Microsoft::InfraManager::Vm) ||
-              (vm.kind_of?(ManageIQ::Providers::Azure::CloudManager::Vm) && vm.require_snapshot_for_scan?)
-          vm.ext_management_system.vm_delete_evm_snapshot(vm, :snMor => mor)
-        else
-          delete_snapshot(mor)
-        end
+        delete_snapshot(mor, vm)
       end
       if vm
         inputs = {:vm => vm, :host => vm.host}

@@ -13,7 +13,7 @@ module ManageIQ::Providers
     has_many :container_replicators, :foreign_key => :ems_id, :dependent => :destroy
     has_many :containers, -> { active }, :foreign_key => :ems_id
     has_many :container_projects, -> { active }, :foreign_key => :ems_id
-    has_many :container_quotas, :foreign_key => :ems_id, :dependent => :destroy
+    has_many :container_quotas, -> { active }, :foreign_key => :ems_id
     has_many :container_limits, :foreign_key => :ems_id, :dependent => :destroy
     has_many :container_image_registries, :foreign_key => :ems_id, :dependent => :destroy
     has_many :container_images, -> { active }, :foreign_key => :ems_id
@@ -34,6 +34,7 @@ module ManageIQ::Providers
     has_many :security_contexts, :through => :containers
     has_many :container_service_port_configs, :through => :container_services
     has_many :container_routes, :through => :container_services
+    has_many :container_quota_scopes, :through => :container_quotas
     has_many :container_quota_items, :through => :container_quotas
     has_many :container_limit_items, :through => :container_limits
     has_many :container_template_parameters, :through => :container_templates
@@ -44,6 +45,7 @@ module ManageIQ::Providers
     has_many :all_container_projects, :foreign_key => :ems_id, :dependent => :destroy, :class_name => "ContainerProject"
     has_many :all_container_images, :foreign_key => :ems_id, :dependent => :destroy, :class_name => "ContainerImage"
     has_many :all_container_nodes, :foreign_key => :ems_id, :dependent => :destroy, :class_name => "ContainerNode"
+    has_many :all_container_quotas, :foreign_key => :ems_id, :dependent => :destroy, :class_name => "ContainerQuota"
 
 
     virtual_column :port_show, :type => :string

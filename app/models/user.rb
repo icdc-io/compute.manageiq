@@ -127,7 +127,7 @@ class User < ApplicationRecord
   def current_group_by_description=(group_description)
     if group_description
       desired_group = miq_groups.detect { |g| g.description == group_description }
-      desired_group ||= MiqGroup.find_by(:description => group_description) if super_admin_user?
+      desired_group ||= MiqGroup.in_region(region_id).find_by(:description => group_description) if super_admin_user?
       self.current_group = desired_group if desired_group
     end
   end
@@ -258,6 +258,14 @@ class User < ApplicationRecord
     self.current_group = groups.first if current_group.nil? || !groups.include?(current_group)
   end
 
+  def change_current_group
+    user_groups = miq_group_ids
+    user_groups.delete(current_group_id)
+    raise _("The user's current group cannot be changed because the user does not belong to any other group") if user_groups.empty?
+    self.current_group = MiqGroup.find_by(:id => user_groups.first)
+    save!
+  end
+
   def admin?
     self.class.admin?(userid)
   end
@@ -330,8 +338,9 @@ class User < ApplicationRecord
     Thread.current[:user] ||= find_by_userid(current_userid)
   end
 
-  def self.with_current_user_groups
-    current_user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => current_user.miq_group_ids})
+  def self.with_current_user_groups(user = nil)
+    user ||= current_user
+    user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
   end
 
   def self.missing_user_features(db_user)

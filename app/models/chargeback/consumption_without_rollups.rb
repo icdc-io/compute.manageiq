@@ -41,6 +41,10 @@ class Chargeback
       1 # Yes, charge this interval as fixed_compute_*_*
     end
 
+    def metering_used_fields_present
+      0 # we don't count used hours in metering report
+    end
+
     def current_value(metric, _sub_metric = nil)
       # Return the last seen allocation for charging purposes.
       @value ||= {}
@@ -56,6 +60,7 @@ class Chargeback
     end
     alias avg current_value
     alias max current_value
+    alias sum_of_maxes_from_grouped_values current_value
     private :current_value
   end
 end

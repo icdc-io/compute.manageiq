@@ -65,7 +65,7 @@ module ManagerRefresh::SaveCollection
         all_attribute_keys << :created_on if supports_created_on?
         all_attribute_keys << :updated_on if supports_updated_on?
 
-        _log.info("*************** PROCESSING #{inventory_collection} of size #{inventory_collection.size} *************")
+        _log.debug("Processing #{inventory_collection} of size #{inventory_collection.size}...")
 
         update_or_destroy_records!(batch_iterator(association), inventory_objects_index, attributes_index, all_attribute_keys)
 
@@ -80,10 +80,10 @@ module ManagerRefresh::SaveCollection
             create_records!(all_attribute_keys, batch, attributes_index)
           end
         end
-        _log.info("*************** PROCESSED #{inventory_collection}, "\
-                  "created=#{inventory_collection.created_records.count}, "\
-                  "updated=#{inventory_collection.updated_records.count}, "\
-                  "deleted=#{inventory_collection.deleted_records.count} *************")
+        _log.debug("Processing #{inventory_collection}, "\
+                   "created=#{inventory_collection.created_records.count}, "\
+                   "updated=#{inventory_collection.updated_records.count}, "\
+                   "deleted=#{inventory_collection.deleted_records.count}...Complete")
       rescue => e
         _log.error("Error when saving #{inventory_collection} with #{inventory_collection_details}. Message: #{e.message}")
         raise e
@@ -101,13 +101,18 @@ module ManagerRefresh::SaveCollection
 
             next unless assert_distinct_relation(primary_key_value)
 
+            # Incoming values are in SQL string form.
             # TODO(lsmola) unify this behavior with object_index_with_keys method in InventoryCollection
             index = unique_index_keys_to_s.map do |attribute|
+              value = record_key(record, attribute)
               if attribute == "timestamp"
+                # TODO: can this be covered by @deserializable_keys?
                 type = model_class.type_for_attribute(attribute)
-                type.cast(record_key(record, attribute)).utc.iso8601.to_s
+                type.cast(value).utc.iso8601.to_s
+              elsif (type = deserializable_keys[attribute.to_sym])
+                type.deserialize(value).to_s
               else
-                record_key(record, attribute).to_s
+                value.to_s
               end
             end.join(inventory_collection.stringify_joiner)
 
@@ -258,7 +263,11 @@ module ManagerRefresh::SaveCollection
         # for every remainders(a last batch in a stream of batches)
         if !supports_remote_data_timestamp?(all_attribute_keys) || result.count == batch_size_for_persisting
           result.each do |inserted_record|
-            key                 = unique_index_columns.map { |x| inserted_record[x.to_s] }
+            key = unique_index_columns.map do |x|
+              value = inserted_record[x.to_s]
+              type = deserializable_keys[x]
+              type ? type.deserialize(value) : value
+            end
             inventory_object    = indexed_inventory_objects[key]
             inventory_object.id = inserted_record[primary_key] if inventory_object
           end

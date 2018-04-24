@@ -8,21 +8,15 @@ class ManageIQ::Providers::CloudManager::ProvisionWorkflow < ::MiqProvisionVirtW
     targets.each_with_object({}) { |az, h| h[az.id] = az.name }
   end
 
-  def allowed_cloud_networks(_options = {})
-    return {} unless (src_obj = provider_or_tenant_object)
-
-    src_obj.all_cloud_networks.each_with_object({}) do |cn, hash|
-      hash[cn.id] = cn.cidr.blank? ? cn.name : "#{cn.name} (#{cn.cidr})"
-    end
-  end
-
   def allowed_cloud_subnets(_options = {})
     src = resources_for_ui
     return {} if src[:cloud_network_id].nil?
 
     az_id = src[:availability_zone_id].to_i
     if (cn = CloudNetwork.find_by(:id => src[:cloud_network_id]))
-      cn.cloud_subnets.each_with_object({}) do |cs, hash|
+
+      targets = get_targets_for_source(cn, :cloud_filter, CloudNetwork, 'cloud_subnets')
+      targets.each_with_object({}) do |cs, hash|
         next if !az_id.zero? && az_id != cs.availability_zone_id
         hash[cs.id] = "#{cs.name} (#{cs.cidr}) | #{cs.availability_zone.try(:name)}"
       end
@@ -31,12 +25,16 @@ class ManageIQ::Providers::CloudManager::ProvisionWorkflow < ::MiqProvisionVirtW
     end
   end
 
+  def allowed_cloud_networks(_options = {})
+    return {} unless (src = provider_or_tenant_object)
+    targets = get_targets_for_source(src, :cloud_filter, CloudNetwork, 'all_cloud_networks')
+    allowed_ci(:cloud_network, [:availability_zone], targets.map(&:id))
+  end
+
   def allowed_guest_access_key_pairs(_options = {})
     source = load_ar_obj(get_source_vm)
-    ems = source.try(:ext_management_system)
-
-    return {} if ems.nil?
-    ems.key_pairs.each_with_object({}) { |kp, h| h[kp.id] = kp.name }
+    targets = get_targets_for_ems(source, :cloud_filter, ManageIQ::Providers::CloudManager::AuthKeyPair, 'key_pairs')
+    targets.each_with_object({}) { |kp, h| h[kp.id] = kp.name }
   end
 
   def allowed_security_groups(_options = {})
@@ -51,8 +49,8 @@ class ManageIQ::Providers::CloudManager::ProvisionWorkflow < ::MiqProvisionVirtW
 
   def allowed_floating_ip_addresses(_options = {})
     return {} unless (src_obj = provider_or_tenant_object)
-
-    src_obj.floating_ips.available.each_with_object({}) do |ip, h|
+    targets = get_targets_for_source(src_obj, :cloud_filter, FloatingIp, 'floating_ips.available')
+    targets.each_with_object({}) do |ip, h|
       h[ip.id] = ip.address
     end
   end
@@ -88,6 +86,23 @@ class ManageIQ::Providers::CloudManager::ProvisionWorkflow < ::MiqProvisionVirtW
   def allowed_ci(ci, relats, filtered_ids = nil)
     return {} if (sources = resources_for_ui).blank?
     super(ci, relats, sources, filtered_ids)
+  end
+
+  def cloud_network_display_name(cn)
+    cn.cidr.blank? ? cn.name : "#{cn.name} (#{cn.cidr})"
+  end
+
+  def availability_zone_to_cloud_network(src)
+    if src[:availability_zone]
+      load_ar_obj(src[:availability_zone]).cloud_subnets.each_with_object({}) do |cs, hash|
+        cn = cs.cloud_network
+        hash[cn.id] = cloud_network_display_name(cn)
+      end
+    else
+      load_ar_obj(src[:ems]).all_cloud_networks.each_with_object({}) do |cn, hash|
+        hash[cn.id] = cloud_network_display_name(cn)
+      end
+    end
   end
 
   def get_source_and_targets(refresh = false)

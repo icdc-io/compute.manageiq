@@ -78,10 +78,9 @@ describe DialogFieldImporter do
     context "when the type of the dialog field is a tag control" do
       let(:type) { "DialogFieldTagControl" }
 
-      context "when the import file contains a category name" do
+      context "when the import file contains a category_name, but no category_id" do
         let(:options) do
           {
-            :category_id          => "123",
             :category_name        => "best_category",
             :category_description => category_description
           }
@@ -123,12 +122,136 @@ describe DialogFieldImporter do
         end
       end
 
-      context "when the import file only contains a category id" do
-        let(:options) { {:category_id => "123"} }
+      context "when the import file contains a category_id" do
+        before do
+          @first_category    = Category.create!(:name => "first_category", :description => "first_category")
+          @existing_category = Category.create!(:name => "best_category", :description => "best_category")
+        end
 
-        it "uses the category id provided" do
-          dialog_field_importer.import_field(dialog_field)
-          expect(DialogFieldTagControl.first.category).to eq("123")
+        let(:options) do
+          {
+            :category_id          => category_id,
+            :category_name        => category_name,
+            :category_description => category_description
+          }
+        end
+
+        context "when the category_id matches an existing category" do
+          let(:category_id) { @existing_category.id }
+
+          context "when the category_name matches the existing category" do
+            let(:category_name) { @existing_category.name }
+
+            context "when the category_description matches the existing category" do
+              let(:category_description) { @existing_category.description }
+
+              it "sets the field to the existing category" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(@existing_category.id.to_s)
+              end
+            end
+
+            context "when the category_description does not match the existing category" do
+              let(:category_description) { "worst_description" }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+          end
+
+          context "when the category_name matches a different category" do
+            let(:category_name) { @first_category.name }
+
+            context "when the category_description matches the different category" do
+              let(:category_description) { @first_category.description }
+
+              it "sets the field to the different category" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(@first_category.id.to_s)
+              end
+            end
+
+            context "when the category_description does not match the existing category" do
+              let(:category_description) { "worst_description" }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+          end
+
+          context "when the category_name does not match the existing category" do
+            let(:category_name) { "worst_category" }
+
+            context "when the category_description matches the existing category" do
+              let(:category_description) { @existing_category.description }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+
+            context "when the category_description does not match the existing category" do
+              let(:category_description) { "worst_description" }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+          end
+        end
+
+        context "when the category_id does not match an existing category" do
+          let(:category_id) { @existing_category.id + 1 }
+
+          context "when the category_name matches an existing category" do
+            let(:category_name) { @existing_category.name }
+
+            context "when the category_description matches the existing category" do
+              let(:category_description) { @existing_category.description }
+
+              it "sets the field to the existing category" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(@existing_category.id.to_s)
+              end
+            end
+
+            context "when the category_description does not match the existing category" do
+              let(:category_description) { "worst_description" }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+          end
+
+          context "when the category_name does not match the existing category" do
+            let(:category_name) { "worst_category" }
+
+            context "when the category_description matches the existing category" do
+              let(:category_description) { @existing_category.description }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+
+            context "when the category_description does not match the existing category" do
+              let(:category_description) { "worst_description" }
+
+              it "returns nil" do
+                dialog_field_importer.import_field(dialog_field)
+                expect(DialogFieldTagControl.first.category).to eq(nil)
+              end
+            end
+          end
         end
       end
     end

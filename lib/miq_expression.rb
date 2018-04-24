@@ -476,15 +476,19 @@ class MiqExpression
       result[:format_sub_type] = f.sub_type
       result[:virtual_column] = model.virtual_attribute?(col.to_s)
       result[:sql_support] = !result[:virtual_reflection] && model.attribute_supported_by_sql?(col.to_s)
-      result[:excluded_by_preprocess_options] = exclude_col_by_preprocess_options?(col, options)
+      result[:excluded_by_preprocess_options] = exclude_col_by_preprocess_options?(f, options)
     end
     result
   end
 
-  def self.exclude_col_by_preprocess_options?(col, options)
-    return false unless options.kind_of?(Hash)
-    return false unless options[:vim_performance_daily_adhoc]
-    Metric::Rollup.excluded_col_for_expression?(col.to_sym)
+  def self.exclude_col_by_preprocess_options?(field, options)
+    if options.kind_of?(Hash) && options[:vim_performance_daily_adhoc]
+      Metric::Rollup.excluded_col_for_expression?(field.column.to_sym)
+    elsif field.target == Service
+      Service::AGGREGATE_ALL_VM_ATTRS.include?(field.column.to_sym)
+    else
+      false
+    end
   end
 
   def lenient_evaluate(obj, tz = nil)
@@ -823,6 +827,7 @@ class MiqExpression
     unless opts[:typ] == "count" || opts[:typ] == "find"
       @column_cache ||= {}
       key = "#{model}_#{opts[:interval]}_#{opts[:include_model] || false}"
+      @column_cache[key] = nil if model == "ChargebackVm"
       @column_cache[key] ||= get_column_details(relats[:columns], model, model, opts).sort! { |a, b| a.to_s <=> b.to_s }
       result.concat(@column_cache[key])
 
@@ -901,6 +906,7 @@ class MiqExpression
 
   def self.get_relats(model)
     @model_relats ||= {}
+    @model_relats[model] = nil if model == "ChargebackVm"
     @model_relats[model] ||= build_relats(model)
   end
 
@@ -927,15 +933,15 @@ class MiqExpression
       model.constantize.try(:refresh_dynamic_metric_columns)
       md = model_details(model, :include_model => false, :include_tags => true).select do |c|
         allowed_suffixes = ReportController::Reports::Editor::CHARGEBACK_ALLOWED_FIELD_SUFFIXES
-        allowed_suffixes -= ['_cost'] if model.starts_with?('Metering')
+        allowed_suffixes += ReportController::Reports::Editor::METERING_VM_ALLOWED_FIELD_SUFFIXES if model.starts_with?('Metering')
         c.last.ends_with?(*allowed_suffixes)
       end
       td = if TAG_CLASSES.include?(cb_model)
-             tag_details(model, {}) + _custom_details_for(cb_model, {})
+             tag_details(model, {})
            else
              []
            end
-      md + td
+      md + td + _custom_details_for(cb_model, {})
     else
       model_details(model, :include_model => false, :include_tags => true)
     end
@@ -952,12 +958,7 @@ class MiqExpression
     result = {:columns => model.attribute_names, :parent => parent}
     result[:reflections] = {}
 
-    refs = model.reflections_with_virtual
-    if model.try(:include_descendant_classes_in_expressions?)
-      model.descendants.each { |desc| refs.reverse_merge!(desc.reflections_with_virtual) }
-    end
-
-    refs.each do |assoc, ref|
+    model.reflections_with_virtual.each do |assoc, ref|
       next unless INCLUDE_TABLES.include?(assoc.to_s.pluralize)
       next if     assoc.to_s.pluralize == "event_logs" && parent[:root] == "Host" && !proto?
       next if     assoc.to_s.pluralize == "processes" && parent[:root] == "Host" # Process data not available yet for Host
@@ -1323,10 +1324,10 @@ class MiqExpression
   def to_arel(exp, tz)
     operator = exp.keys.first
     field = Field.parse(exp[operator]["field"]) if exp[operator].kind_of?(Hash) && exp[operator]["field"]
-    arel_attribute = field && field.target.arel_attribute(field.column)
+    arel_attribute = field&.arel_attribute
     if exp[operator].kind_of?(Hash) && exp[operator]["value"] && Field.is_field?(exp[operator]["value"])
       field_value = Field.parse(exp[operator]["value"])
-      parsed_value = field_value.target.arel_attribute(field_value.column)
+      parsed_value = field_value.arel_attribute
     elsif exp[operator].kind_of?(Hash)
       parsed_value = exp[operator]["value"]
     end
@@ -1408,7 +1409,7 @@ class MiqExpression
         arel = arel_attribute.eq(parsed_value)
         arel = arel.and(Arel::Nodes::SqlLiteral.new(extract_where_values(reflection.klass, reflection.scope))) if reflection.scope
         field.model.arel_attribute(:id).in(
-          field.target.arel_table.where(arel).project(field.target.arel_table[reflection.foreign_key]).distinct
+          field.arel_table.where(arel).project(field.arel_table[reflection.foreign_key]).distinct
         )
       end
     when "is"

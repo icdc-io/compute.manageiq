@@ -38,21 +38,30 @@ module ManagerRefresh::SaveCollection
                                                 .try(:[], "sql_type")
         end
 
-        @serializable_keys = @model_class.attribute_names.each_with_object({}) do |key, obj|
+        @serializable_keys = {}
+        @deserializable_keys = {}
+        @model_class.attribute_names.each do |key|
           attribute_type = @model_class.type_for_attribute(key.to_s)
           pg_type        = @pg_types[key.to_sym]
 
           if inventory_collection.use_ar_object?
             # When using AR object, lets make sure we type.serialize(value) every value, so we have a slow but always
             # working way driven by a configuration
-            obj[key.to_sym] = attribute_type
+            @serializable_keys[key.to_sym] = attribute_type
+            @deserializable_keys[key.to_sym] = attribute_type
           elsif attribute_type.respond_to?(:coder) ||
                 attribute_type.type == :int4range ||
                 pg_type == "text[]" ||
                 pg_type == "character varying[]"
             # Identify columns that needs to be encoded by type.serialize(value), it's a costy operations so lets do
             # do it only for columns we need it for.
-            obj[key.to_sym] = attribute_type
+            # TODO: should these set @deserializable_keys too?
+            @serializable_keys[key.to_sym] = attribute_type
+          elsif attribute_type.type == :decimal
+            # Postgres formats decimal columns with fixed number of digits e.g. '0.100'
+            # Need to parse and let Ruby format the value to have a comparable string.
+            @serializable_keys[key.to_sym] = attribute_type
+            @deserializable_keys[key.to_sym] = attribute_type
           end
         end
       end
@@ -71,7 +80,7 @@ module ManagerRefresh::SaveCollection
 
       attr_reader :unique_index_keys, :unique_index_keys_to_s, :select_keys, :unique_db_primary_keys, :unique_db_indexes,
                   :primary_key, :arel_primary_key, :record_key_method, :pure_sql_records_fetching, :select_keys_indexes,
-                  :batch_size, :batch_size_for_persisting, :model_class, :serializable_keys, :pg_types
+                  :batch_size, :batch_size_for_persisting, :model_class, :serializable_keys, :deserializable_keys, :pg_types
 
       def save!(association)
         attributes_index        = {}
@@ -84,7 +93,7 @@ module ManagerRefresh::SaveCollection
           inventory_objects_index[index] = inventory_object
         end
 
-        _log.info("*************** PROCESSING #{inventory_collection} of size #{inventory_collection.size} *************")
+        _log.debug("Processing #{inventory_collection} of size #{inventory_collection.size}...")
         # Records that are in the DB, we will be updating or deleting them.
         ActiveRecord::Base.transaction do
           association.find_each do |record|
@@ -121,10 +130,10 @@ module ManagerRefresh::SaveCollection
             end
           end
         end
-        _log.info("*************** PROCESSED #{inventory_collection}, "\
-                  "created=#{inventory_collection.created_records.count}, "\
-                  "updated=#{inventory_collection.updated_records.count}, "\
-                  "deleted=#{inventory_collection.deleted_records.count} *************")
+        _log.debug("Processing #{inventory_collection}, "\
+                   "created=#{inventory_collection.created_records.count}, "\
+                   "updated=#{inventory_collection.updated_records.count}, "\
+                   "deleted=#{inventory_collection.deleted_records.count}...Complete")
       rescue => e
         _log.error("Error when saving #{inventory_collection} with #{inventory_collection_details}. Message: #{e.message}")
         raise e
@@ -143,8 +152,8 @@ module ManagerRefresh::SaveCollection
 
         all_manager_uuids_size = inventory_collection.all_manager_uuids.size
 
-        _log.info("*************** PROCESSING :delete_complement of #{inventory_collection} of size "\
-                  "#{all_manager_uuids_size} *************")
+        _log.debug("Processing :delete_complement of #{inventory_collection} of size "\
+                   "#{all_manager_uuids_size}...")
         deleted_counter = 0
 
         inventory_collection.db_collection_for_comparison_for_complement_of(
@@ -158,8 +167,8 @@ module ManagerRefresh::SaveCollection
           end
         end
 
-        _log.info("*************** PROCESSED :delete_complement of #{inventory_collection} of size "\
-                  "#{all_manager_uuids_size}, deleted=#{deleted_counter} *************")
+        _log.debug("Processing :delete_complement of #{inventory_collection} of size "\
+                   "#{all_manager_uuids_size}, deleted=#{deleted_counter}...Complete")
       end
 
       def delete_record!(record)

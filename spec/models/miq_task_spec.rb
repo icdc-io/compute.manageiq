@@ -330,28 +330,42 @@ describe MiqTask do
     end
   end
 
+  context "before save callback" do
+    describe "#started" do
+      let(:task) { FactoryGirl.create(:miq_task_plain) }
+
+      it "initilizes 'started_on' attribute if task become Active " do
+        expect(task._started_on).to be nil
+        Timecop.freeze do
+          task.update_attributes!(:state => MiqTask::STATE_ACTIVE)
+          expect(task._started_on).to eq Time.now.utc
+        end
+      end
+    end
+  end
+
   describe "#update_status" do
     let(:miq_task) { FactoryGirl.create(:miq_task_plain) }
 
     context "to 'Active' state" do
       it "sets 'started_on => Time.now.utc' if 'started_on' is nil" do
         Timecop.freeze do
-          expect(miq_task.started_on).to be nil
+          expect(miq_task._started_on).to be nil
           miq_task.update_status(MiqTask::STATE_ACTIVE, MiqTask::STATUS_OK, "")
-          expect(miq_task.started_on).to eq Time.now.utc
+          expect(miq_task._started_on).to eq Time.now.utc
         end
       end
 
       it "does not set 'started_on' if passed state is not 'active'" do
         miq_task.update_status("Any state", MiqTask::STATUS_OK, "")
-        expect(miq_task.started_on).to be nil
+        expect(miq_task._started_on).to be nil
       end
 
       it "does not changed 'started_on' if task already has 'started-on' attribute set" do
         some_time = Time.now.utc - 5.hours
         miq_task.update_attributes!(:started_on => some_time)
         miq_task.update_status(MiqTask::STATE_ACTIVE, MiqTask::STATUS_OK, "")
-        expect(miq_task.started_on).to eq some_time
+        expect(miq_task._started_on).to eq some_time
       end
 
       it "sets 'miq_server' association" do
@@ -367,9 +381,9 @@ describe MiqTask do
 
     it "sets 'started_on => Time.now.utc' if 'started_on' is nil" do
       Timecop.freeze do
-        expect(miq_task.started_on).to be nil
+        expect(miq_task._started_on).to be nil
         miq_task.update_status(MiqTask::STATE_ACTIVE, MiqTask::STATUS_OK, "")
-        expect(miq_task.started_on).to eq Time.now.utc
+        expect(miq_task._started_on).to eq Time.now.utc
       end
     end
 
@@ -377,7 +391,7 @@ describe MiqTask do
       some_time = Time.now.utc - 5.hours
       miq_task.update_attributes!(:started_on => some_time)
       miq_task.update_status(MiqTask::STATE_ACTIVE, MiqTask::STATUS_OK, "")
-      expect(miq_task.started_on).to eq some_time
+      expect(miq_task._started_on).to eq some_time
     end
 
     it "sets 'miq_server' association" do
@@ -468,6 +482,29 @@ describe MiqTask do
     it "destroys task filtered by passed condition and older than passed date" do
       MiqTask.destroy_older_by_condition(15.minutes.ago, ["status=? AND name LIKE ?", MiqTask::STATUS_ERROR, "Task1%"])
       expect(MiqTask.count).to eq 3
+    end
+  end
+
+  describe "#task_results" do
+    it "forces UTF-8 encoding" do
+      task = FactoryGirl.create(
+        :miq_task,
+        :binary_blob => BinaryBlob.new(
+          :name      => "task_results",
+          :data_type => "YAML",
+          :binary    => YAML.dump("\xC3\xA4".force_encoding("ASCII-8BIT"))
+        )
+      )
+
+      expect(task.task_results).to eq("ä")
+    end
+  end
+
+  describe "#task_results=" do
+    it "forces UTF-8 encoding" do
+      task = FactoryGirl.create(:miq_task, :task_results => "\xC3\xA4".force_encoding("ASCII-8BIT"))
+
+      expect(task.task_results).to eq("ä")
     end
   end
 

@@ -15,10 +15,6 @@ class Vm < VmOrTemplate
     Vm
   end
 
-  def self.include_descendant_classes_in_expressions?
-    true
-  end
-
   def self.corresponding_model
     if self == Vm
       MiqTemplate
@@ -81,7 +77,7 @@ class Vm < VmOrTemplate
     check = validate_collect_running_processes
     unless check[:message].nil?
       _log.warn(check[:message].to_s)
-      return pl
+      raise check[:message].to_s
     end
 
     begin
@@ -121,7 +117,7 @@ class Vm < VmOrTemplate
       :spice   => spice_support,
       :vnc     => vnc_support,
       :vmrc    => vmrc_support,
-      :mks     => mks_support,
+      :webmks  => webmks_support,
       :cockpit => cockpit_support
     }
   end
@@ -136,7 +132,8 @@ class Vm < VmOrTemplate
     }
   end
 
-  def mks_support
+
+  def webmks_support
     {
       :visible => supports_mks_console?,
       :enabled => supports_launch_mks_console?,

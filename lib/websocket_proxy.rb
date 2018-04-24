@@ -6,18 +6,34 @@ class WebsocketProxy
     @id = SecureRandom.uuid
     @console = console
     @logger = logger
+    @protocol = 'binary'
 
     secure = Rack::Request.new(env).ssl?
     scheme = secure ? 'wss:' : 'ws:'
     @url = scheme + '//' + env['HTTP_HOST'] + env['REQUEST_URI']
-    @driver = WebSocket::Driver.rack(self, :protocols => %w(binary))
+
+    # VMware vCloud WebMKS SDK (console access) grabs 'binary' if offered, but then fails because in fact it's not
+    # able to use it :) We workaround this by only forcing the 'uint8utf8' protocol which actually works.
+    @protocol = 'uint8utf8' if console.protocol.to_s.end_with?('uint8utf8')
+
+    @driver = WebSocket::Driver.rack(self, :protocols => [@protocol])
 
     begin
       # Hijack the socket from the Rack middleware
       @ws = env['rack.hijack'].call
       # Set up the socket client for the proxy
       @sock = TCPSocket.open(@console.host_name, @console.port)
-      init_ssl if @console.ssl
+      adapter = case @console.protocol
+                when 'vnc'
+                  WebsocketSocket
+                when 'spice'
+                  @console.ssl ? WebsocketSSLSocket : WebsocketSocket
+                when 'webmks'
+                  WebsocketWebmks
+                when 'webmks-uint8utf8'
+                  WebsocketWebmksUint8utf8
+                end
+      @right = adapter.new(@sock, @console)
     rescue => ex
       @logger.error(ex)
       @error = true
@@ -25,8 +41,11 @@ class WebsocketProxy
 
     @driver.on(:open) { @console.update(:opened => true) }
 
-    @driver.on(:message) do |msg|
-      @ssl ? @ssl.syswrite(msg.data.pack('C*')) : @sock.write(msg.data.pack('C*'))
+    # TODO: Move binary <-> string interpretation into client class, don't do it here (reusability).
+    if binary?
+      @driver.on(:message) { |msg| @right.issue(msg.data.pack('C*')) }
+    else
+      @driver.on(:message) { |msg| @right.issue(msg.data) }
     end
 
     @driver.on(:close) { cleanup }
@@ -43,9 +62,14 @@ class WebsocketProxy
     if is_ws
       data = @ws.recv_nonblock(64.kilobytes)
       @driver.parse(data)
+    elsif binary?
+      @right.fetch(64.kilobytes) do |data|
+        @driver.binary(data)
+      end
     else
-      data = @ssl ? @ssl.sysread(64.kilobytes) : @sock.recv_nonblock(64.kilobytes)
-      @driver.binary(data)
+      @right.fetch(64.kilobytes) do |data|
+        @driver.frame(data)
+      end
     end
   end
 
@@ -70,16 +94,7 @@ class WebsocketProxy
     @console ? @console.vm_id : 'unknown'
   end
 
-  private
-
-  def init_ssl
-    context = OpenSSL::SSL::SSLContext.new
-    context.cert = OpenSSL::X509::Certificate.new(File.open('certs/server.cer'))
-    context.key = OpenSSL::PKey::RSA.new(File.open('certs/server.cer.key'))
-    context.ssl_version = :SSLv23
-    context.verify_depth = OpenSSL::SSL::VERIFY_NONE
-    @ssl = OpenSSL::SSL::SSLSocket.new(@sock, context)
-    @ssl.sync_close = true
-    @ssl.connect
+  def binary?
+    @protocol == 'binary'
   end
 end

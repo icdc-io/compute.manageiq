@@ -44,7 +44,7 @@ class Host < ApplicationRecord
   has_many                  :vms_and_templates, :dependent => :nullify
   has_many                  :vms, :inverse_of => :host
   has_many                  :miq_templates, :inverse_of => :host
-  has_many                  :host_storages
+  has_many                  :host_storages, :dependent => :destroy
   has_many                  :storages, :through => :host_storages
   has_many                  :host_switches, :dependent => :destroy
   has_many                  :switches, :through => :host_switches
@@ -180,10 +180,6 @@ class Host < ApplicationRecord
     if authentication_userid(:ipmi).blank? || authentication_password(:ipmi).blank?
       unsupported_reason_add(:reset, _("The Host has invalid IPMI credentials"))
     end
-  end
-
-  def self.include_descendant_classes_in_expressions?
-    true
   end
 
   def self.non_clustered
@@ -421,7 +417,7 @@ class Host < ApplicationRecord
   end
 
   def exit_maint_mode
-    msg = validate_enter_maint_mode
+    msg = validate_exit_maint_mode
     if msg[:available] && respond_to?(:vim_exit_maintenance_mode)
       check_policy_prevent("request_host_exit_maintenance_mode", "vim_exit_maintenance_mode")
     else
@@ -839,7 +835,7 @@ class Host < ApplicationRecord
       end
 
       discover_options = {:ipaddr         => ipaddr,
-                          :usePing        => options[:ping],
+                          :ping           => options[:ping],
                           :timeout        => options[:timeout],
                           :discover_types => options[:discover_types],
                           :credentials    => options[:credentials]
@@ -946,11 +942,11 @@ class Host < ApplicationRecord
   end
 
   def rediscover(ipaddr, discover_types = [:esx])
-    require 'manageiq-network_discovery'
-    ost = OpenStruct.new(:usePing => true, :discover_types => discover_types, :ipaddr => ipaddr)
+    require 'manageiq/network_discovery/discovery'
+    ost = OpenStruct.new(:ping => true, :discover_types => discover_types, :ipaddr => ipaddr)
     _log.info("Rediscovering Host: #{ipaddr} with types: #{discover_types.inspect}")
     begin
-      ManageIQ::NetworkDiscovery.scanHost(ost)
+      ManageIQ::NetworkDiscovery::Discovery.scan_host(ost)
       _log.info("Rediscovering Host: #{ipaddr} raw results: #{self.class.ost_inspect(ost)}")
 
       unless ost.hypervisor.empty?
@@ -966,18 +962,18 @@ class Host < ApplicationRecord
   end
 
   def self.discoverHost(options)
-    require 'manageiq-network_discovery'
+    require 'manageiq/network_discovery/discovery'
     ost = OpenStruct.new(Marshal.load(options))
     _log.info("Discovering Host: #{ost_inspect(ost)}")
     begin
-      ManageIQ::NetworkDiscovery.scanHost(ost)
+      ManageIQ::NetworkDiscovery::Discovery.scan_host(ost)
 
       if ost.hypervisor.empty?
         _log.info("NOT Discovered: #{ost_inspect(ost)}")
       else
         _log.info("Discovered: #{ost_inspect(ost)}")
 
-        if [:virtualcenter, :scvmm, :rhevm].any? { |ems_type| ost.hypervisor.include?(ems_type) }
+        if %i(virtualcenter scvmm rhevm openstack_infra).any? { |ems_type| ost.hypervisor.include?(ems_type) }
           ExtManagementSystem.create_discovered_ems(ost)
           return # only create ems instance, no host.
         end

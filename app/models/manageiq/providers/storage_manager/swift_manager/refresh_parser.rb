@@ -16,7 +16,7 @@ module ManageIQ::Providers
       @data              = {}
       @data_index        = {}
 
-      @swift_service     = ems.parent_manager.swift_service
+      @swift_service     = ems.parent_manager&.swift_service
     end
 
     def ems_inv_to_hashes
@@ -123,8 +123,8 @@ module ManageIQ::Providers
     end
 
     def cleanup
-      @data[:cloud_object_store_containers].each { |c| c.delete(:tenant_id) }
-      @data[:cloud_object_store_objects].each    { |c| c.delete(:tenant_id) }
+      @data[:cloud_object_store_containers]&.each { |c| c.delete(:tenant_id) }
+      @data[:cloud_object_store_objects]&.each    { |c| c.delete(:tenant_id) }
     end
   end
 end

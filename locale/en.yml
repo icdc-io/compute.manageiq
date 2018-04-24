@@ -5,7 +5,7 @@ en:
   product:
     name: ManageIQ
     name_full: ManageIQ
-    copyright: "Copyright (c) 2017 ManageIQ. Sponsored by Red Hat Inc."
+    copyright: "Copyright (c) 2018 ManageIQ. Sponsored by Red Hat Inc."
     support_website: "http://www.manageiq.org"
     support_website_text: "ManageIQ.org"
   activerecord:
@@ -90,7 +90,7 @@ en:
         cpu_ready_delta_summation:     CPU - Time Spent In Ready State (ms)
         cpu_system_delta_summation:    CPU - Time Spent in System State (ms)
         cpu_usagemhz_rate_average:     CPU - Usage Rate for Collected Intervals (MHz)
-        cpu_used_delta_summation:      CPU - Time Used (ms)
+        cpu_used_delta_summation:      CPU - Total time usage (VMware) (ms)
         cpu_wait_delta_summation:      CPU - Time Spent in Wait State (ms)
         derived_cpu_available:         CPU - Total - from VM Analysis (MHz)
         derived_cpu_reserved:          CPU - Reserved (MHz)
@@ -238,7 +238,7 @@ en:
       effective_cpu: CPU - Effective
       effective_memory: Memory - Effective
       ems_cluster_name: Cluster
-      emstype_description: Type
+      emstype_description: Type Description
       enabled: Active
       end_trend_value: End
       evaluation_description: What is evaluated
@@ -683,34 +683,40 @@ en:
     model:
       AuditEvent:               EVM Audit Event
       AvailabilityZone:         Availability Zone
+      BottleneckEvent:          Bottleneck Event
       HostAggregate:            Host Aggregate
       ChargebackVm:             Chargeback for Vms
+      ChargebackContainerImage: Chargeback for Image
       ChargebackContainerProject: Chargeback for Projects
       ChargebackRate:           Chargeback Rate
       Classification:           Category
       CloudNetwork:             Cloud Network
+      CloudResourceQuota:       Cloud Resource Quota
       CloudSubnet:              Cloud Subnet
       CloudTenant:              Cloud Tenant
       CloudVolume:              Cloud Volume
+      CloudVolumeBackup:        Cloud Volume Backup
+      CloudVolumeSnapshot:      Cloud Volume Snapshot
       Compliance:               Compliance History
       Compliances:              Compliance History
       Condition:                Condition
-      ContainerBuild:           Build
+      ContainerBuild:           Container Build
+      ContainerQuota:           Container Quota
       CustomButton:             Button
       CustomButtonSet:          Buttons Group
       ConfigurationScriptSource: Repository
       Container:                Container
       ContainerPerformance:     Performance - Container
-      ContainerGroup:           Pod
+      ContainerGroup:           Container Pod
       ContainerGroupPerformance: Performance - Pod
-      ContainerImageRegistry:   Image Registry
+      ContainerImageRegistry:   Container Image Registry
       ContainerImage:           Container Image
-      ContainerNode:            Node
+      ContainerNode:            Container Node
       ContainerNodePerformance: Performance - Container Node
-      ContainerProject:         Project
-      ContainerProjectPerformance: Performance - ContainerProject
-      ContainerRoute:           Route
-      ContainerReplicator:      Replicator
+      ContainerProject:         Container Project
+      ContainerProjectPerformance: Performance - Container Project
+      ContainerRoute:           Container Route
+      ContainerReplicator:      Container Replicator
       ContainerService:         Container Service
       ContainerTemplate:        Container Template
       EmsCluster:               Cluster / Deployment Role
@@ -726,7 +732,9 @@ en:
       Filesystem:               File
       Flavor:                   Flavor
       FloatingIp:               Floating IP
+      GenericObject:            Generic Object
       GenericObjectDefinition:  Generic Object Class
+      GuestApplication:         Guest Application
       Host:                     Host / Node
       HostPerformance:          Performance - Host
       IsoDatastore:             ISO Datastore
@@ -743,6 +751,7 @@ en:
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::GoogleCredential:     Credential (Google)
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential:    Credential (Machine)
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential:    Credential (Network)
+      ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential:      Credential (Vault)
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::OpenstackCredential:  Credential (OpenStack)
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::RackspaceCredential:  Credential (Rackspace)
       ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Satellite6Credential: Credential (Satellite)
@@ -777,6 +786,10 @@ en:
       ManageIQ::Providers::Azure::CloudManager::Vm:                         Instance (Microsoft Azure)
       ManageIQ::Providers::Amazon::CloudManager::Vm:                        Instance (Amazon)
       ManageIQ::Providers::Vmware::CloudManager::Vm:                        Instance (VMware vCloud)
+      ManageIQ::Providers::Amazon::CloudManager::Flavor:                    Flavor (Amazon)
+      ManageIQ::Providers::Google::CloudManager::Flavor:                    Flavor (Google)
+      ManageIQ::Providers::Azure::CloudManager::Flavor:                     Flavor (Microsoft Azure)
+      ManageIQ::Providers::Openstack::CloudManager::Flavor:                 Flavor (OpenStack)
       ManageIQ::Providers::CloudManager::Template:                          Image
       ManageIQ::Providers::Amazon::CloudManager::Template:                  Image (Amazon)
       ManageIQ::Providers::CloudManager::VirtualTemplate:                   Resourceless Server Template
@@ -807,6 +820,7 @@ en:
       ManageIQ::Providers::Kubernetes::ContainerManager:                    Container Provider (Kubernetes)
       ManageIQ::Providers::Kubernetes::ContainerManager::ContainerGroup:    Pod (Kubernetes)
       ManageIQ::Providers::Openshift::ContainerManager:                     Container Provider (OpenShift)
+      ManageIQ::Providers::Openshift::ContainerManager::ContainerTemplate:  Container Template (OpenShift)
       ManageIQ::Providers::Amazon::NetworkManager:                          Network Provider (Amazon)
       ManageIQ::Providers::Amazon::NetworkManager::CloudNetwork:            Cloud Network (Amazon)
       ManageIQ::Providers::Amazon::NetworkManager::CloudSubnet:             Cloud Subnet (Amazon)
@@ -834,6 +848,7 @@ en:
       ManageIQ::Providers::Azure::CloudManager::OrchestrationStack:         Orchestration Stack (Microsoft Azure)
       ManageIQ::Providers::Amazon::CloudManager::OrchestrationStack:        Orchestration Stack (Amazon)
       ManageIQ::Providers::Amazon::NetworkManager::NetworkPort:             Network Port (Amazon)
+      ManageIQ::Providers::Amazon::NetworkManager::NetworkRouter:           Network Router (Amazon)
       ManageIQ::Providers::Azure::NetworkManager:                           Network Manager (Microsoft Azure)
       ManageIQ::Providers::Azure::NetworkManager::NetworkPort:              Network Port (Microsoft Azure)
       ManageIQ::Providers::Openstack::NetworkManager::NetworkPort:          Network Port (OpenStack)
@@ -846,6 +861,11 @@ en:
       ManageIQ::Providers::Vmware::InfraManager::Host:                      Host (Vmware)
       ManageIQ::Providers::Vmware::InfraManager::HostEsx:                   Host (Vmware)
       ManageIQ::Providers::Lenovo::PhysicalInfraManager::PhysicalServer:    Physical Server (Lenovo)
+      ManageIQ::Providers::Hawkular::MiddlewareManager::MiddlewareServerEap:     Middleware Server (EAP)
+      ManageIQ::Providers::Hawkular::MiddlewareManager::MiddlewareServerWildfly: Middleware Server (WildFly)
+      MeteringContainerImage:   Metering for Image
+      MeteringContainerProject: Metering for Project
+      MeteringVm:               Metering for VM
       MiddlewareDatasource:     Middleware Datasource
       MiddlewareDomain:         Middleware Domain
       MiddlewareMessaging:      Middleware Messaging
@@ -878,6 +898,7 @@ en:
       MiqTemplate:              VM Template and Image
       MiqUserRole:              Role
       MiqWidget:                Widget
+      MiqWidgetSet:             Dashboard
       MiqWorker:                EVM Worker
       NetworkPort:              Network Port
       NetworkRouter:            Network Router
@@ -890,6 +911,7 @@ en:
       ManageIQ::Providers::Vmware::CloudManager::OrchestrationTemplate:    vApp Template
       PersistentVolume:         Persistent Volume
       PhysicalServer:           Physical Server
+      PolicyEvent:              Policy Event
       ProductUpdate:            Product Update
       PxeCustomizationTemplate: Customization Template
       PxeImage:                 PXE Image
@@ -907,10 +929,13 @@ en:
       Storage:                  Datastore
       StorageFile:              Datastore File
       StoragePerformance:       Performance - Datastore
+      Switch:                   Switch
+      Tenant:                   Tenant
       TimeProfile:              Time Profile
       User:                     EVM User
       VimPerformanceTrend:      Performance Trend
       Vm:                       VM and Instance
+      VmCloud:                  Instance
       VmdbIndex:                Index
       VmdbTable:                VMDB Table
       VmOrTemplate:             VM or Template
@@ -990,8 +1015,8 @@ en:
       ems_object_storages:         Object Storage Managers
       evm_server:                  EVM Server
       ems_network:                 Network Provider
-      ems_phyical_infra:           Physical Infrastructure Provider
-      ems_phyical_infras:          Physical Infrastructure Providers
+      ems_physical_infra:          Physical Infrastructure Provider
+      ems_physical_infras:         Physical Infrastructure Providers
       ems_storage:                 Storage Manager
       floating_ips:                Floating IP
       load_balancer:               Load Balancer
@@ -1036,7 +1061,10 @@ en:
       miq_custom_attribute:        EVM Custom Attribute
       miq_custom_attributes:       EVM Custom Attributes
       miq_event_definition:        Event
+      manageiq_providers_cloud_manager: Cloud Manager
+      manageiq_providers_cloud_manager_vms: Instances
       manageiq_providers_foreman_configuration_manager_configuration_profile: Configuration Profile (Foreman)
+      manageiq_providers_network_manager: Cloud Manager
       manageiq_providers_openstack_infra_manager_cloud_networks: Cloud Networks (OpenStack)
       manageiq_providers_openstack_cloud_manager_cloud_tenant: Cloud Tenants (OpenStack)
       miq_provision:               Provision
@@ -1054,6 +1082,7 @@ en:
       miq_servers:                 Servers
       miq_task:                    Task
       miq_template:                VM Template
+      miq_templates:               VM Templates
       miq_worker:                  EVM Worker
       miq_workers:                 EVM Workers
       miq_zone:                    Zone

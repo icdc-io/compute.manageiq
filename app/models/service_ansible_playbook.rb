@@ -13,7 +13,7 @@ class ServiceAnsiblePlaybook < ServiceGeneric
 
   def execute(action)
     jt = job_template(action)
-    opts = get_job_options(action).deep_merge(:extra_vars => {'manageiq' => manageiq_extra_vars(action)})
+    opts = get_job_options(action).deep_merge(:extra_vars => {'manageiq' => manageiq_extra_vars(action), 'manageiq_connection' => manageiq_connection_env})
     hosts = opts.delete(:hosts)
 
     _log.info("Launching Ansible Tower job with options:")
@@ -49,6 +49,7 @@ class ServiceAnsiblePlaybook < ServiceGeneric
   def postprocess(action)
     inventory_raw_id = options.fetch_path(job_option_key(action), :inventory)
     delete_inventory(action, inventory_raw_id) if inventory_raw_id
+    log_stdout(action)
   end
 
   def on_error(action)
@@ -62,13 +63,30 @@ class ServiceAnsiblePlaybook < ServiceGeneric
 
   def manageiq_extra_vars(action)
     {
-      'api_url'   => MiqRegion.my_region.remote_ws_url,
-      'api_token' => Api::UserTokenService.new.generate_token(evm_owner.userid, 'api'),
-      'service'   => href_slug,
-      'user'      => evm_owner.href_slug,
-      'group'     => miq_group.href_slug,
-      'action'    => action
+      'api_url'     => api_url,
+      'api_token'   => api_token,
+      'service'     => href_slug,
+      'user'        => evm_owner.href_slug,
+      'group'       => miq_group.href_slug,
+      'action'      => action,
+      'X_MIQ_Group' => evm_owner.current_group.description
     }.merge(request_options_extra_vars)
+  end
+
+  def manageiq_connection_env
+    {
+      'url'         => api_url,
+      'token'       => api_token,
+      'X_MIQ_Group' => evm_owner.current_group.description
+    }
+  end
+
+  def api_token
+    @api_token ||= Api::UserTokenService.new.generate_token(evm_owner.userid, 'api')
+  end
+
+  def api_url
+    @api_url ||= MiqRegion.my_region.remote_ws_url
   end
 
   def request_options_extra_vars
@@ -87,8 +105,11 @@ class ServiceAnsiblePlaybook < ServiceGeneric
     job_options.deep_merge!(parse_dialog_options) unless action == ResourceAction::RETIREMENT
     job_options.deep_merge!(overrides)
 
-    credential_id = job_options.delete(:credential_id)
-    job_options[:credential] = Authentication.find(credential_id).manager_ref unless credential_id.blank?
+    %i(credential vault_credential).each do |cred|
+      cred_sym = "#{cred}_id".to_sym
+      credential_id = job_options.delete(cred_sym)
+      job_options[cred] = Authentication.find(credential_id).manager_ref if credential_id.present?
+    end
 
     hosts = job_options[:hosts]
     job_options[:inventory] = create_inventory_with_hosts(action, hosts).id unless use_default_inventory?(hosts)
@@ -162,5 +183,16 @@ class ServiceAnsiblePlaybook < ServiceGeneric
     opts.tap do
       opts[:extra_vars].transform_values! { |val| val.kind_of?(String) ? MiqPassword.try_decrypt(val) : val }
     end
+  end
+
+  def log_stdout(action)
+    log_option = options.fetch_path(:config_info, action.downcase.to_sym, :log_output) || 'on_error'
+    return unless %(on_error always).include?(log_option)
+    job = job(action)
+    return if log_option == 'on_error' && job.raw_status.succeeded?
+    _log.info("Stdout from ansible job #{job.name}: #{job.raw_stdout('txt_download')}")
+  rescue => err
+    _log.error("Failed to get stdout from ansible job #{job.name}")
+    _log.log_backtrace(err)
   end
 end

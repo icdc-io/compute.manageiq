@@ -27,6 +27,7 @@ class MiqTask < ApplicationRecord
   before_validation :initialize_attributes, :on => :create
 
   before_destroy :check_active, :check_associations
+  before_save :ensure_started
 
   virtual_has_one :task_results
   virtual_attribute :state_or_status, :string, :arel => (lambda do |t|
@@ -48,6 +49,18 @@ class MiqTask < ApplicationRecord
   scope :completed_error,         ->           { finished.where(:status => 'Error') }
   scope :no_status_selected,      ->           { running.where.not(:status => %(Ok Error Warn)) }
   scope :with_status_in,          ->(s, *rest) { rest.reduce(MiqTask.send(s)) { |chain, r| chain.or(MiqTask.send(r)) } }
+
+  def started_on
+    self._started_on || created_on
+  end
+
+  def _started_on
+    read_attribute(:started_on)
+  end
+
+  def ensure_started
+    self.started_on = Time.now.utc if state == STATE_ACTIVE && self._started_on.nil?
+  end
 
   def self.update_status_for_timed_out_active_tasks
     MiqTask.active.timed_out.no_associated_job.find_each do |task|
@@ -100,7 +113,6 @@ class MiqTask < ApplicationRecord
     self.status = status
     self.message = message
     self.state = state
-    self.started_on ||= Time.now.utc if state == STATE_ACTIVE
     self.miq_server ||= MiqServer.my_server
 
     save!
@@ -176,7 +188,6 @@ class MiqTask < ApplicationRecord
 
   def state_active
     self.state = STATE_ACTIVE
-    self.started_on ||= Time.now.utc
     self.miq_server ||= MiqServer.my_server
 
     save!
@@ -230,12 +241,14 @@ class MiqTask < ApplicationRecord
       serializer_name = binary_blob.data_type
       serializer_name = "Marshal" unless serializer_name == "YAML" # YAML or Marshal, for now
       serializer = serializer_name.constantize
-      return serializer.load(binary_blob.binary)
+      result = serializer.load(binary_blob.binary)
+      return result.kind_of?(String) ? result.force_encoding("UTF-8") : result
     end
     nil
   end
 
   def task_results=(value)
+    value = value.force_encoding("UTF-8") if value.kind_of?(String)
     self.binary_blob   = BinaryBlob.new(:name => "task_results", :data_type => "YAML")
     binary_blob.binary = YAML.dump(value)
   end

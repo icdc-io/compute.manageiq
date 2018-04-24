@@ -16,12 +16,20 @@ module ManageIQ::Providers
       self
     end
 
+    def supported_catalog_types
+      []
+    end
+
     def refresher
       self.class::Refresher
     end
 
     def http_proxy_uri
-      VMDB::Util.http_proxy_uri(emstype.try(:to_sym)) || VMDB::Util.http_proxy_uri
+      self.class.http_proxy_uri
+    end
+
+    def self.http_proxy_uri
+      VMDB::Util.http_proxy_uri(ems_type.try(:to_sym)) || VMDB::Util.http_proxy_uri
     end
 
     def self.default_blacklisted_event_names

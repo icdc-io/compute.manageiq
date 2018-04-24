@@ -61,15 +61,28 @@ module EmsRefresh::SaveInventoryContainer
       h[:container_project_id] = h.fetch_path(:project, :id)
     end
 
-    save_inventory_multi(ems.container_quotas, hashes, :use_association, [:ems_ref], :container_quota_items, :project)
+    save_inventory_multi(ems.container_quotas, hashes, :use_association,
+                         [:ems_ref], [:container_quota_items, :container_quota_scopes], :project,
+                         true)
     store_ids_for_new_records(ems.container_quotas, hashes, :ems_ref)
+  end
+
+  def save_container_quota_scopes_inventory(container_quota, hashes)
+    return if hashes.nil?
+    container_quota.container_quota_scopes.reset
+
+    save_inventory_multi(container_quota.container_quota_scopes, hashes, :use_association, [:scope])
+    store_ids_for_new_records(container_quota.container_quota_scopes, hashes, :scope)
   end
 
   def save_container_quota_items_inventory(container_quota, hashes)
     return if hashes.nil?
     container_quota.container_quota_items.reset
 
-    save_inventory_multi(container_quota.container_quota_items, hashes, :use_association, [:resource])
+    # Archive and create new on changes, not only on deletion - by including the data in find_key.
+    save_inventory_multi(container_quota.container_quota_items, hashes, :use_association,
+                         [:resource, :quota_desired, :quota_enforced, :quota_observed], [], [],
+                         true)
     store_ids_for_new_records(container_quota.container_quota_items, hashes, :resource)
   end
 

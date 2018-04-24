@@ -28,9 +28,10 @@ gem "ancestry",                       "~>2.2.1",       :require => false
 gem "bcrypt",                         "~> 3.1.10",     :require => false
 gem "bundler",                        ">=1.11.1",      :require => false
 gem "color",                          "~>1.8"
-gem "config",                         "~>1.3.0",       :require => false
-gem "dalli",                          "~>2.7.4",       :require => false
+gem "config",                         "~>1.6.0",       :require => false
+gem "dalli",                          "=2.7.6",        :require => false
 gem "default_value_for",              "~>3.0.3"
+gem "docker-api",                     "~>1.33.6",      :require => false
 gem "elif",                           "=0.1.0",        :require => false
 gem "fast_gettext",                   "~>1.2.0"
 gem "gettext_i18n_rails",             "~>1.7.2"
@@ -38,15 +39,15 @@ gem "gettext_i18n_rails_js",          "~>1.1.0"
 gem "hamlit",                         "~>2.7.0"
 gem "highline",                       "~>1.6.21",      :require => false
 gem "inifile",                        "~>3.0",         :require => false
-gem "kubeclient",                     "~>2.4.0",       :require => false # For scaling pods at runtime
-gem "manageiq-api-client",            "~>0.1.0",       :require => false
+gem "kubeclient",                     "~>2.4",         :require => false # For scaling pods at runtime
+gem "linux_admin",                    "~>1.2.1",       :require => false
+gem "manageiq-api-client",            "~>0.3.0",       :require => false
 gem "manageiq-messaging",                              :require => false, :git => "https://github.com/ManageIQ/manageiq-messaging", :branch => "master"
-gem "manageiq-network_discovery",     "~>0.1.2",       :require => false
 gem "memoist",                        "~>0.15.0",      :require => false
 gem "mime-types",                     "~>2.6.1",       :path => "mime-types-redirector"
-gem "more_core_extensions",           "~>3.3"
+gem "more_core_extensions",           "~>3.5"
 gem "nakayoshi_fork",                 "~>0.0.3"  # provides a more CoW friendly fork (GC a few times before fork)
-gem "net-ldap",                       "~>0.14.0",      :require => false
+gem "net-ldap",                       "~>0.16.1",      :require => false
 gem "net-ping",                       "~>1.7.4",       :require => false
 gem "openscap",                       "~>0.4.3",       :require => false
 gem "pg",                             "~>0.18.2",      :require => false
@@ -62,6 +63,7 @@ gem "rubyzip",                        "~>1.2.1",       :require => false
 gem "rugged",                         "~>0.25.0",      :require => false
 gem "simple-rss",                     "~>1.3.1",       :require => false
 gem "snmp",                           "~>1.2.0",       :require => false
+gem "sqlite3",                                         :require => false
 gem "trollop",                        "~>2.0",         :require => false
 
 # Modified gems (forked on Github)
@@ -83,7 +85,7 @@ group :amazon, :manageiq_default do
 end
 
 group :ansible, :manageiq_default do
-  gem "ansible_tower_client",           "~>0.12.2",      :require => false
+  gem "ansible_tower_client",           "~>0.13.0",      :require => false
 end
 
 group :azure, :manageiq_default do
@@ -116,7 +118,7 @@ group :nuage, :manageiq_default do
 end
 
 group :qpid_proton, :optional => true do
-  gem "qpid_proton",                    "~>0.18",        :git => "https://github.com/xlab-si/qpid_proton_gem", :require => false
+  gem "qpid_proton",                    "~>0.22.0",      :require => false
 end
 
 group :openshift, :manageiq_default do
@@ -130,7 +132,7 @@ end
 
 group :ovirt, :manageiq_default do
   manageiq_plugin "manageiq-providers-ovirt"
-  gem "ovirt_metrics",                  "~>1.4.1",       :require => false
+  gem "ovirt_metrics",                  "~>2.0.0",       :require => false
 end
 
 group :scvmm, :manageiq_default do
@@ -158,7 +160,7 @@ group :automate, :seed, :manageiq_default do
 end
 
 group :replication, :manageiq_default do
-  gem "pg-pglogical",                   "~>2.0.0",       :require => false
+  gem "pg-pglogical",                   "~>2.1.2",       :require => false
 end
 
 group :rest_api, :manageiq_default do
@@ -166,7 +168,8 @@ group :rest_api, :manageiq_default do
 end
 
 group :scheduler, :manageiq_default do
-  gem "rufus-scheduler", :git => "https://github.com/chrisarcand/rufus-scheduler.git", :branch => "3-1-with-ruby-2-4-support", :require => false
+  # Modified gems (forked on Github)
+  gem "rufus-scheduler", "=3.1.10.2", :git => "https://github.com/ManageIQ/rufus-scheduler.git", :require => false, :tag => "v3.1.10-2"
 end
 
 group :seed, :manageiq_default do
@@ -174,7 +177,7 @@ group :seed, :manageiq_default do
 end
 
 group :smartstate, :manageiq_default do
-  gem "manageiq-smartstate",            "~>0.2",       :require => false
+  gem "manageiq-smartstate",            "~>0.2.10",       :require => false
 end
 
 group :consumption, :manageiq_default do
@@ -207,7 +210,7 @@ unless ENV["APPLIANCE"]
   group :development do
     gem "foreman"
     gem "haml_lint",        "~>0.20.0", :require => false
-    gem "rubocop",          "~>0.47.0", :require => false
+    gem "rubocop",          "~>0.52.1", :require => false
     gem "scss_lint",        "~>0.48.0", :require => false
     gem "yard"
   end
@@ -217,7 +220,6 @@ unless ENV["APPLIANCE"]
     gem "capybara",         "~>2.5.0",  :require => false
     gem "coveralls",                    :require => false
     gem "factory_girl",     "~>4.5.0",  :require => false
-    gem "sqlite3",                      :require => false
     gem "timecop",          "~>0.7.3",  :require => false
     gem "vcr",              "~>3.0.2",  :require => false
     gem "webmock",          "~>2.3.1",  :require => false

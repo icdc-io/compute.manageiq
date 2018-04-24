@@ -76,6 +76,78 @@ describe MeteringVm do
       expect(subject.net_io_used_metric).to eq(net_usage_rate_average * count_of_metric_rollup)
       expect(subject.storage_allocated_metric).to eq(derived_vm_allocated_disk_storage)
       expect(subject.storage_used_metric).to eq(derived_vm_used_disk_storage * count_of_metric_rollup)
+      expect(subject.beginning_of_resource_existence_in_report_interval).to eq(month_beginning)
+      expect(subject.end_of_resource_existence_in_report_interval).to eq(month_beginning + 1.month)
     end
+
+    context "vm started later then beginning of report interval and it was retired earlier then end of report interval " do
+      let(:beginning_of_resource_existence) { month_beginning + 5.days }
+      let(:end_of_resource_existence)       { month_beginning + 20.days }
+
+      it 'uses datetime from Vm#created_on and Vm#retires_on' do
+        vm.update_attributes(:created_on => beginning_of_resource_existence, :retires_on => end_of_resource_existence)
+        vm.metric_rollups.each { |mr| mr.update_attributes(:timestamp => beginning_of_resource_existence) }
+
+        expect(subject.beginning_of_resource_existence_in_report_interval).to eq(beginning_of_resource_existence)
+        expect(subject.end_of_resource_existence_in_report_interval).to eq(end_of_resource_existence)
+      end
+    end
+
+    context 'count of used hours is different than count of metric rollups' do
+      let(:used_metric_attributtes_with_zeros) do
+        # create hash with metrics as keys with zeros in values
+        # e.g. {"cpu_usagemhz_rate_average"=>0, "derived_memory_used"=>0, ...
+        Hash[MetricRollup::METERING_USED_METRIC_FIELDS.inject([]) { |result_array, metric| result_array << [metric, 0] }]
+      end
+
+      let(:count_of_metric_rollup_with_zero_used_metric) { 20 }
+
+      before do
+        vm.metric_rollups.limit(20).each { |record| record.update(used_metric_attributtes_with_zeros) }
+      end
+
+      it 'calculates metering used hours only from used metrics' do
+        expect(subject.metering_used_metric).to eq(vm.metric_rollups.count - count_of_metric_rollup_with_zero_used_metric)
+        expect(subject.metering_used_metric).to eq(40)
+        expect(subject.metering_used_metric).not_to eq(subject.fixed_compute_metric)
+      end
+    end
+  end
+
+  let(:allowed_attributes) do
+    %w(start_date
+       end_date
+       interval_name
+       display_range
+       entity
+       tag_name
+       label_name
+       fixed_compute_metric
+       id
+       vm_id
+       vm_name
+       vm_uid
+       vm_guid
+       owner_name
+       provider_name
+       provider_uid
+       cpu_allocated_metric
+       cpu_used_metric
+       disk_io_used_metric
+       memory_allocated_metric
+       memory_used_metric
+       net_io_used_metric
+       storage_allocated_metric
+       storage_used_metric
+       metering_used_metric
+       existence_hours_metric
+       tenant_name
+       beginning_of_resource_existence_in_report_interval
+       end_of_resource_existence_in_report_interval
+  )
+  end
+
+  it 'lists proper attributes' do
+    expect(described_class.attribute_names).to match_array(allowed_attributes)
   end
 end

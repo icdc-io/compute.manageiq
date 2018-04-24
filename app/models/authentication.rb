@@ -1,4 +1,6 @@
 class Authentication < ApplicationRecord
+  acts_as_miq_taggable
+
   include NewWithTypeStiMixin
   def self.new(*args, &block)
     if self == Authentication
@@ -92,7 +94,7 @@ class Authentication < ApplicationRecord
   def validation_failed(status = :unreachable, message = nil)
     message ||= ERRORS[status]
     _log.warn("[#{resource_type}] [#{resource_id}], previously valid on: #{last_valid_on}, previous status: [#{self.status}]")
-    update_attributes(:status => status.to_s.capitalize, :status_details => message.to_s, :last_invalid_on => Time.now.utc)
+    update_attributes(:status => status.to_s.capitalize, :status_details => message.to_s.truncate(200), :last_invalid_on => Time.now.utc)
     raise_event(status, message)
   end
 

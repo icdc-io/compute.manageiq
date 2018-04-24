@@ -3,7 +3,7 @@ class ServiceTemplate < ApplicationRecord
 
   GENERIC_ITEM_SUBTYPES = {
     "custom"          => _("Custom"),
-    "vm"              => _("VM"),
+    "vm"              => _("Virtual Machine"),
     "playbook"        => _("Playbook"),
     "hosted_database" => _("Hosted Database"),
     "load_balancer"   => _("Load Balancer"),
@@ -17,12 +17,12 @@ class ServiceTemplate < ApplicationRecord
     "generic"                    => _("Generic"),
     "generic_orchestration"      => _("Orchestration"),
     "generic_ansible_playbook"   => _("Ansible Playbook"),
-    "generic_ansible_tower"      => _("AnsibleTower"),
-    "generic_container_template" => _("Container Template"),
+    "generic_ansible_tower"      => _("Ansible Tower"),
+    "generic_container_template" => _("OpenShift Template"),
     "google"                     => _("Google"),
     "microsoft"                  => _("SCVMM"),
     "openstack"                  => _("OpenStack"),
-    "redhat"                     => _("RHEV"),
+    "redhat"                     => _("Red Hat Virtualization"),
     "vmware"                     => _("VMware")
   }.freeze
 
@@ -66,8 +66,18 @@ class ServiceTemplate < ApplicationRecord
   virtual_has_one :config_info, :class_name => "Hash"
 
   scope :with_service_template_catalog_id,          ->(cat_id) { where(:service_template_catalog_id => cat_id) }
+  scope :without_service_template_catalog_id,       ->         { where(:service_template_catalog_id => nil) }
   scope :with_existent_service_template_catalog_id, ->         { where.not(:service_template_catalog_id => nil) }
   scope :displayed,                                 ->         { where(:display => true) }
+
+  def self.catalog_item_types
+    ci_types = Set.new(Rbac.filtered(ExtManagementSystem.all).flat_map(&:supported_catalog_types))
+    ci_types.add('generic_orchestration') if Rbac.filtered(OrchestrationTemplate).exists?
+    ci_types.add('generic')
+    CATALOG_ITEM_TYPES.each.with_object({}) do |(key, description), hash|
+      hash[key] = { :description => description, :display => ci_types.include?(key) }
+    end
+  end
 
   def self.create_catalog_item(options, auth_user)
     transaction do

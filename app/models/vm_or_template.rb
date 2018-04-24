@@ -121,7 +121,7 @@ class VmOrTemplate < ApplicationRecord
   has_many                  :ems_events_src,  :class_name => "EmsEvent"
   has_many                  :ems_events_dest, :class_name => "EmsEvent", :foreign_key => :dest_vm_or_template_id
 
-  has_many                  :policy_events, -> { where(["target_id = ? OR target_class = 'VmOrTemplate'", id]).order(:timestamp) }, :class_name => "PolicyEvent"
+  has_many                  :policy_events, ->(vm) { where(["target_id = ? AND target_class = 'VmOrTemplate'", vm.id]).order(:timestamp) }, :foreign_key => "target_id"
 
   has_many                  :miq_events, :as => :target, :dependent => :destroy
 
@@ -171,7 +171,7 @@ class VmOrTemplate < ApplicationRecord
   virtual_has_many   :lans,                                                  :uses => {:hardware => {:nics => :lan}}
   virtual_has_many   :child_resources,        :class_name => "VmOrTemplate"
 
-  virtual_belongs_to :miq_provision_template, :class_name => "Vm",           :uses => {:miq_provision => :vm_template}
+  has_one            :miq_provision_template, :through => "miq_provision", :source => "source", :source_type => "VmOrTemplate"
   virtual_belongs_to :parent_resource_pool,   :class_name => "ResourcePool", :uses => :all_relationships
 
   virtual_has_one   :direct_service,       :class_name => 'Service'
@@ -1434,10 +1434,6 @@ class VmOrTemplate < ApplicationRecord
     datastorepath = location || ""
     datastorepath = "#{s.name}/#{datastorepath}"  unless s.nil?
     datastorepath
-  end
-
-  def miq_provision_template
-    miq_provision.try(:vm_template)
   end
 
   def event_threshold?(options = {:time_threshold => 30.minutes, :event_types => ["MigrateVM_Task_Complete"], :freq_threshold => 2})

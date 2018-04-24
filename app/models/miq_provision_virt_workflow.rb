@@ -155,6 +155,7 @@ class MiqProvisionVirtWorkflow < MiqProvisionWorkflow
         f[:notes] = vm_description
       when :vlan
         get_field(:vlan)
+        vlan ||= Array(@values[fn]).first
         set_value_from_list(fn, f, vlan, allowed_vlans)
       end
     end
@@ -230,7 +231,7 @@ class MiqProvisionVirtWorkflow < MiqProvisionWorkflow
     unless @vlan_options[:vlans] == false
       rails_logger('allowed_vlans', 0)
       # TODO: Use Active Record to preload this data?
-      MiqPreloader.preload(hosts, :switches => :lans)
+      MiqPreloader.preload(hosts, :lans => :switches)
       load_allowed_vlans(hosts, vlans)
       rails_logger('allowed_vlans', 1)
     end

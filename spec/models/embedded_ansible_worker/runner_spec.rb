@@ -1,4 +1,9 @@
 describe EmbeddedAnsibleWorker::Runner do
+  let(:embedded_ansible_instance) { double("EmbeddedAnsible") }
+  before do
+    allow(EmbeddedAnsible).to receive(:new).and_return(embedded_ansible_instance)
+  end
+
   context ".new" do
     let(:miq_server)  {
       s = EvmSpecHelper.create_guid_miq_server_zone[1]
@@ -15,11 +20,43 @@ describe EmbeddedAnsibleWorker::Runner do
       r
     }
 
-    it "#do_before_work_loop exits on exceptions" do
-      expect(runner).to receive(:setup_ansible)
-      expect(runner).to receive(:update_embedded_ansible_provider).and_raise(StandardError)
-      expect(runner).to receive(:do_exit)
-      runner.do_before_work_loop
+    context "#do_before_work_loop" do
+      let(:start_notification_id) { NotificationType.find_by(:name => "role_activate_start").id }
+      let(:success_notification_id) { NotificationType.find_by(:name => "role_activate_success").id }
+
+      before do
+        ServerRole.seed
+        NotificationType.seed
+      end
+
+      it "creates a notification to inform the user that the service has started" do
+        expect(runner).to receive(:setup_ansible)
+        expect(runner).to receive(:update_embedded_ansible_provider)
+
+        runner.do_before_work_loop
+
+        note = Notification.find_by(:notification_type_id => success_notification_id)
+        expect(note.options[:role_name]).to eq("Embedded Ansible")
+        expect(note.options.keys).to include(:server_name)
+      end
+
+      it "creates a notification to inform the user that the role has been assigned" do
+        expect(runner).to receive(:setup_ansible)
+        expect(runner).to receive(:update_embedded_ansible_provider)
+
+        runner.do_before_work_loop
+
+        note = Notification.find_by(:notification_type_id => start_notification_id)
+        expect(note.options[:role_name]).to eq("Embedded Ansible")
+        expect(note.options.keys).to include(:server_name)
+      end
+
+      it "exits on exceptions" do
+        expect(runner).to receive(:setup_ansible)
+        expect(runner).to receive(:update_embedded_ansible_provider).and_raise(StandardError)
+        expect(runner).to receive(:do_exit)
+        runner.do_before_work_loop
+      end
     end
 
     context "#update_embedded_ansible_provider" do
@@ -29,7 +66,7 @@ describe EmbeddedAnsibleWorker::Runner do
         MiqDatabase.seed
         MiqDatabase.first.set_ansible_admin_authentication(:password => "secret")
 
-        allow(EmbeddedAnsible).to receive(:api_connection).and_return(api_connection)
+        allow(embedded_ansible_instance).to receive(:api_connection).and_return(api_connection)
       end
 
       it "creates initial" do
@@ -92,33 +129,51 @@ describe EmbeddedAnsibleWorker::Runner do
       end
     end
 
-    context "#setup_ansible" do
-      let(:start_notification_id) { NotificationType.find_by(:name => "role_activate_start").id }
-      let(:success_notification_id) { NotificationType.find_by(:name => "role_activate_success").id }
-
+    context "#do_work" do
       before do
-        ServerRole.seed
-        NotificationType.seed
+        runner.instance_variable_set(:@job_data_retention, ::Settings.embedded_ansible.job_data_retention_days)
       end
 
-      it "creates a notification to inform the user that the service has started" do
-        expect(EmbeddedAnsible).to receive(:start)
+      it "starts embedded ansible if it is not alive and not running" do
+        allow(embedded_ansible_instance).to receive(:alive?).and_return(false)
+        allow(embedded_ansible_instance).to receive(:running?).and_return(false)
 
-        runner.setup_ansible
+        expect(embedded_ansible_instance).to receive(:start)
 
-        note = Notification.find_by(:notification_type_id => success_notification_id)
-        expect(note.options[:role_name]).to eq("Embedded Ansible")
-        expect(note.options.keys).to include(:server_name)
+        runner.do_work
       end
 
-      it "creates a notification to inform the user that the role has been assigned" do
-        expect(EmbeddedAnsible).to receive(:start)
+      context "with a provider" do
+        let(:provider) { FactoryGirl.create(:provider_embedded_ansible, :with_authentication) }
 
-        runner.setup_ansible
+        it "runs an authentication check if embedded ansible is alive and the credentials are not valid" do
+          auth = provider.authentications.first
+          auth.status = "Error"
+          auth.save!
 
-        note = Notification.find_by(:notification_type_id => start_notification_id)
-        expect(note.options[:role_name]).to eq("Embedded Ansible")
-        expect(note.options.keys).to include(:server_name)
+          allow(embedded_ansible_instance).to receive(:alive?).and_return(true)
+          allow(runner).to receive(:provider).and_return(provider)
+          expect(provider).to receive(:authentication_check)
+
+          runner.do_work
+        end
+
+        it "doesn't run an authentication check if the credentials are valid" do
+          allow(embedded_ansible_instance).to receive(:alive?).and_return(true)
+          allow(runner).to receive(:provider).and_return(provider)
+          expect(provider).not_to receive(:authentication_check)
+
+          runner.do_work
+        end
+
+        it "sets the embedded ansible job data retention value when the setting changes" do
+          allow(embedded_ansible_instance).to receive(:alive?).and_return(true)
+          allow(runner).to receive(:provider).and_return(provider)
+          stub_settings(:embedded_ansible => {:job_data_retention_days => 30})
+
+          expect(embedded_ansible_instance).to receive(:set_job_data_retention)
+          runner.do_work
+        end
       end
     end
   end

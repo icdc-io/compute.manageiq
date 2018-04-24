@@ -1,4 +1,84 @@
 describe MiqExpression do
+  describe '#reporting_available_fields' do
+    let(:vm) { FactoryGirl.create(:vm) }
+    let!(:custom_attribute) { FactoryGirl.create(:custom_attribute, :name => 'my_attribute_1', :resource => vm) }
+    let(:extra_fields) do
+      %w(start_date
+         end_date
+         interval_name
+         display_range
+         entity
+         tag_name
+         label_name
+         id
+         vm_id
+         vm_name)
+    end
+
+    it 'lists custom attributes in ChargebackVm' do
+      skip('removing of virtual custom attributes is needed to do first in other specs')
+      
+      displayed_columms = described_class.reporting_available_fields('ChargebackVm').map(&:second)
+      expected_columns = (ChargebackVm.attribute_names - extra_fields).map { |x| "ChargebackVm-#{x}" }
+
+      CustomAttribute.all.each do |custom_attribute|
+        expected_columns.push("#{vm.class}-#{CustomAttributeMixin::CUSTOM_ATTRIBUTES_PREFIX}#{custom_attribute.name}")
+      end
+      expect(displayed_columms).to match_array(expected_columns)
+    end
+
+    context 'with ChargebackVm' do
+      context 'with dynamic fields' do
+        let(:volume_1) { FactoryGirl.create(:cloud_volume, :volume_type => 'TYPE1') }
+        let(:volume_2) { FactoryGirl.create(:cloud_volume, :volume_type => 'TYPE2') }
+        let(:volume_3) { FactoryGirl.create(:cloud_volume, :volume_type => 'TYPE3') }
+        let(:model)    { "ChargebackVm" }
+        let(:volume_1_type_field_cost) { "#{model}-storage_allocated_#{volume_1.volume_type}_cost" }
+        let(:volume_2_type_field_cost) { "#{model}-storage_allocated_#{volume_2.volume_type}_cost" }
+        let(:volume_3_type_field_cost) { "#{model}-storage_allocated_#{volume_3.volume_type}_cost" }
+
+        before(:each) do
+          volume_1
+          volume_2
+        end
+
+        it 'returns uncached actual fields also when dynamic fields chas been changed' do
+          report_fields = described_class.reporting_available_fields(model).map(&:second)
+
+          expect(report_fields).to include(volume_1_type_field_cost)
+          expect(report_fields).to include(volume_2_type_field_cost)
+
+          # case: change name
+          volume_2.update_attributes!(:volume_type => 'NEW_TYPE_2')
+          report_fields = described_class.reporting_available_fields(model).map(&:second)
+          expect(report_fields).to include(volume_1_type_field_cost)
+          expect(report_fields).not_to include(volume_2_type_field_cost) # old field
+
+          # check existence of new name
+          report_fields = described_class.reporting_available_fields(model).map(&:second)
+          volume_2_type_field_cost = "#{model}-storage_allocated_#{volume_2.volume_type}_cost"
+          expect(report_fields).to include(volume_1_type_field_cost)
+          expect(report_fields).to include(volume_2_type_field_cost)
+
+          # case: add volume_type
+          volume_3
+          report_fields = described_class.reporting_available_fields(model).map(&:second)
+          expect(report_fields).to include(volume_1_type_field_cost)
+          expect(report_fields).to include(volume_3_type_field_cost)
+
+          # case: remove volume_types
+          volume_2.destroy
+          volume_3.destroy
+
+          report_fields = described_class.reporting_available_fields(model).map(&:second)
+          expect(report_fields).to include(volume_1_type_field_cost)
+          expect(report_fields).not_to include(volume_2_type_field_cost)
+          expect(report_fields).not_to include(volume_3_type_field_cost)
+        end
+      end
+    end
+  end
+
   describe "#valid?" do
     it "returns true for a valid flat expression" do
       expression = described_class.new("=" => {"field" => "Vm-name", "value" => "foo"})
@@ -159,6 +239,11 @@ describe MiqExpression do
     it "generates the SQL for a = expression with expression as a value" do
       sql, * = MiqExpression.new("=" => {"field" => "Vm-name", "value" => "Vm-name"}).to_sql
       expect(sql).to eq("\"vms\".\"name\" = \"vms\".\"name\"")
+    end
+
+    it "will handle values that look like they contain MiqExpression-encoded constants but cannot be loaded" do
+      sql, * = described_class.new("=" => {"field" => "Vm-name", "value" => "VM-name"}).to_sql
+      expect(sql).to eq(%q("vms"."name" = 'VM-name'))
     end
 
     it "generates the SQL for a < expression" do
@@ -2085,23 +2170,6 @@ describe MiqExpression do
     end
   end
 
-  context ".build_relats" do
-    it "includes reflections from descendant classes of Vm" do
-      relats = MiqExpression.get_relats(Vm)
-      expect(relats[:reflections][:cloud_tenant]).not_to be_blank
-    end
-
-    it "includes reflections from descendant classes of Host" do
-      relats = MiqExpression.get_relats(Host)
-      expect(relats[:reflections][:cloud_networks]).not_to be_blank
-    end
-
-    it "excludes reflections from descendant classes of VmOrTemplate " do
-      relats = MiqExpression.get_relats(VmOrTemplate)
-      expect(relats[:reflections][:cloud_tenant]).to be_blank
-    end
-  end
-
   describe "#to_human" do
     it "generates a human readable string for a 'FIELD' expression" do
       exp = MiqExpression.new(">" => {"field" => "Vm-allocated_disk_storage", "value" => "5.megabytes"})
@@ -3242,6 +3310,10 @@ describe MiqExpression do
   end
 
   describe ".tag_details" do
+    before do
+      described_class.instance_variable_set(:@classifications, nil)
+    end
+
     it "returns the tags when no path is given" do
       Tenant.seed
       FactoryGirl.create(

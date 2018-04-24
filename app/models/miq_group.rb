@@ -22,9 +22,10 @@ class MiqGroup < ApplicationRecord
 
   delegate :self_service?, :limited_self_service?, :disallowed_roles, :to => :miq_user_role, :allow_nil => true
 
-  validates :description, :presence => true, :unique_within_region => true
+  validates :description, :presence => true, :unique_within_region => { :match_case => false }
   validate :validate_default_tenant, :on => :update, :if => :tenant_id_changed?
   before_destroy :ensure_can_be_destroyed
+  after_destroy :reset_current_group_for_users
 
   # For REST API compatibility only; Don't use otherwise!
   accepts_nested_attributes_for :entitlement
@@ -53,7 +54,16 @@ class MiqGroup < ApplicationRecord
   end
 
   def settings
-    super && super.with_indifferent_access
+    current = super
+    return if current.nil?
+
+    self.settings = current.with_indifferent_access
+    super
+  end
+
+  def settings=(new_settings)
+    indifferent_settings = new_settings.try(:with_indifferent_access)
+    super(indifferent_settings)
   end
 
   def self.with_allowed_roles_for(user_or_group)
@@ -251,8 +261,8 @@ class MiqGroup < ApplicationRecord
     in_my_region.non_tenant_groups
   end
 
-  def self.with_current_user_groups
-    current_user = User.current_user
+  def self.with_current_user_groups(user = nil)
+    current_user = user || User.current_user
     current_user.admin_user? ? all : where(:id => current_user.miq_group_ids)
   end
 
@@ -287,5 +297,9 @@ class MiqGroup < ApplicationRecord
     raise _("The group has users assigned that do not belong to any other group") if single_group_users?
     raise _("A tenant default group can not be deleted") if tenant_group? && referenced_by_tenant?
     raise _("A read only group cannot be deleted.") if system_group?
+  end
+
+  def reset_current_group_for_users
+    User.where(:id => user_ids, :current_group_id => id).each(&:change_current_group)
   end
 end

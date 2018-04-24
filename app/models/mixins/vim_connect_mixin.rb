@@ -3,6 +3,7 @@ module VimConnectMixin
 
   def connect(options = {})
     options[:auth_type] ||= :ws
+    raise _("no console credentials defined") if options[:auth_type] == :console && !authentication_type(options[:auth_type])
     raise _("no credentials defined") if missing_credentials?(options[:auth_type])
 
     options[:fault_tolerant] = true unless options.key?(:fault_tolerant)
@@ -47,6 +48,9 @@ module VimConnectMixin
 
   module ClassMethods
     def raw_connect(options)
+      require 'handsoap'
+      require 'VMwareWebService/miq_fault_tolerant_vim'
+
       options[:pass] = MiqPassword.try_decrypt(options[:pass])
       validate_connection do
         if options[:fault_tolerant]

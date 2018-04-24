@@ -252,12 +252,11 @@ module MiqProvisionQuotaMixin
   end
 
   def quota_find_active_prov_request_by_owner(options)
-    email = get_option(:owner_email).to_s.strip
-    quota_find_active_prov_request(options).select { |p| email.casecmp(p.request_owner_email(p)).zero? }
+    quota_find_active_prov_request(options).select { |p| request_owner_email(self).casecmp(p.request_owner_email(p)).zero? }
   end
 
   def request_owner_email(request)
-    service_request?(request) ? request.requester.email : request.get_option(:owner_email).to_s.strip
+    service_request?(request) ? request.requester.email : request.get_option(:owner_email)
   end
 
   def service_request?(request)
@@ -276,25 +275,17 @@ module MiqProvisionQuotaMixin
   end
 
   def quota_find_active_prov_request(_options)
-    prov_req_ids = MiqQueue.where(
-      :class_name  => %w(MiqProvisionRequest ServiceTemplateProvisionRequest),
-      :method_name => 'create_request_tasks',
-      :state       => 'dequeue'
-    ).pluck(:instance_id)
-
-    prov_ids = []
-    MiqQueue
-      .where(:method_name => 'deliver', :state => %w(ready dequeue), :class_name => 'MiqAeEngine')
-      .where("tracking_label like ?", '%_provision_%')
-      .each do |q|
-        if q.args
-          args = q.args.first
-          prov_ids << args[:object_id] if args[:object_type].include?('Provision') && !args[:object_id].blank?
-        end
-      end
-    prov_req_ids += MiqRequestTask.where(:id => prov_ids).pluck("miq_request_id")
-
-    MiqRequest.where(:id => prov_req_ids.compact.uniq)
+    MiqRequest.where(
+      :approval_state => 'approved',
+      :type           => %w(MiqProvisionRequest ServiceTemplateProvisionRequest),
+      :request_state  => %w(active queued pending),
+      :status         => 'Ok',
+      :process        => true
+    ).where.not(:id => id)
+              .where(%{source_type IS NULL OR
+       (source_type = 'VmOrTemplate' AND source_id IN (SELECT id FROM vms)) OR
+       (source_type = 'ServiceTemplate' AND source_id IN (SELECT id FROM service_templates))
+     })
   end
 
   def vm_quota_values(pr, result)
@@ -320,6 +311,7 @@ module MiqProvisionQuotaMixin
   end
 
   def service_quota_values(request, result)
+    return unless request.service_template
     request.service_template.service_resources.each do |sr|
       if request.service_template.service_type == 'composite'
         bundle_quota_values(sr, result)

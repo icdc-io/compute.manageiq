@@ -111,7 +111,7 @@ module EmsRefresh
     end
 
     ems.refresher.refresh(get_target_objects(target))
-
+    target.post_create_actions_queue if target.respond_to?(:post_create_actions_queue)
     target
   end
 
@@ -172,6 +172,7 @@ module EmsRefresh
     # Items will be naturally serialized since there is a dedicated worker.
     MiqQueue.put_or_update(queue_options) do |msg, item|
       targets = msg.nil? ? targets : msg.data.concat(targets)
+      targets.uniq! if targets.size > 1_000
 
       # If we are merging with an existing queue item we don't need a new
       # task, just use the original one
@@ -202,7 +203,7 @@ module EmsRefresh
 
   def self.create_refresh_task(ems, targets)
     task_options = {
-      :action => "EmsRefresh(#{ems.name}) [#{targets}]",
+      :action => "EmsRefresh(#{ems.name}) [#{targets}]".truncate(255),
       :userid => "system"
     }
 

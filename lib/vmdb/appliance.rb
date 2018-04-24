@@ -20,6 +20,14 @@ module Vmdb
       Vmdb::Appliance.log_diagnostics
     end
 
+    def self.PRODUCT_NAME
+      I18n.t("product.name").freeze
+    end
+
+    def self.USER_AGENT
+      "#{self.PRODUCT_NAME}/#{self.VERSION}".freeze
+    end
+
     def self.log_config(*args)
       options = args.extract_options!
       fh = options[:logger] || $log

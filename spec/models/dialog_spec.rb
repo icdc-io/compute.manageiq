@@ -38,7 +38,7 @@ describe Dialog do
     it "with same label" do
       expect { @dialog = FactoryGirl.create(:dialog, :label => 'dialog') }.to_not raise_error
       expect { @dialog = FactoryGirl.create(:dialog, :label => 'dialog') }
-        .to raise_error(ActiveRecord::RecordInvalid, /Label is not unique within region/)
+        .to raise_error(ActiveRecord::RecordInvalid, /Name is not unique within region/)
     end
 
     it "with different labels" do
@@ -265,13 +265,15 @@ describe Dialog do
               'dialog_tab_id' => dialog_tab.first.compressed_id,
               'dialog_fields' =>
                                  [{
-                                   'id'              => dialog_field.first.id,
-                                   'dialog_group_id' => dialog_group.first.compressed_id
+                                   'id'                      => dialog_field.first.id,
+                                   'name'                    => dialog_field.first.name,
+                                   'dialog_group_id'         => dialog_group.first.compressed_id,
+                                   'dialog_field_responders' => %w(dialog_field2)
                                  }] },
             {
               'label'         => 'group 2',
               'dialog_fields' => [{
-                'name'  => 'dialog_field',
+                'name'  => 'dialog_field2',
                 'label' => 'field_label'
               }]
             }
@@ -300,6 +302,14 @@ describe Dialog do
       it 'creates the dialog tab from the dialog tabs without an id' do
         dialog.update_tabs(updated_content)
         expect(dialog.reload.dialog_tabs.count).to eq(2)
+      end
+
+      it "creates associations with the correct ids" do
+        expect do
+          dialog.update_tabs(updated_content)
+        end.to change(DialogFieldAssociation, :count).by(1)
+        expect(DialogFieldAssociation.first.trigger_id).to eq(dialog_field.first.id)
+        expect(DialogFieldAssociation.first.respond_id).to eq(dialog_field.first.id + 1)
       end
     end
 
@@ -394,6 +404,27 @@ describe Dialog do
 
     it "fails without tab" do
       expect { dialog.save! }.to raise_error(ActiveRecord::RecordInvalid, "Validation failed: Dialog #{dialog.label} must have at least one Tab")
+    end
+
+    context "unique field names" do
+      before do
+        dialog.dialog_tabs << FactoryGirl.create(:dialog_tab, :label => 'tab')
+        dialog.dialog_tabs.first.dialog_groups << FactoryGirl.create(:dialog_group, :label => 'group')
+        dialog.dialog_tabs.first.dialog_groups.first.dialog_fields << FactoryGirl.create(:dialog_field, :label => 'field 1', :name => 'field1')
+      end
+
+      it "fails with two identical field names on different groups" do
+        dialog.dialog_tabs.first.dialog_groups << FactoryGirl.create(:dialog_group, :label => 'group2')
+        dialog.dialog_tabs.first.dialog_groups.last.dialog_fields << FactoryGirl.create(:dialog_field, :label => 'field 3', :name => 'field1')
+        expect { dialog.save! }
+          .to raise_error(ActiveRecord::RecordInvalid, /Dialog field name cannot be duplicated on a dialog: field1/)
+      end
+
+      it "fails with two identical field names on same group" do
+        dialog.dialog_tabs.first.dialog_groups.first.dialog_fields << FactoryGirl.create(:dialog_field, :label => 'field 3', :name => 'field1')
+        expect { dialog.save! }
+          .to raise_error(ActiveRecord::RecordInvalid, /Dialog field name cannot be duplicated on a dialog: field1/)
+      end
     end
 
     it "validates with tab" do

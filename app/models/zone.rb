@@ -1,6 +1,6 @@
 class Zone < ApplicationRecord
   validates_presence_of   :name, :description
-  validates_uniqueness_of :name
+  validates :name, :unique_within_region => true
 
   serialize :settings, Hash
 
@@ -22,7 +22,6 @@ class Zone < ApplicationRecord
   virtual_has_many :active_miq_servers, :class_name => "MiqServer"
 
   before_destroy :check_zone_in_use_on_destroy
-  after_update   :queue_ntp_reload_if_changed
 
   include AuthenticationMixin
 
@@ -53,11 +52,6 @@ class Zone < ApplicationRecord
     MiqRegion.find_by(:region => region_id)
   end
 
-  def ntp_settings
-    # Return ntp settings if populated otherwise return the defaults
-    settings.fetch_path(:ntp, :server).present? ? settings[:ntp] : settings_for_resource.ntp.to_h
-  end
-
   def assigned_roles
     miq_servers.flat_map(&:assigned_roles).uniq.compact
   end
@@ -75,7 +69,7 @@ class Zone < ApplicationRecord
   end
 
   def self.default_zone
-    find_by(:name => "default")
+    in_my_region.find_by(:name => "default")
   end
 
   def remote_cockpit_ws_miq_server
@@ -190,32 +184,18 @@ class Zone < ApplicationRecord
     miq_servers.any?(&:started?)
   end
 
+  def ntp_reload_queue
+    servers = active_miq_servers
+    return if servers.blank?
+    _log.info("Zone: [#{name}], Queueing ntp_reload for [#{servers.length}] active_miq_servers, ids: #{servers.collect(&:id)}")
+
+    servers.each(&:ntp_reload_queue)
+  end
+
   protected
 
   def check_zone_in_use_on_destroy
     raise _("cannot delete default zone") if name == "default"
     raise _("zone name '%{name}' is used by a server") % {:name => name} unless miq_servers.blank?
-  end
-
-  private
-
-  def queue_ntp_reload_if_changed
-    return if settings_was[:ntp] == ntp_settings
-
-    servers = active_miq_servers
-    return if servers.blank?
-    _log.info("Zone: [#{name}], Queueing ntp_reload for [#{servers.length}] active_miq_servers, ids: #{servers.collect(&:id)}")
-
-    servers.each do |s|
-      MiqQueue.put_deprecated(
-        :class_name  => "MiqServer",
-        :instance_id => s.id,
-        :method_name => "ntp_reload",
-        :args        => [ntp_settings],
-        :server_guid => s.guid,
-        :priority    => MiqQueue::HIGH_PRIORITY,
-        :zone        => name
-      )
-    end
   end
 end

@@ -7,6 +7,7 @@ describe(ServiceAnsiblePlaybook) do
   let(:credential_0)   { FactoryGirl.create(:authentication, :manager_ref => '1') }
   let(:credential_1)   { FactoryGirl.create(:authentication, :manager_ref => 'a') }
   let(:credential_2)   { FactoryGirl.create(:authentication, :manager_ref => 'b') }
+  let(:credential_3)   { FactoryGirl.create(:authentication, :manager_ref => '2') }
   let(:decrpyted_val)  { 'my secret' }
   let(:encrypted_val)  { MiqPassword.encrypt(decrpyted_val) }
   let(:encrypted_val2) { MiqPassword.encrypt(decrpyted_val + "new") }
@@ -43,10 +44,11 @@ describe(ServiceAnsiblePlaybook) do
     {
       :config_info => {
         :provision => {
-          :hosts         => "default_host1,default_host2",
-          :credential_id => credential_0.id,
-          :playbook_id   => 10,
-          :extra_vars    => {
+          :hosts               => "default_host1,default_host2",
+          :credential_id       => credential_0.id,
+          :vault_credential_id => credential_3.id,
+          :playbook_id         => 10,
+          :extra_vars          => {
             "var1" => {:default => "default_val1"},
             :var2  => {:default => "default_val2"},
             "var3" => {:default => "default_val3"}
@@ -68,6 +70,7 @@ describe(ServiceAnsiblePlaybook) do
     {
       :provision_job_options => {
         :credential => 1,
+        :vault_credential => 2,
         :inventory  => 2,
         :hosts      => "default_host1,default_host2",
         :extra_vars => {'var1' => 'value1', 'var2' => 'value2', 'pswd' => encrypted_val}
@@ -82,7 +85,7 @@ describe(ServiceAnsiblePlaybook) do
         expect(basic_service).to receive(:create_inventory_with_hosts).with(action, hosts).and_return(double(:id => 10))
         basic_service.preprocess(action)
         service.reload
-        expect(basic_service.options[:provision_job_options]).to have_attributes(:inventory => 10)
+        expect(basic_service.options[:provision_job_options]).to include(:inventory => 10)
       end
     end
 
@@ -92,7 +95,7 @@ describe(ServiceAnsiblePlaybook) do
         expect(service).to receive(:create_inventory_with_hosts).with(action, hosts).and_return(double(:id => 20))
         service.preprocess(action)
         service.reload
-        expect(service.options[:provision_job_options]).to have_attributes(
+        expect(service.options[:provision_job_options]).to include(
           :inventory  => 20,
           :credential => credential_1.manager_ref,
           :extra_vars => {'var1' => 'value1', 'var2' => 'value2', 'var3' => 'default_val3', 'pswd' => encrypted_val}
@@ -113,11 +116,11 @@ describe(ServiceAnsiblePlaybook) do
           expect(service).to receive(:create_inventory_with_hosts).with(action, hosts).and_return(double(:id => 20))
           service.preprocess(action)
           service.reload
-          expect(service.options[:retirement_job_options]).to have_attributes(
+          expect(service.options[:retirement_job_options]).to include(
             :inventory  => 20,
-            :credential => nil,
             :extra_vars => {'var1' => 'default_val1', 'var2' => 'default_val2', 'var3' => 'default_val3'}
           )
+          expect(service.options[:retirement_job_options]).not_to have_key(:credential)
         end
       end
     end
@@ -128,7 +131,7 @@ describe(ServiceAnsiblePlaybook) do
         expect(service).to receive(:create_inventory_with_hosts).with(action, hosts).and_return(double(:id => 30))
         service.preprocess(action, override_options)
         service.reload
-        expect(service.options[:provision_job_options]).to have_attributes(
+        expect(service.options[:provision_job_options]).to include(
           :inventory  => 30,
           :credential => credential_2.manager_ref,
           :extra_vars => {'var1' => 'new_val1', 'var2' => 'value2', 'var3' => 'default_val3', 'pswd' => encrypted_val2}
@@ -143,7 +146,7 @@ describe(ServiceAnsiblePlaybook) do
       FactoryGirl.create(:miq_region, :region => ApplicationRecord.my_region_number)
       miq_request_task = FactoryGirl.create(:miq_request_task)
       miq_request_task.update_attributes(:options => {:request_options => {:manageiq_extra_vars => control_extras}})
-      loaded_service.update_attributes(:evm_owner        => FactoryGirl.create(:user),
+      loaded_service.update_attributes(:evm_owner        => FactoryGirl.create(:user_with_group),
                                        :miq_group        => FactoryGirl.create(:miq_group),
                                        :miq_request_task => miq_request_task)
     end
@@ -151,8 +154,10 @@ describe(ServiceAnsiblePlaybook) do
     it 'creates an Ansible Tower job' do
       expect(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Job).to receive(:create_job) do |jobtemp, opts|
         expect(jobtemp).to eq(tower_job_temp)
-        exposed_miq = %w(api_url api_token service user group) + control_extras.keys
+        exposed_miq = %w(api_url api_token service user group X_MIQ_Group) + control_extras.keys
+        exposed_connection = %w(url token X_MIQ_Group)
         expect(opts[:extra_vars].delete('manageiq').keys).to include(*exposed_miq)
+        expect(opts[:extra_vars].delete('manageiq_connection').keys).to include(*exposed_connection)
 
         expected_opts = provision_options[:provision_job_options].except(:hosts)
         expected_opts[:extra_vars]['pswd'] = decrpyted_val
@@ -206,6 +211,7 @@ describe(ServiceAnsiblePlaybook) do
     context 'with user selected hosts' do
       it 'deletes temporary inventory' do
         expect(executed_service).to receive(:delete_inventory)
+        expect(executed_service).to receive(:log_stdout)
         executed_service.postprocess(action)
       end
     end
@@ -221,7 +227,21 @@ describe(ServiceAnsiblePlaybook) do
       end
 
       it 'needs not to delete the inventory' do
+        expect(executed_service).to receive(:log_stdout)
         expect(executed_service).not_to receive(:delete_inventory)
+        executed_service.postprocess(action)
+      end
+    end
+
+    context 'require log stdout when job failed' do
+      before do
+        status = ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Job::Status.new('failed', nil)
+        allow(tower_job).to receive(:raw_status).and_return(status)
+      end
+
+      it 'writes stdout to log' do
+        expect(tower_job).to receive(:raw_stdout).with('txt_download')
+        expect(executed_service).to receive(:delete_inventory)
         executed_service.postprocess(action)
       end
     end

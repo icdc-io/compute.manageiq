@@ -28,6 +28,12 @@ class ChargebackRate < ApplicationRecord
   scope :with_rate_type, ->(rate_type) { where(:rate_type => rate_type) }
 
   VALID_CB_RATE_TYPES = ["Compute", "Storage"]
+  DATASTORE_MAPPING   = {'CloudVolume' => 'Storage'}.freeze
+
+  def self.tag_class(klass)
+    klass = ChargebackRate::DATASTORE_MAPPING[klass] || klass
+    super(klass)
+  end
 
   def rate_details_relevant_to(report_cols)
     # we can memoize, as we get the same report_cols thrrough the life of the object
@@ -144,7 +150,7 @@ class ChargebackRate < ApplicationRecord
   end
 
   def ensure_nondefault
-    if default?
+    if default? || description == 'Default Container Image Rate'
       errors.add(:rate, "default rate cannot be deleted")
       throw :abort
     end

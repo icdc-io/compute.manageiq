@@ -457,7 +457,7 @@ describe VmOrTemplate do
 
   context "#supports_terminate?" do
     let(:ems_does_vm_destroy) { FactoryGirl.create(:ems_vmware) }
-    let(:ems_doesnot_vm_destroy) { FactoryGirl.create(:ems_vmware_cloud) }
+    let(:ems_doesnot_vm_destroy) { FactoryGirl.create(:ems_cloud) }
     let(:host) { FactoryGirl.create(:host) }
 
     it "returns true for a VM not terminated" do
@@ -576,6 +576,32 @@ describe VmOrTemplate do
     template.miq_provisions_from_template << provision
 
     expect(template.miq_provision_vms.collect(&:id)).to eq([vm.id])
+  end
+
+  describe "#miq_provision_template" do
+    it "links vm to template" do
+      ems       = FactoryGirl.create(:ems_vmware_with_authentication)
+      template  = FactoryGirl.create(:template_vmware, :ext_management_system => ems)
+      vm        = FactoryGirl.create(:vm_vmware, :ext_management_system => ems)
+
+      options = {
+        :vm_name        => vm.name,
+        :vm_target_name => vm.name,
+        :src_vm_id      => [template.id, template.name]
+      }
+
+      FactoryGirl.create(
+        :miq_provision_vmware,
+        :destination  => vm,
+        :source       => template,
+        :request_type => 'clone_to_vm',
+        :state        => 'finished',
+        :status       => 'Ok',
+        :options      => options
+      )
+
+      expect(vm.miq_provision_template).to eq(template)
+    end
   end
 
   describe ".v_pct_free_disk_space (delegated to hardware)" do
@@ -1135,6 +1161,14 @@ describe VmOrTemplate do
         :instance_id => vm_blue2.id,
         :method_name => "classify_with_parent_folder_path"
       )
+    end
+  end
+
+  context "#policy_events" do
+    it "returns the policy events with target class of VmOrTemplate and target_id of the vm" do
+      policy_event = FactoryGirl.create(:policy_event, :target_class => "VmOrTemplate", :target_id => vm.id)
+
+      expect(vm.policy_events).to eq([policy_event])
     end
   end
 end

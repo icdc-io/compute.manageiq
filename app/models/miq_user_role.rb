@@ -9,8 +9,7 @@ class MiqUserRole < ApplicationRecord
 
   virtual_column :vm_restriction,                   :type => :string
 
-  validates_presence_of   :name
-  validates_uniqueness_of :name
+  validates :name, :presence => true, :uniqueness => { :case_sensitive => false }
 
   serialize :settings
 
@@ -22,8 +21,8 @@ class MiqUserRole < ApplicationRecord
   FIXTURE_YAML = "#{FIXTURE_PATH}.yml"
 
   RESTRICTIONS = {
-    :user          => "Only User Owned",
-    :user_or_group => "Only User or Group Owned"
+    :user          => N_('Only User Owned'),
+    :user_or_group => N_('Only User or Group Owned')
   }
 
   def feature_identifiers

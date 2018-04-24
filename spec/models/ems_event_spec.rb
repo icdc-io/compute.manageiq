@@ -1,7 +1,7 @@
 describe EmsEvent do
   context "model" do
     let(:ems1) { FactoryGirl.create(:ems_kubernetes) }
-    let(:ems2) { FactoryGirl.create(:ems_hawkular_datawarehouse) }
+    let(:ems2) { FactoryGirl.create(:ems_kubernetes) }
 
     it "Find ems events and generated events for ext management systems" do
       generated_event = FactoryGirl.create(:ems_event, :ext_management_system => ems1, :generating_ems => ems2)
@@ -90,41 +90,6 @@ describe EmsEvent do
       it "constructed event has .container_replicator" do
         event = EmsEvent.add(@ems.id, repl_event_hash)
         expect(event.container_replicator).to eq @container_replicator
-      end
-    end
-  end
-
-  context ".process_middleware_entities_in_event!" do
-    let(:middleware_ref) { "hawkular-test-path" }
-    let(:ems) { FactoryGirl.create(:ems_hawkular) }
-    let(:middleware_server) do
-      FactoryGirl.create(:middleware_server,
-                         :ems_ref               => middleware_ref,
-                         :name                  => 'test-server',
-                         :ext_management_system => ems)
-    end
-
-    let(:event_hash) { {:middleware_type => MiddlewareServer.name, :ems_id => ems.id} }
-
-    before :each do
-      middleware_server
-    end
-
-    context "process server_in events" do
-      it "should link server id to event" do
-        event_hash[:middleware_ref] = middleware_ref
-        EmsEvent.process_middleware_entities_in_event!(event_hash)
-        expect(event_hash[:middleware_server_id]).to eq middleware_server.id
-        expect(event_hash[:middleware_server_name]).to eq middleware_server.name
-      end
-    end
-
-    context "process unknown_server_in events" do
-      it "should not link server id to event" do
-        event_hash[:middleware_ref] = 'unknown_id'
-        EmsEvent.process_middleware_entities_in_event!(event_hash)
-        expect(event_hash[:middleware_server_id]).to be_nil
-        expect(event_hash[:middleware_server_name]).to be_nil
       end
     end
   end
@@ -287,13 +252,43 @@ describe EmsEvent do
     end
   end
 
+  context ".add" do
+    let(:ems) { FactoryGirl.create(:ext_management_system) }
+    context "with a VM" do
+      let(:vm) { FactoryGirl.create(:vm, :uid_ems => '3ace5197-3d6a-4cb3-aeb2-e8348e428775', :ems_ref => 'vm-123') }
+      let(:event) do
+        {
+          :ems_id     => ems.id,
+          :event_type => 'VmDestroyedEvent',
+          :vm_ems_ref => vm.ems_ref,
+          :vm_uid_ems => vm.uid_ems,
+        }
+      end
+
+      context "with a connected VM" do
+        before { vm.update_attributes(:ems_id => ems.id) }
+
+        it "should link the event to the vm" do
+          ems_event = EmsEvent.add(ems.id, event)
+          expect(ems_event.vm_or_template_id).to eq(vm.id)
+        end
+      end
+
+      context "with a disconnected VM" do
+        it "should link the event to the vm" do
+          ems_event = EmsEvent.add(ems.id, event)
+          expect(ems_event.vm_or_template_id).to eq(vm.id)
+        end
+      end
+    end
+  end
+
   context '.event_groups' do
     let(:provider_event) { 'SomeSpecialProviderEvent' }
 
     it 'returns a list of expected groups' do
       event_group_names = [
         :addition,
-        :application,
         :configuration,
         :console,
         :deletion,
@@ -307,6 +302,7 @@ describe EmsEvent do
         :snapshot,
         :status,
         :storage,
+        :update,
       ]
       expect(described_class.event_groups.keys).to match_array(event_group_names)
       expect(described_class.event_groups[:addition]).to include(:name => 'Creation/Addition')

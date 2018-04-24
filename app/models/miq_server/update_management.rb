@@ -60,31 +60,34 @@ module MiqServer::UpdateManagement
   def attempt_registration
     return unless register
     attach_products
+    configure_yum_proxy
     # HACK: #enable_repos is not always successful immediately after #attach_products, retry to ensure they are enabled.
     5.times { repos_enabled? ? break : enable_repos }
+  rescue LinuxAdmin::SubscriptionManagerError => e
+    _log.error("Registration Failed: #{e.message}")
+    Notification.create(:type => "server_registration_error", :options => {:server_name => MiqServer.my_server.name})
+    raise
   end
 
   def register
     update_attributes(:upgrade_message => "registering")
-    if LinuxAdmin::RegistrationSystem.registered?
+    if LinuxAdmin::SubscriptionManager.registered?(assemble_registration_options)
       _log.info("Appliance already registered")
       update_attributes(:rh_registered => true)
     else
       _log.info("Registering appliance...")
       registration_type = MiqDatabase.first.registration_type
 
-      registration_class = LinuxAdmin::SubscriptionManager
-
       # TODO: Prompt user for environment in UI for Satellite 6 registration, use default environment for now.
       registration_options = assemble_registration_options
       registration_options[:environment] = "Library" if registration_type == "rhn_satellite6"
 
-      registration_class.register(registration_options)
+      LinuxAdmin::SubscriptionManager.register(registration_options)
 
       # Reload the registration_type
-      LinuxAdmin::RegistrationSystem.registration_type(true)
+      LinuxAdmin::SubscriptionManager.registration_type(true)
 
-      update_attributes(:rh_registered => LinuxAdmin::RegistrationSystem.registered?)
+      update_attributes(:rh_registered => LinuxAdmin::SubscriptionManager.registered?(assemble_registration_options))
     end
 
     if rh_registered?
@@ -101,11 +104,21 @@ module MiqServer::UpdateManagement
   def attach_products
     update_attributes(:upgrade_message => "attaching products")
     _log.info("Attaching products based on installed certificates")
-    LinuxAdmin::RegistrationSystem.subscribe(assemble_registration_options)
+    LinuxAdmin::SubscriptionManager.subscribe(assemble_registration_options)
+  end
+
+  def configure_yum_proxy
+    registration_options = assemble_registration_options
+    return unless registration_options[:proxy_address]
+    conf = IniFile.load("/etc/yum.conf")
+    conf["main"]["proxy"] = registration_options[:proxy_address]
+    conf["main"]["proxy_username"] = registration_options[:proxy_username] if registration_options[:proxy_username]
+    conf["main"]["proxy_password"] = registration_options[:proxy_password] if registration_options[:proxy_password]
+    conf.save
   end
 
   def repos_enabled?
-    enabled = LinuxAdmin::RegistrationSystem.enabled_repos
+    enabled = LinuxAdmin::SubscriptionManager.enabled_repos
     if MiqDatabase.first.update_repo_names.all? { |desired| enabled.include?(desired) }
       _log.info("Desired update repository is enabled")
       update_attributes(:rh_subscribed => true, :upgrade_message => "registered")
@@ -118,7 +131,7 @@ module MiqServer::UpdateManagement
     MiqDatabase.first.update_repo_names.each do |repo|
       update_attributes(:upgrade_message => "enabling #{repo}")
       begin
-        LinuxAdmin::RegistrationSystem.enable_repo(repo, assemble_registration_options)
+        LinuxAdmin::SubscriptionManager.enable_repo(repo, assemble_registration_options)
       rescue AwesomeSpawn::CommandResultError
         update_attributes(:upgrade_message => "failed to enable #{repo}")
       end

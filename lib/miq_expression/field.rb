@@ -21,7 +21,12 @@ class MiqExpression::Field < MiqExpression::Target
     return false unless field.kind_of?(String)
     match = REGEX.match(field)
     return false unless match
-    model = match[:model_name].safe_constantize
+    model =
+      begin
+        match[:model_name].safe_constantize
+      rescue LoadError
+        nil
+      end
     return false unless model
     !!(model < ApplicationRecord)
   end
@@ -60,6 +65,29 @@ class MiqExpression::Field < MiqExpression::Target
 
   def report_column
     (associations + [column]).join('.')
+  end
+
+  # this should only be accessed in MiqExpression
+  # please avoid using it
+  def arel_table
+    if associations.none?
+      model.arel_table
+    else
+      # if we are pointing to a table that already in the query, need to alias it
+      # seems we should be able to ask AR to do this for us...
+      ref = reflections.last
+      if ref.klass.table_name == model.table_name
+        ref.klass.arel_table.alias(ref.alias_candidate(model.table_name))
+      else
+        ref.klass.arel_table
+      end
+    end
+  end
+
+  # this should only be accessed in MiqExpression
+  # please avoid using it
+  def arel_attribute
+    target.arel_attribute(column, arel_table) if target
   end
 
   private

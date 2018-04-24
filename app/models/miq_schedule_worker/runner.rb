@@ -199,6 +199,11 @@ class MiqScheduleWorker::Runner < MiqWorker::Runner
       enqueue(:archived_entities_purge_timer)
     end
 
+    every = worker_settings[:notifications_purge_interval]
+    scheduler.schedule_every(every, :first_in => every) do
+      enqueue(:notification_purge_timer)
+    end
+
     # Schedule every 24 hours
     at = worker_settings[:storage_file_collection_time_utc]
     if Time.now.strftime("%Y-%m-%d #{at}").to_time(:utc) < Time.now.utc
@@ -269,6 +274,20 @@ class MiqScheduleWorker::Runner < MiqWorker::Runner
       sched,
       :tags => [:database_operations, :database_metrics_purge_schedule],
     ) { enqueue(:metric_purge_all_timer) }
+
+    sched = ::Settings.database.maintenance.reindex_schedule
+    _log.info("database_maintenance_reindex_schedule: #{sched}")
+    scheduler.schedule_cron(
+      sched,
+      :tags => %i(database_operations database_maintenance_reindex_schedule),
+    ) { enqueue(:database_maintenance_reindex_timer) }
+
+    sched = ::Settings.database.maintenance.vacuum_schedule
+    _log.info("database_maintenance_vacuum_schedule: #{sched}")
+    scheduler.schedule_cron(
+      sched,
+      :tags => %i(database_operations database_maintenance_vacuum_schedule),
+    ) { enqueue(:database_maintenance_vacuum_timer) }
 
     @schedules[:database_operations]
   end

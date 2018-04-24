@@ -2,28 +2,28 @@ name,description,event_type,set_type
 #
 # EVM Server operations
 #
-evm_server_start,EVM Server Start,Default,evm_operations
-evm_server_stop,EVM Server Stop,Default,evm_operations
-evm_server_not_responding,EVM Server Not Responding,Default,evm_operations
-evm_server_memory_exceeded,EVM Server Exceeded Memory Limit,Default,evm_operations
-evm_server_is_master,EVM Server is Master,Default,evm_operations
-evm_server_system_disk_high_usage,EVM Server High System Disk Usage,Default,evm_operations
-evm_server_boot_disk_high_usage,EVM Server High /boot Disk Usage,Default,evm_operations
-evm_server_home_disk_high_usage,EVM Server High /home Disk Usage,Default,evm_operations
-evm_server_var_disk_high_usage,EVM Server High /var Disk Usage,Default,evm_operations
-evm_server_var_log_disk_high_usage,EVM Server High /var/log Disk Usage,Default,evm_operations
-evm_server_var_log_audit_disk_high_usage,EVM Server High /var/log/audit Disk Usage,Default,evm_operations
-evm_server_miq_tmp_disk_high_usage,EVM Server High Temp Storage Disk Usage,Default,evm_operations
-evm_server_tmp_disk_high_usage,EVM Server High /tmp Disk Usage,Default,evm_operations
-evm_server_db_disk_high_usage,EVM Server High DB Disk Usage,Default,evm_operations
-evm_server_db_backup_low_space,EVM Server Database Backup Insufficient Space,Default,evm_operations
-evm_worker_start,EVM Worker Started,Default,evm_operations
-evm_worker_stop,EVM Worker Stopped,Default,evm_operations
-evm_worker_killed, EVM Worker Killed,Default,evm_operations
-evm_worker_not_responding, EVM Worker Not Responding,Default,evm_operations
-evm_worker_memory_exceeded, EVM Worker Exceeded Memory Limit,Default,evm_operations
-evm_worker_uptime_exceeded, EVM Worker Exceeded Uptime Limit,Default,evm_operations
-evm_worker_exit_file, EVM Worker Exit File,Default,evm_operations
+evm_server_start,Server Start,Default,evm_operations
+evm_server_stop,Server Stop,Default,evm_operations
+evm_server_not_responding,Server Not Responding,Default,evm_operations
+evm_server_memory_exceeded,Server Exceeded Memory Limit,Default,evm_operations
+evm_server_is_master,Server is Master,Default,evm_operations
+evm_server_system_disk_high_usage,Server High System Disk Usage,Default,evm_operations
+evm_server_boot_disk_high_usage,Server High /boot Disk Usage,Default,evm_operations
+evm_server_home_disk_high_usage,Server High /home Disk Usage,Default,evm_operations
+evm_server_var_disk_high_usage,Server High /var Disk Usage,Default,evm_operations
+evm_server_var_log_disk_high_usage,Server High /var/log Disk Usage,Default,evm_operations
+evm_server_var_log_audit_disk_high_usage,Server High /var/log/audit Disk Usage,Default,evm_operations
+evm_server_miq_tmp_disk_high_usage,Server High Temp Storage Disk Usage,Default,evm_operations
+evm_server_tmp_disk_high_usage,Server High /tmp Disk Usage,Default,evm_operations
+evm_server_db_disk_high_usage,Server High DB Disk Usage,Default,evm_operations
+evm_server_db_backup_low_space,Server Database Backup Insufficient Space,Default,evm_operations
+evm_worker_start,Worker Started,Default,evm_operations
+evm_worker_stop,Worker Stopped,Default,evm_operations
+evm_worker_killed,Worker Killed,Default,evm_operations
+evm_worker_not_responding,Worker Not Responding,Default,evm_operations
+evm_worker_memory_exceeded,Worker Exceeded Memory Limit,Default,evm_operations
+evm_worker_uptime_exceeded,Worker Exceeded Uptime Limit,Default,evm_operations
+evm_worker_exit_file,Worker Exit File,Default,evm_operations
 
 #
 # External Management System operations
@@ -70,26 +70,6 @@ request_host_shutdown,Host Shutdown Request,Default,host_operations
 request_host_reboot,Host Reboot Request,Default,host_operations
 request_host_enable_vmotion,Host Vmotion Enable Request,Default,host_operations
 request_host_disable_vmotion,Host Vmotion Disable Request,Default,host_operations
-
-#
-# Middleware operations
-#
-middleware_deployment_ok,EAP Application Deploy Succeeded,Default,middleware_operations
-middleware_deployment_error,EAP Application Deploy Failed,Default,middleware_operations
-middleware_deployment_remove_ok,EAP Application Undeploy Succeeded,Default,middleware_operations
-middleware_deployment_remove_error,EAP Application Undeploy Failed,Default,middleware_operations
-middleware_datasource_ok,EAP Datasource Create Succeeded,Default,middleware_operations
-middleware_datasource_error,EAP Datasource Create Failed,Default,middleware_operations
-middleware_datasource_remove_ok,EAP Datasource Delete Succeeded,Default,middleware_operations
-middleware_datasource_remove_error,EAP Datasource Delete Failed,Default,middleware_operations
-middleware_jdbc_ok,EAP JDBC Driver Deploy Succeeded,Default,middleware_operations
-middleware_jdbc_error,EAP JDBC Driver Deploy Failed,Default,middleware_operations
-middleware_jdbc_remove_ok,EAP JDBC Driver Undeploy Succeeded,Default,middleware_operations
-middleware_jdbc_remove_error,EAP JDBC Driver Undeploy Failed,Default,middleware_operations
-middlewareserver_compliance_check,Middleware Server Compliance Check,Default,compliance
-middlewareserver_compliance_passed,Middleware Server Compliance Passed,Default,compliance
-middlewareserver_compliance_failed,Middleware Server Compliance Failed,Default,compliance
-
 #
 # Company tags
 #
@@ -120,6 +100,7 @@ request_vm_destroy,VM Delete (from Disk) Request,Default,vm_configurational
 #
 # VM lifecycle
 #
+vm_destroy,VM Delete (from Disk),Default,vm_process
 vm_retired,VM Retired,Default,vm_process
 request_vm_retire,VM Retire Request,Default,vm_process
 vm_retire_warn,VM Retirement Warning,Default,vm_process
@@ -223,6 +204,12 @@ containergroup_scheduled,Pod Scheduled,Default,container_operations
 containergroup_compliance_check,Pod Compliance Check,Default,compliance
 containergroup_compliance_passed,Pod Compliance Passed,Default,compliance
 containergroup_compliance_failed,Pod Compliance Failed,Default,compliance
+containergroup_created,Pod Container Created,Default,container_operations
+containergroup_failed,Pod Container Failed,Default,container_operations
+containergroup_killing,Pod Container Killing,Default,container_operations
+containergroup_started,Pod Container Started,Default,container_operations
+containergroup_stopped,Pod Container Stopped,Default,container_operations
+containergroup_unhealthy,Pod Container Unhealthy,Default,container_operations
 
 containerreplicator_failedcreate,Replicator Failed Creating Pod,Default,container_operations
 containerreplicator_successfulcreate,Replicator Successfully Created Pod,Default,container_operations

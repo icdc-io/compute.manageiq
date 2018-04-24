@@ -453,6 +453,15 @@ describe User do
         subject.current_group_by_description = g2.description
         expect(subject.current_group).to eq(g2)
       end
+
+      it "ignores groups from other regions" do
+        expect(subject).to be_super_admin_user
+
+        group = FactoryGirl.create(:miq_group, :id => ApplicationRecord.id_in_region(1, ApplicationRecord.my_region_number + 1))
+
+        subject.current_group_by_description = group.description
+        expect(subject.current_group.description).not_to eq(group.description)
+      end
     end
   end
 
@@ -535,6 +544,23 @@ describe User do
         expect(User.current_userid).to eq(user1.userid)
         expect(User.current_user).to eq(user1)
       end
+    end
+  end
+
+  describe "#change_current_group" do
+    let(:group1) { FactoryGirl.create(:miq_group) }
+    let(:group2) { FactoryGirl.create(:miq_group) }
+
+    it "changes the user to a group other than the current one" do
+      user = FactoryGirl.create(:user, :miq_groups => [group1, group2], :current_group => group1)
+      user.change_current_group
+      expect(user.current_group).to eq(group2)
+    end
+
+    it "raises an error if there is no group other than the current one to switch to" do
+      user = FactoryGirl.create(:user, :miq_groups => [group1], :current_group => group1)
+      expect { user.change_current_group }
+        .to raise_error(RuntimeError, /The user's current group cannot be changed because the user does not belong to any other group/)
     end
   end
 

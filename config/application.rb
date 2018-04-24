@@ -90,15 +90,24 @@ module Vmdb
     # Customize any additional options below...
 
     config.autoload_paths += config.eager_load_paths
-    config.autoload_paths << Rails.root.join("app", "models", "aliases")
-    config.autoload_paths << Rails.root.join("app", "models", "mixins")
-    config.autoload_paths << Rails.root.join("lib", "miq_automation_engine", "models")
-    config.autoload_paths << Rails.root.join("lib", "miq_automation_engine", "models", "mixins")
-    config.autoload_paths << Rails.root.join("app", "controllers", "mixins")
-    config.autoload_paths << Rails.root.join("lib")
-    config.autoload_paths << Rails.root.join("lib", "services")
 
-    config.autoload_once_paths << Rails.root.join("lib", "vmdb", "console_methods.rb")
+    # NOTE:  If you are going to make changes to autoload_paths, please make
+    # sure they are all strings.  Rails will push these paths into the
+    # $LOAD_PATH.
+    #
+    # More info can be found in the ruby-lang bug:
+    #
+    #   https://bugs.ruby-lang.org/issues/14372
+    #
+    config.autoload_paths << Rails.root.join("app", "models", "aliases").to_s
+    config.autoload_paths << Rails.root.join("app", "models", "mixins").to_s
+    config.autoload_paths << Rails.root.join("lib", "miq_automation_engine", "models").to_s
+    config.autoload_paths << Rails.root.join("lib", "miq_automation_engine", "models", "mixins").to_s
+    config.autoload_paths << Rails.root.join("app", "controllers", "mixins").to_s
+    config.autoload_paths << Rails.root.join("lib").to_s
+    config.autoload_paths << Rails.root.join("lib", "services").to_s
+
+    config.autoload_once_paths << Rails.root.join("lib", "vmdb", "console_methods.rb").to_s
 
     # config.eager_load_paths accepts an array of paths from which Rails will eager load on boot if cache classes is enabled.
     # Defaults to every folder in the app directory of the application.

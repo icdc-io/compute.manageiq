@@ -8,20 +8,20 @@ class MiqAction < ApplicationRecord
 
   silence_warnings do
     const_set("TYPES",
-              "create_snapshot"         => "Create a Snapshot",
-              "email"                   => "Send an E-mail",
-              "snmp_trap"               => "Send an SNMP Trap",
-              "tag"                     => "Tag",
-              "reconfigure_memory"      => "Reconfigure Memory",
-              "reconfigure_cpus"        => "Reconfigure CPUs",
-              "custom_automation"       => "Invoke a Custom Automation",
-              "evaluate_alerts"         => "Evaluate Alerts",
-              "assign_scan_profile"     => "Assign Profile to Analysis Task",
-              "set_custom_attribute"    => "Set a Custom Attribute in vCenter",
-              "inherit_parent_tags"     => "Inherit Parent Tags",
-              "remove_tags"             => "Remove Tags",
-              "delete_snapshots_by_age" => "Delete Snapshots by Age",
-              "run_ansible_playbook"    => "Run Ansible Playbook"
+              "create_snapshot"         => N_("Create a Snapshot"),
+              "email"                   => N_("Send an E-mail"),
+              "snmp_trap"               => N_("Send an SNMP Trap"),
+              "tag"                     => N_("Tag"),
+              "reconfigure_memory"      => N_("Reconfigure Memory"),
+              "reconfigure_cpus"        => N_("Reconfigure CPUs"),
+              "custom_automation"       => N_("Invoke a Custom Automation"),
+              "evaluate_alerts"         => N_("Evaluate Alerts"),
+              "assign_scan_profile"     => N_("Assign Profile to Analysis Task"),
+              "set_custom_attribute"    => N_("Set a Custom Attribute in vCenter"),
+              "inherit_parent_tags"     => N_("Inherit Parent Tags"),
+              "remove_tags"             => N_("Remove Tags"),
+              "delete_snapshots_by_age" => N_("Delete Snapshots by Age"),
+              "run_ansible_playbook"    => N_("Run Ansible Playbook")
              )
   end
 
@@ -285,6 +285,8 @@ class MiqAction < ApplicationRecord
   end
 
   def action_email(action, rec, inputs)
+    return unless MiqRegion.my_region.role_assigned?('notifier')
+
     action.options[:from] = ::Settings.smtp.from if action.options[:from].blank?
 
     email_options = {
@@ -439,7 +441,7 @@ class MiqAction < ApplicationRecord
     raise _("unable to execute script, no file name specified") if filename.nil?
 
     unless File.exist?(filename)
-      raise _("unable to execute script, file name [%{file_name} does not exist]") % {:file_name => filename}
+      raise _("unable to execute script, file name [%{file_name}] does not exist") % {:file_name => filename}
     end
 
     command_result = nil
@@ -724,14 +726,15 @@ class MiqAction < ApplicationRecord
     rec.scan
   end
 
-  def action_container_image_annotate_deny_execution(action, rec, inputs)
+  def action_container_image_annotate_scan_results(action, rec, inputs)
+    MiqPolicy.logger.info("MIQ(#{__method__}): Now executing  [#{action.description}]")
     error_prefix = "MIQ(#{__method__}): Unable to perform action [#{action.description}], "
     unless rec.kind_of?(ContainerImage)
       MiqPolicy.logger.error("#{error_prefix} object [#{rec.inspect}] is not a Container Image")
       return
     end
 
-    unless rec.respond_to?(:annotate_deny_execution)
+    unless rec.respond_to?(:annotate_scan_policy_results)
       MiqPolicy.logger.error("#{error_prefix} ContainerImage is not linked with an OpenShift image")
       return
     end
@@ -739,7 +742,7 @@ class MiqAction < ApplicationRecord
     if inputs[:synchronous]
       MiqPolicy.logger.info("MIQ(#{__method__}): Now executing  [#{action.description}] for event "\
                             "[#{inputs[:event].description}]")
-      rec.annotate_deny_execution(inputs[:policy].name)
+      rec.annotate_scan_policy_results(inputs[:policy].name, inputs[:result])
     else
       MiqPolicy.logger.info("MIQ(#{__method__}): Queueing [#{action.description}] for event "\
                             "[#{inputs[:event].description}]")
@@ -747,8 +750,8 @@ class MiqAction < ApplicationRecord
         :service     => "ems_operations",
         :affinity    => rec.ext_management_system,
         :class_name  => rec.class.name,
-        :method_name => "annotate_deny_execution",
-        :args        => inputs[:policy].name,
+        :method_name => :annotate_scan_policy_results,
+        :args        => [inputs[:policy].name, inputs[:result]],
         :instance_id => rec.id,
         :priority    => MiqQueue::HIGH_PRIORITY,
       )

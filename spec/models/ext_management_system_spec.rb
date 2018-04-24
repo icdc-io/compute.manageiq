@@ -80,7 +80,7 @@ describe ExtManagementSystem do
   end
 
   it ".ems_infra_discovery_types" do
-    expected_types = %w(scvmm rhevm virtualcenter)
+    expected_types = %w(scvmm rhevm virtualcenter openstack_infra)
 
     expect(described_class.ems_infra_discovery_types).to match_array(expected_types)
   end
@@ -403,19 +403,72 @@ describe ExtManagementSystem do
       expect(ExtManagementSystem.count).to eq(0)
     end
 
-    it "does not destroy an ems with active workers" do
+    it "destroys an ems with active workers" do
       ems = FactoryGirl.create(:ext_management_system)
-      FactoryGirl.create(:miq_ems_refresh_worker, :queue_name => ems.queue_name, :status => "started")
+      worker = FactoryGirl.create(:miq_ems_refresh_worker, :queue_name => ems.queue_name, :status => "started")
       ems.destroy
-      expect(ExtManagementSystem.count).to eq(1)
+      expect(ExtManagementSystem.count).to eq(0)
+      expect(worker.class.exists?(worker.id)).to be_falsy
+    end
+  end
+
+  context ".destroy_queue" do
+    let(:ems)    { FactoryGirl.create(:ext_management_system, :zone => zone) }
+    let(:ems2)   { FactoryGirl.create(:ext_management_system, :zone => zone) }
+    let(:server) { EvmSpecHelper.local_miq_server }
+    let(:zone)   { server.zone }
+
+    it "queues up destroy" do
+      described_class.destroy_queue([ems.id, ems2.id])
+
+      expect(MiqQueue.count).to eq(2)
+      expect(MiqQueue.pluck(:instance_id)).to match_array([ems.id, ems2.id])
+    end
+  end
+
+  context "#destroy_queue" do
+    let(:ems)    { FactoryGirl.create(:ext_management_system, :zone => zone) }
+    let(:server) { EvmSpecHelper.local_miq_server }
+    let(:zone)   { server.zone }
+
+    it "returns a task" do
+      task_id = ems.destroy_queue
+
+      deliver_queue_message
+
+      expect(MiqTask.find(task_id)).to have_attributes(
+        :state  => "Finished",
+        :status => "Ok",
+      )
     end
 
-    it "queues up destroy for child_managers" do
-      child_manager = FactoryGirl.create(:ext_management_system)
-      ems = FactoryGirl.create(:ext_management_system, :child_managers => [child_manager])
-      expect(described_class).to receive(:schedule_destroy_queue).with(ems.id)
-      expect(described_class).to receive(:schedule_destroy_queue).with(child_manager.id)
-      described_class.destroy_queue(ems.id)
+    it "destroys the ems when no active worker exists" do
+      ems.destroy_queue
+
+      expect(MiqQueue.count).to eq(1)
+
+      deliver_queue_message
+
+      expect(MiqQueue.count).to eq(0)
+      expect(ExtManagementSystem.count).to eq(0)
+    end
+
+    it "destroys the ems when active worker exists" do
+      FactoryGirl.create(:miq_ems_refresh_worker, :queue_name => ems.queue_name, :status => "started", :miq_server => server)
+      ems.destroy_queue
+
+      expect(MiqQueue.count).to eq(1)
+
+      deliver_queue_message
+
+      expect(MiqQueue.count).to eq(0)
+      expect(ExtManagementSystem.count).to eq(0)
+      expect(MiqWorker.count).to eq(0)
+    end
+
+    def deliver_queue_message(queue_message = MiqQueue.order(:id).first)
+      status, message, result = queue_message.deliver
+      queue_message.delivered(status, message, result)
     end
   end
 
@@ -432,6 +485,15 @@ describe ExtManagementSystem do
       ems = FactoryGirl.create(:ext_management_system)
       allow(ems).to receive(:supports_cloud_object_store_container_create).and_return(true)
       expect(ems.supports_cloud_object_store_container_create).to eq(true)
+    end
+  end
+
+  describe ".raw_connect?" do
+    it "returns true if validation was successful" do
+      connection = double
+      allow(ManageIQ::Providers::Amazon::CloudManager).to receive(:raw_connect).and_return(connection)
+
+      expect(ManageIQ::Providers::Amazon::CloudManager.raw_connect?).to eq(true)
     end
   end
 end

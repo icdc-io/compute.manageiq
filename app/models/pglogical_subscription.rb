@@ -33,7 +33,7 @@ class PglogicalSubscription < ActsAsArModel
   end
 
   def save!
-    assert_valid_schemas!
+    assert_different_region!
     id ? update_subscription : create_subscription
   end
 
@@ -78,7 +78,6 @@ class PglogicalSubscription < ActsAsArModel
   end
 
   def enable
-    assert_valid_schemas!
     pglogical.subscription_enable(id).check
   end
 
@@ -92,7 +91,7 @@ class PglogicalSubscription < ActsAsArModel
   end
 
   def validate(new_connection_params = {})
-    find_password
+    find_password if new_connection_params['password'].blank?
     connection_hash = attributes.merge(new_connection_params.delete_blanks)
     MiqRegionRemote.validate_connection_settings(connection_hash['host'],
                                                  connection_hash['port'],
@@ -103,6 +102,9 @@ class PglogicalSubscription < ActsAsArModel
 
   def backlog
     connection.xlog_location_diff(remote_node_lsn, remote_replication_lsn)
+  rescue PG::Error => e
+    _log.error(e.message)
+    nil
   end
 
   def find_pass
@@ -227,13 +229,9 @@ class PglogicalSubscription < ActsAsArModel
     self
   end
 
-  def assert_valid_schemas!
-    local_errors = ManageIQ::Schema::Checker.check_schema
-    raise local_errors if local_errors
-    find_password if password.nil?
-    with_remote_connection do |conn|
-      remote_errors = ManageIQ::Schema::Checker.check_schema(conn)
-      raise remote_errors if remote_errors
+  def assert_different_region!
+    if MiqRegionRemote.region_number_from_sequence == remote_region_number
+      raise "Subscriptions cannot be created to the same region as the current region"
     end
   end
 

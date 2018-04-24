@@ -11,8 +11,8 @@ class Dialog < ApplicationRecord
   has_many :resource_actions
   virtual_has_one :content, :class_name => "Hash"
 
-  before_destroy          :reject_if_has_resource_actions
-  validates :label, :unique_within_region => true
+  before_destroy :reject_if_has_resource_actions
+  validates      :name, :unique_within_region => true
 
   alias_attribute  :name, :label
 
@@ -59,6 +59,11 @@ class Dialog < ApplicationRecord
     errors[:dialog_tabs].delete("is invalid")
     if dialog_tabs.blank?
       errors.add(:base, _("Dialog %{dialog_label} must have at least one Tab") % {:dialog_label => label})
+    end
+
+    duplicate_field_names = dialog_fields.collect(&:name).duplicates
+    if duplicate_field_names.present?
+      errors.add(:base, _("Dialog field name cannot be duplicated on a dialog: %{duplicates}") % {:duplicates => duplicate_field_names.join(', ')})
     end
 
     dialog_tabs.each do |dt|
@@ -119,6 +124,8 @@ class Dialog < ApplicationRecord
   # Creates a new item without an ID,
   # Removes any items not passed in the content.
   def update_tabs(tabs)
+    association_list = dialog_import_service.build_association_list("dialog_tabs" => tabs)
+
     transaction do
       updated_tabs = []
       tabs.each do |dialog_tab|
@@ -129,10 +136,14 @@ class Dialog < ApplicationRecord
             updated_tabs << tab
           end
         else
-          updated_tabs << DialogImportService.new.build_dialog_tabs('dialog_tabs' => [dialog_tab]).first
+          updated_tabs << dialog_import_service.build_dialog_tabs('dialog_tabs' => [dialog_tab]).first
         end
       end
       self.dialog_tabs = updated_tabs
+    end
+
+    transaction do
+      dialog_import_service.build_associations(self, association_list)
     end
   end
 
@@ -156,5 +167,9 @@ class Dialog < ApplicationRecord
     if resource_actions.length > 0
       raise _("Dialog cannot be deleted because it is connected to other components.")
     end
+  end
+
+  def dialog_import_service
+    @dialog_import_service ||= DialogImportService.new
   end
 end

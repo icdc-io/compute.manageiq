@@ -89,6 +89,17 @@ describe MiqServer do
 
       @server.attempt_registration
     end
+
+    it "should raise a notification if registration fails" do
+      NotificationType.seed
+      result = AwesomeSpawn::CommandResult.new("stuff", "things", "more things", 1)
+      err = LinuxAdmin::SubscriptionManagerError.new("things", result)
+      expect(@server).to receive(:register).and_raise(err)
+      expect { @server.attempt_registration }.to raise_error(LinuxAdmin::SubscriptionManagerError)
+
+      note = Notification.find_by(:notification_type_id => NotificationType.find_by(:name => "server_registration_error").id)
+      expect(note.options.keys).to include(:server_name)
+    end
   end
 
   context "#register" do
@@ -136,6 +147,41 @@ describe MiqServer do
 
       @server.attach_products
       expect(@server.upgrade_message).to eq("attaching products")
+    end
+  end
+
+  context "#configure_yum_proxy" do
+    it "with no proxy server" do
+      expect(IniFile).not_to receive(:load)
+
+      @server.configure_yum_proxy
+    end
+
+    it "with proxy server but no credentials" do
+      database.update_attributes(:registration_http_proxy_server => "http://my_proxy:port")
+
+      Tempfile.open do |tempfile|
+        stub_inifile = IniFile.new(:filename => tempfile.path)
+        expect(IniFile).to receive(:load).and_return(stub_inifile)
+
+        @server.configure_yum_proxy
+
+        expect(File.read(tempfile)).to eq("[main]\nproxy = http://my_proxy:port\n\n")
+      end
+    end
+
+    it "with proxy server and credentials" do
+      database.update_authentication(:registration_http_proxy => {:userid => "user", :password => "pass"})
+      database.update_attributes(:registration_http_proxy_server => "http://my_proxy:port")
+
+      Tempfile.open do |tempfile|
+        stub_inifile = IniFile.new(:filename => tempfile.path)
+        expect(IniFile).to receive(:load).and_return(stub_inifile)
+
+        @server.configure_yum_proxy
+
+        expect(File.read(tempfile)).to eq("[main]\nproxy = http://my_proxy:port\nproxy_username = user\nproxy_password = pass\n\n")
+      end
     end
   end
 

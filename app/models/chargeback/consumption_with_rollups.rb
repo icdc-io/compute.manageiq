@@ -37,7 +37,15 @@ class Chargeback
     end
 
     def max(metric, sub_metric = nil)
-      values(metric, sub_metric).max
+      values = values(metric, sub_metric)
+      values.present? ? values.max : 0
+    end
+
+    def sum_of_maxes_from_grouped_values(metric, sub_metric = nil)
+      return max(metric, sub_metric) if sub_metric
+      @grouped_values ||= {}
+      grouped_rollups = @rollups.group_by { |x| x.resource.id }
+      @grouped_values[metric] ||= grouped_rollups.map { |_, rollups| rollups.collect(&metric.to_sym).compact.max }.compact.sum
     end
 
     def avg(metric, sub_metric = nil)
@@ -62,6 +70,10 @@ class Chargeback
       @chargeback_fields_present ||= @rollups.count(&:chargeback_fields_present?)
     end
 
+    def metering_used_fields_present
+      @metering_used_fields_present ||= @rollups.count(&:metering_used_fields_present?)
+    end
+
     private
 
     def born_at
@@ -71,7 +83,7 @@ class Chargeback
 
     def sub_metric_rollups(sub_metric)
       q = VimPerformanceState.where(:timestamp => start_time...end_time, :resource => resource, :capture_interval => 3_600)
-      q.map { |x| x.allocated_disk_types[sub_metric] || 0 }
+      q.map { |x| x.state_data.try(:[], :allocated_disk_types).try(:[], sub_metric) || 0 }
     end
 
     def values(metric, sub_metric = nil)

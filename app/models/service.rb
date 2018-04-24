@@ -58,8 +58,8 @@ class Service < ApplicationRecord
   virtual_has_one    :backup_scheduler
 
   before_validation :set_tenant_from_group
+  before_create     :apply_dialog_settings
 
-  delegate :custom_actions, :custom_action_buttons, :to => :service_template, :allow_nil => true
   delegate :provision_dialog, :to => :miq_request, :allow_nil => true
   delegate :user, :to => :miq_request, :allow_nil => true
 
@@ -84,7 +84,7 @@ class Service < ApplicationRecord
   virtual_column :location,                                 :type => :string
   virtual_column :miq_request_state,                        :type => :string
 
-  validates_presence_of :name
+  validates :name, :presence => true
 
   default_value_for :display, false
   default_value_for :retired, false
@@ -106,6 +106,14 @@ class Service < ApplicationRecord
 
   def power_states
     vms.map(&:power_state)
+  end
+
+  def custom_actions
+    service_template&.custom_actions(self)
+  end
+
+  def custom_action_buttons
+    service_template&.custom_action_buttons(self)
   end
 
   def power_state
@@ -270,11 +278,8 @@ class Service < ApplicationRecord
     update_attributes(:options => options)
   end
 
-  def update_progress(hash = {})
-    hash.keys.each do |attribute|
-      options[attribute] = hash[attribute]
-      update_attributes(:options => options)
-    end
+  private def update_progress(hash)
+    update_attributes(:options => options.merge(hash))
   end
 
   def process_group_action(action, group_idx, direction)
@@ -282,7 +287,7 @@ class Service < ApplicationRecord
       begin
         rsc = svc_rsc.resource
         rsc_action = service_action(action, svc_rsc)
-        rsc_name =  "#{rsc.class.name}:#{rsc.id}" + (rsc.respond_to?(:name) ? ":#{rsc.name}" : "")
+        rsc_name = "#{rsc.class.name}:#{rsc.id}" + (rsc.respond_to?(:name) ? ":#{rsc.name}" : "")
         if rsc_action.nil?
           _log.info("Not Processing action for Service:<#{name}:#{id}>, RSC:<#{rsc_name}}> in Group Idx:<#{group_idx}>")
         elsif rsc.respond_to?(rsc_action)
@@ -413,11 +418,11 @@ class Service < ApplicationRecord
   end
 
   def chargeback_report_name
-    "Chargeback-Vm-Monthly-#{id}"
+    "Chargeback-Vm-Monthly-#{name}-#{id}"
   end
 
   def generate_chargeback_report(options = {})
-    _log.info("Generation of chargeback report for service #{name} started...")
+    _log.info("Generation of chargeback report for service #{name} with #{id} started...")
     MiqReportResult.where(:name => chargeback_report_name).destroy_all
     report = MiqReport.new(chargeback_yaml)
     options[:report_sync] = true
@@ -426,7 +431,7 @@ class Service < ApplicationRecord
   end
 
   def chargeback_yaml
-    yaml = YAML.load_file(File.join(Rails.root, "product/chargeback/chargeback_vm_monthly.yaml"))
+    yaml = YAML.load_file(Rails.root.join('product', 'chargeback', 'chargeback_vm_monthly.yaml'))
     yaml["db_options"][:options][:service_id] = id
     yaml["title"] = chargeback_report_name
     yaml
@@ -492,5 +497,26 @@ class Service < ApplicationRecord
 
   def backups_with_states
     custom_attributes.where("name LIKE ?", "BACKUP_%")
+  end
+
+  def configuration_script
+  end
+
+  private
+
+  def apply_dialog_settings
+    dialog_options = options[:dialog] || {}
+
+    %w(dialog_service_name dialog_service_description).each do |field_name|
+      send(field_name, dialog_options[field_name]) if dialog_options.key?(field_name)
+    end
+  end
+
+  def dialog_service_name(value)
+    self.name = value if value.present?
+  end
+
+  def dialog_service_description(value)
+    self.description = value if value.present?
   end
 end
