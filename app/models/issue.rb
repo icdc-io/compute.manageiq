@@ -1,6 +1,4 @@
 require 'bundler/setup'
-#require 'rubygems'
-#gem 'activeresource'
 require 'active_resource' unless defined?(ActiveResource)
 require 'net/http'
 require 'json'
@@ -90,7 +88,7 @@ class Issue < ActiveResource::Base
   def self.headers
     new_headers = {}
     new_headers["X-Redmine-API-Key"] = RedmineConfig::REDMINE_CONFIG[:api_key]
-    new_headers["X-Redmine-Switch-User"] = User.current_user.email
+    new_headers["X-Redmine-Switch-User"] = User.current_user.email if User.current_user.present?
     new_headers
   end
 
@@ -101,20 +99,18 @@ class Issue < ActiveResource::Base
   def self.count
   end
 
-  def count
-  end
-
   def keys
   end
 
   def close
-    self.status_id =  self.class.get_close_status.id
+    # self.status_id =  self.class.get_close_status.id
+    self.status.id == '7' ? self.status_id = '12' : self.status_id = '11'
     save
   end
 
-  def self.get_close_status
-    IssueStatus.all.find { |status| status.is_closed == "true" }
-  end
+  # def self.get_close_status
+  #   IssueStatus.all.find { |status| status.is_closed == "true" }
+  # end
 
   def [](attr)
     @attributes[attr.to_s]
@@ -136,13 +132,16 @@ class Issue < ActiveResource::Base
 
     custom_fields = {}
     custom_fields["Service"] = data["service_id"] if data["service_id"]
-    custom_fields["Tenant"] = User.current_user.current_tenant.name
+    custom_fields["Tenant"] = User.current_user.present? ? User.current_user.current_tenant.name : ""
     issue.set_custom_fields(custom_fields)
     issue.save
+    self.format_issue(issue)
   end
 
-  def add_comment(text)
+  def add_comment(text, files)
+    uploads = Issue.upload_files(files)
     self.notes = text
+    self.uploads = uploads
     switch_state
     save
   end
@@ -158,7 +157,7 @@ class Issue < ActiveResource::Base
 
   def self.find_issue(id, format = true)
     user = Users.find(:all, :params => { :name => User.current_user.email})[0]
-    issue = self.find(id, :params => { :include => "journals"})
+    issue = self.find(id, :params => { :include => "journals,attachments"})
     issue = self.format_issue(issue, user.id) if format
     issue
   end
@@ -183,13 +182,27 @@ class Issue < ActiveResource::Base
     issues.each do |issue|
       self.format_issue(issue)
     end
+
     issues
   end
 
+  def self.get_status(status)
+    statusMap = RedmineConfig::REDMINE_CONFIG[:status_name]
+    statusMap[status]
+  end
+
+  def self.get_priority(priority)
+    priorityMap = RedmineConfig::REDMINE_CONFIG[:priority]
+    priorityMap[priority]
+  end
+
   def self.format_issue(issue, user_id = nil)
+    issue.uploads = issue.try(:uploads)&.map(&:filename)
+    issue.attachments = issue.try(:attachments)&.map(&:filename)
     issue.project = issue.project.name
     issue.tracker = issue.tracker.name
-    issue.status = issue.status.name
+    issue.stat_id = issue.status.id.to_i
+    issue.status = get_status(issue.status.id.to_i)
     issue.author = issue.author.name
     begin
       issue.assigned_to = issue.assigned_to.name
@@ -198,7 +211,7 @@ class Issue < ActiveResource::Base
     end
     issue.fixed_version = ""
     issue.custom_fields = ""
-    issue.priority = issue.priority.name
+    issue.priority = get_priority(issue.priority.id.to_i)
     issue.parent = ""
     begin
       issue.redmine_category = issue.redmine_category.name
@@ -209,9 +222,11 @@ class Issue < ActiveResource::Base
       details = []
       issue.journals.each do |journal|
         next unless journal.notes
-        _log.info("DBG attachment #{journal.inspect}")
         note = {"created_on" => journal.created_on, "note" => journal.notes.encode("UTF-8")}
         note["user"] = journal.user.id == user_id ? "_Me" : journal.user.name
+        note['uploads'] = []
+        journal.details.each { |d| note['uploads'] << d.new_value if d.property == 'attachment' }
+        issue.attachments.pop(note['uploads'].size)
         details.push(note)
       end
       issue.journals = details

@@ -9,4 +9,19 @@
     :from: 10
     :to: 16
 
+:status_name:
+  7: 'New'
+  8: 'In progress'
+  10: 'Need response'
+  11: 'Closed'
+  12: 'Rejected'
+  13: 'Postponed'
+  14: 'Waiting for Updated'
+  16: 'Wait response'
+  15: 'Assigned'
 
+:priority:
+  1: 'Low'
+  2: 'Medium'
+  3: 'High'
+  5: 'Critical'
