@@ -6,12 +6,14 @@ class User < ApplicationRecord
   include CustomAttributeMixin
   include ActiveVmAggregationMixin
   include TimezoneMixin
-  include CustomActionsMixin
-  include UserQuotaMixin
+  include UserQuotableMixin
   include UserAccountChargebackMixin
   include AccountChargebackMixin
   include SvmMetricMixin
   include ProcessTasksMixin
+  include TagsEmailsMixin
+  include ResourceConsumptionMixin
+  include ZabbixAlertMixin
 
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
@@ -28,15 +30,17 @@ class User < ApplicationRecord
   has_many   :notifications, :through => :notification_recipients
   has_many   :unseen_notification_recipients, -> { unseen }, :class_name => 'NotificationRecipient'
   has_many   :unseen_notifications, :through => :unseen_notification_recipients, :source => :notification
+
   belongs_to :current_group, :class_name => "MiqGroup"
+
   has_and_belongs_to_many :miq_groups
   scope      :superadmins, lambda {
     joins(:miq_groups => :miq_user_role).where(:miq_user_roles => {:name => MiqUserRole::SUPER_ADMIN_ROLE_NAME })
   }
 
   virtual_has_many :active_vms, :class_name => "VmOrTemplate"
-
   virtual_has_one  :quota
+  virtual_has_one  :services_chargeback
   virtual_has_one  :tenant_quota
   virtual_column :get_user_subnets, :type => :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
@@ -45,7 +49,7 @@ class User < ApplicationRecord
              :to => :miq_user_role, :allow_nil => true
 
   validates_presence_of   :name, :userid
-  validates :userid, :unique_within_region => {:match_case => false}
+  validates :userid, :uniqueness => {:conditions => -> { in_my_region } }
   validates :email, :format => {:with => MoreCoreExtensions::StringFormats::RE_EMAIL,
                                 :allow_nil => true, :message => "must be a valid email address"}
   validates_inclusion_of  :current_group, :in => proc { |u| u.miq_groups }, :allow_nil => true
@@ -57,16 +61,12 @@ class User < ApplicationRecord
   serialize     :settings, Hash   # Implement settings column as a hash
   default_value_for(:settings) { Hash.new }
 
-  def self.with_allowed_roles_for(user_or_group)
-    includes(:miq_groups => :miq_user_role).where.not(:miq_user_roles => {:name => user_or_group.disallowed_roles})
-  end
-
   def self.scope_by_tenant?
     true
   end
 
   def self.admin
-    @admin ||= self.find_by(name: 'admin')
+    @admin ||= self.in_my_region.find_by(userid: 'admin')
   end
 
   ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors}.freeze
@@ -123,12 +123,19 @@ class User < ApplicationRecord
   before_validation :nil_email_field_if_blank
   before_validation :dummy_password_for_external_auth
   before_destroy :destroy_subscribed_widget_sets
+  before_destroy :destroy_zabbix_host
 
   def current_group_by_description=(group_description)
     if group_description
       desired_group = miq_groups.detect { |g| g.description == group_description }
-      desired_group ||= MiqGroup.in_region(region_id).find_by(:description => group_description) if super_admin_user?
+      desired_group ||= MiqGroup.find_by_description(group_description) if super_admin_user?
       self.current_group = desired_group if desired_group
+    end
+  end
+
+  def destroy_zabbix_host
+    unless self.my_region_number == 99
+      remove_zabbix_host_by_owner(self)    
     end
   end
 
@@ -167,7 +174,7 @@ class User < ApplicationRecord
   def role_allows_any?(options = {})
     Rbac.role_allows?(options.merge(:user => self, :any => true))
   end
-
+ 
   def miq_user_role_name
     miq_user_role.try(:name)
   end
@@ -176,16 +183,31 @@ class User < ApplicationRecord
     personal_quotas
   end
 
-  def tenant_quota
-    user_name = User.current_user.userid.downcase.gsub(/[^a-z]/i, '_')
-    if self.current_tenant.tags.collect(&:name).include? "/managed/manager/#{user_name}"
-      self.current_tenant.quota
-    elsif self.current_group.tags.collect(&:name).include? "/managed/manager/#{user_name}"
-      self.current_group.quota
-    else
-      {}
-    end
+  def self.email2tag(email)
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
   end
+
+  def self.priority_tenant_for(user) 
+    Tenant.in_my_region.find_tagged_with(:any => 
+      ["manager/#{email2tag(user.userid)}"], ns: "/managed").
+      min{|tenant1, tenant2| tenant1.depth <=> tenant2.depth }
+  end
+
+  def tenant_quota
+    priority_tenant = self.class.priority_tenant_for(User.current_user)
+    priority_tenant.present? ? priority_tenant.quota : {}
+  end
+
+  def services_chargeback
+    user = User.current_user
+    priority_tenant = self.class.priority_tenant_for(user)
+    
+    if priority_tenant.nil?
+      user.current_group.tenant.services_chargeback(user)
+    else
+      priority_tenant.services_chargeback
+    end
+  end 
 
   def get_user_subnets
     networks = tags(:networks).to_a #fix #3447
@@ -201,14 +223,16 @@ class User < ApplicationRecord
       if /\/managed\/networks\// =~ tag.name 
         tag_info["subnet"] = tag.categorization["name"]
         tag_info["description"] = tag.categorization["description"]
-        nets.push(tag_info)
+        unless tag_info["description"].include? "All IP consumed" 
+          nets.push(tag_info)
+        end
       end
     end
     nets
   end
 
   def self.authenticator(username = nil)
-    Authenticator.for(::Settings.authentication.to_hash, username)
+    Authenticator.for(VMDB::Config.new("vmdb").config[:authentication], username)
   end
 
   def self.authenticate(username, password, request = nil, options = {})
@@ -258,14 +282,6 @@ class User < ApplicationRecord
     self.current_group = groups.first if current_group.nil? || !groups.include?(current_group)
   end
 
-  def change_current_group
-    user_groups = miq_group_ids
-    user_groups.delete(current_group_id)
-    raise _("The user's current group cannot be changed because the user does not belong to any other group") if user_groups.empty?
-    self.current_group = MiqGroup.find_by(:id => user_groups.first)
-    save!
-  end
-
   def admin?
     self.class.admin?(userid)
   end
@@ -312,18 +328,6 @@ class User < ApplicationRecord
     Thread.current[:userid] = saved_userid
   end
 
-  def self.with_user_group(user, group, &block)
-    return yield if user.nil?
-    user = User.find(user) unless user.kind_of?(User)
-    if group && group.kind_of?(MiqGroup)
-      user.current_group = group
-    elsif group != user.current_group_id
-      group = MiqGroup.find_by(:id => group)
-      user.current_group = group if group
-    end
-    User.with_user(user, &block)
-  end
-
   def self.current_user=(user)
     Thread.current[:userid] = user.try(:userid)
     Thread.current[:user] = user
@@ -338,19 +342,8 @@ class User < ApplicationRecord
     Thread.current[:user] ||= find_by_userid(current_userid)
   end
 
-  def self.with_current_user_groups(user = nil)
-    user ||= current_user
-    user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
-  end
-
-  def self.missing_user_features(db_user)
-    if !db_user
-      "User"
-    elsif !db_user.current_group
-      "Group"
-    elsif !db_user.current_group.miq_user_role
-      "Role"
-    end
+  def self.with_current_user_groups
+    current_user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => current_user.miq_group_ids})
   end
 
   def self.seed
@@ -361,7 +354,7 @@ class User < ApplicationRecord
       _log.info("Creating user with parameters #{log_attrs.inspect}")
 
       group_description = user_attributes.delete(:group)
-      group = MiqGroup.in_my_region.find_by(:description => group_description)
+      group = MiqGroup.in_my_region.find_by_description(group_description)
 
       _log.info("Creating #{user_id} user...")
       user = create(user_attributes)
@@ -380,4 +373,9 @@ class User < ApplicationRecord
     File.exist?(seed_file_name) ? YAML.load_file(seed_file_name) : []
   end
   private_class_method :seed_data
+
+  def self.email2tag(email)
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
+  end
+
 end
