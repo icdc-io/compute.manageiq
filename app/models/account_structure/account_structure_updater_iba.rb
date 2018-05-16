@@ -25,40 +25,40 @@ class AccountStructure::AccountStructureUpdaterIBA
 
       update_users_emails
 
-      $asu_log.info("finding accounts ...")
+      $log.info("finding accounts ...")
       find_accounts
       log_accounts
       
-      $asu_log.info("getting accounts from infokadry ...")
+      $log.info("getting accounts from infokadry ...")
       get_accounts_infokadry
 
-      $asu_log.info("getting departments from infokadry ...")
+      $log.info("getting departments from infokadry ...")
       get_departments_infokadry
       
-      $asu_log.info("adding tenants ...")
+      $log.info("adding tenants ...")
       add_tenants
 
-      $asu_log.info("adding managers ...")
+      $log.info("adding managers ...")
       add_managers
 
-      $asu_log.info("updating tenants ...")
+      $log.info("updating tenants ...")
       update_tenants
 
-      $asu_log.info("deleting not account users ...")
+      $log.info("deleting not account users ...")
       delete_not_account_users
 
-      $asu_log.info("relocating users ...")
+      $log.info("relocating users ...")
       relocate_users
 
-      $asu_log.info("deleting lost users ...")
+      $log.info("deleting lost users ...")
       delete_lost_users
 
-      $asu_log.info("deleting lost tenants ...")
+      $log.info("deleting lost tenants ...")
       delete_lost_tenants
 
-      $asu_log.info("the update is completed \n")
+      $log.info("the update is completed \n")
     rescue => e
-      $asu_log.error(e.to_s)
+      $log.error(e.to_s)
     end
   end
 
@@ -86,7 +86,7 @@ class AccountStructure::AccountStructureUpdaterIBA
         msg = "tenant #{dep[DEP]} (#{dep[DEP_NUMBER]}) "\
               "has no ancestor #{dep[ANCESTORS][-2]},"\
               "tenant would be skipped"
-        $asu_log.error(msg)
+        $log.error(msg)
         
         create_support_ticket("ASU: Infokadry tenant ancestor is missing", msg)
 
@@ -98,7 +98,7 @@ class AccountStructure::AccountStructureUpdaterIBA
   def add_tenants
     @departments_infokadry.each do |dep|
       if find_tenant_by_ext_id(dep[DEP_NUMBER]).nil?
-        $asu_log.info("adding tenant #{dep[DEP]} (#{dep[DEP_NUMBER]})")
+        $log.info("adding tenant #{dep[DEP]} (#{dep[DEP_NUMBER]})")
         add_tenant(dep)
       end
     end
@@ -148,14 +148,14 @@ class AccountStructure::AccountStructureUpdaterIBA
     updated_group_name = generate_group_name(tenant.external_id)
 
     if default_users_group.nil?
-      $asu_log.info("creating default users group for tenant #{tenant.description}")
+      $log.info("creating default users group for tenant #{tenant.description}")
       tenant.create_users_group
     else
       default_users_group.description = updated_group_name
       default_users_group.miq_user_role = icdc_user_role
 
       if default_users_group.changed?
-        $asu_log.info("updating default users group for tenant #{tenant.description}")
+        $log.info("updating default users group for tenant #{tenant.description}")
         log_model_changes(default_users_group.description ,default_users_group)
         default_users_group.save!
       end
@@ -165,7 +165,7 @@ class AccountStructure::AccountStructureUpdaterIBA
 
   def log_model_changes(label, model)
     model.changes.each do |key, change|
-      $asu_log.info("#{label}: #{key} changed from #{change[0]} to #{change[1]}")
+      $log.info("#{label}: #{key} changed from #{change[0]} to #{change[1]}")
     end
   end
 
@@ -178,7 +178,7 @@ class AccountStructure::AccountStructureUpdaterIBA
     tenant.ancestry = updated_ancestry
 
     if tenant.changed?
-      $asu_log.info("updating tenant #{tenant.description} (#{tenant.external_id})")
+      $log.info("updating tenant #{tenant.description} (#{tenant.external_id})")
       log_model_changes(tenant.name, tenant)
       tenant.save!
     end
@@ -232,6 +232,7 @@ class AccountStructure::AccountStructureUpdaterIBA
 
   def find_user_group(tenant_ext_id)
     tenant = find_tenant_by_ext_id(tenant_ext_id)
+    $log.info("Tenant for manager #{tenant.default_users_group}")
     tenant.default_users_group
   end
 
@@ -243,13 +244,13 @@ class AccountStructure::AccountStructureUpdaterIBA
     user_infokadry = find_iba_user_by_id(employee_id)
     
     if user_infokadry.nil?
-      $asu_log.error("there is no infokadry user with employee_id = #{employee_id}")
+      $log.error("there is no infokadry user with employee_id = #{employee_id}")
       return
     end
     
     email = user_infokadry[EMAIL].downcase
 
-    $asu_log.info("creating manager #{email}")
+    $log.info("creating manager #{email}")
 
     user = User.new(userid: email,
                     email:  email,
@@ -293,7 +294,7 @@ class AccountStructure::AccountStructureUpdaterIBA
     actual_tenant = find_tenant_by_ext_id(user_infokadry[DEP_NUMBER])
     current_tenant = user.current_group.tenant
 
-    $asu_log.info("relocating user #{user.email} from #{current_tenant.description}
+    $log.info("relocating user #{user.email} from #{current_tenant.description}
                   (#{current_tenant.external_id}) to #{actual_tenant.description} (#{actual_tenant.external_id})")
 
     if actual_tenant.present?
@@ -304,7 +305,7 @@ class AccountStructure::AccountStructureUpdaterIBA
       transfer_services(user, user)
       remove_user_quotas(user)
     else
-      $asu_log.info("missing tenant #{user_infokadry[DEP_NUMBER]}")
+      $log.info("missing tenant #{user_infokadry[DEP_NUMBER]}")
     end
   end
 
@@ -320,13 +321,13 @@ class AccountStructure::AccountStructureUpdaterIBA
       
       if user_from != user_to
         service.update_attribute(:evm_owner, user_to)
-        $asu_log.info("service transfer: #{service.name} (#{service.id}) from #{user_from.userid} to #{user_to.userid}")
+        $log.info("service transfer: #{service.name} (#{service.id}) from #{user_from.userid} to #{user_to.userid}")
       end
       
       service.miq_group = actual_group
       service.tenant = actual_tenant
       if service.changed?
-        $asu_log.info("updating service #{service.id}")
+        $log.info("updating service #{service.id}")
         log_model_changes("service #{service.id}",service)
         service.save!
       end
@@ -349,10 +350,10 @@ class AccountStructure::AccountStructureUpdaterIBA
       transfer_services(lost_user, managers[0]) if managers[0].present?
         
       if Service.where(evm_owner: lost_user).empty?
-        $asu_log.info("deleting lost user #{lost_user.userid}")
+        $log.info("deleting lost user #{lost_user.userid}")
         lost_user.destroy
       else
-        $asu_log.info("fail to delete lost user #{lost_user.userid}, he has not-transferred services")
+        $log.info("fail to delete lost user #{lost_user.userid}, he has not-transferred services")
         
         create_support_ticket("fail to delete lost user #{lost_user.userid}", 
           "Lost user #{lost_user.userid} has not-transferred services")
@@ -365,7 +366,7 @@ class AccountStructure::AccountStructureUpdaterIBA
     tenants = Tenant.in_my_region.where.not(external_id: nil)
     tenants.each do |tenant|
       if find_iba_department(tenant.external_id).nil?
-        $asu_log.info("deleting lost tenant #{tenant.description} (#{tenant.external_id})")
+        $log.info("deleting lost tenant #{tenant.description} (#{tenant.external_id})")
         tenant.destroy
       end
     end
@@ -383,7 +384,7 @@ class AccountStructure::AccountStructureUpdaterIBA
         
         log_msg = "deleting not account user #{ user.email } with tree #{ department_infokadry[ANCESTORS] },"\
                   "it leaves services #{Service.where(evm_owner: user).map {|s| s.id}}"
-        $asu_log.info(log_msg)
+        $log.info(log_msg)
 
         user.destroy
       end
@@ -466,18 +467,18 @@ class AccountStructure::AccountStructureUpdaterIBA
   end
 
   def log_start_timestamp
-    $asu_log.info("ASU starting at #{date_time_now}, timezone: #{MiqServer.my_server.server_timezone}")
+    $log.info("ASU starting at #{date_time_now}, timezone: #{MiqServer.my_server.server_timezone}")
   end
 
   def log_accounts
     log_msg = "accounts number: #{ @accounts.count },"\
               "accounts ids: #{ @accounts.map{ |a| a.external_id } }"
-    $asu_log.info(log_msg)
+    $log.info(log_msg)
   end
 
   def send_transfer_service_mail(user_from, user_to, services)
     subject = "[ICDC.IO] Received services from #{user_from.email}"
-    body_template = File.read(Rails.root.join('app/views/asu_mails/transfer_service.html.erb'))
+    body_template = File.read(Rails.root.join('app/views/mails/transfer_service.html.erb'))
     body = ERB.new(body_template).result(binding)
     
     MiqAeMethodService::MiqAeServiceMethods.send_email(
@@ -508,7 +509,7 @@ class AccountStructure::AccountStructureUpdaterIBA
   end
 
   def update_users_emails
-    $asu_log.info("updating users emails ...")
+    $log.info("updating users emails ...")
     infos = []
 
     User.in_my_region.find_each do |user|
@@ -522,7 +523,7 @@ class AccountStructure::AccountStructureUpdaterIBA
         unless user_infokadry.nil?
           info_msg = "updating user from #{user.email} to #{supposed_email}"
           infos.push(info_msg)
-          $asu_log.info(info_msg)
+          $log.info(info_msg)
           user.update_attributes(userid: supposed_email, email: supposed_email)
         end
       end
