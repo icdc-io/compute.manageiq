@@ -67,6 +67,7 @@ class Tenant < ApplicationRecord
   virtual_column :get_account_users, :type => :string
   virtual_column :get_account, :type => :string
   virtual_column :get_account_subnet, :type => :string
+  virtual_column :get_tenant_users, :type => :string
 
   before_save :nil_blanks
   after_create :create_tenant_group, :create_users_group
@@ -111,6 +112,18 @@ class Tenant < ApplicationRecord
     end 
     network    
   end  
+
+  def get_tenant_users
+    tenant_users = []
+    tenant_users = users
+    tenant_users.map do |tenant_user|  
+      group = MiqGroup.find_by_id(tenant_user.current_group_id)
+      user = tenant_user.as_json
+      user["tags"] = tenant_user.tags
+      user["group"] = group.get_title
+      user
+    end  
+  end 
 
   def self.scope_by_tenant?
     true
