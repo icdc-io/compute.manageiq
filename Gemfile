@@ -66,6 +66,8 @@ gem "simple-rss",                     "~>1.3.1",       :require => false
 gem "snmp",                           "~>1.2.0",       :require => false
 gem "sqlite3",                                         :require => false
 gem "trollop",                        "~>2.0",         :require => false
+gem "passgen"
+gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "master"
 
 # Modified gems (forked on Github)
 gem "ruport",                         "=1.7.0",                       :git => "https://github.com/ManageIQ/ruport.git", :tag => "v1.7.0-3"

@@ -13,6 +13,7 @@ class Tenant < ApplicationRecord
   include IbaRelationshipMixin 
   include ServiceChargebackMixin
   include ProcessTasksMixin
+  include TenantTagsMixin
 
   acts_as_miq_taggable
 
@@ -33,6 +34,7 @@ class Tenant < ApplicationRecord
 
   has_many :tenant_quotas
   has_many :miq_groups
+  has_one  :default_users_group, -> { where("description LIKE ?", "g%") }, class_name: 'MiqGroup', dependent: :destroy
   has_many :users, :through => :miq_groups
   has_many :ae_domains, :dependent => :destroy, :class_name => 'MiqAeDomain'
   has_many :miq_requests, :dependent => :destroy
@@ -67,7 +69,7 @@ class Tenant < ApplicationRecord
   virtual_column :get_account_subnet, :type => :string
 
   before_save :nil_blanks
-  after_create :create_tenant_group
+  after_create :create_tenant_group, :create_users_group
   before_destroy :ensure_can_be_destroyed
 
   def get_account_users
@@ -395,6 +397,12 @@ class Tenant < ApplicationRecord
 
   def allowed?
     Rbac::Filterer.filtered_object(self).present?
+  end
+
+  def create_users_group
+    group = miq_groups.build(description: "g_#{external_id}", long_description: 'Default')
+    group.miq_user_role = MiqUserRole.find_by_name("ICDC-user")
+    group.save!
   end
 
   private

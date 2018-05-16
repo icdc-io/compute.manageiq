@@ -290,6 +290,22 @@ class User < ApplicationRecord
     userid == "admin"
   end
 
+  def self.with_current_user_groups(user = nil)
+    user ||= current_user
+    user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
+  end
+
+  def self.missing_user_features(db_user)
+    if !db_user
+      "User"
+    elsif !db_user.current_group
+      "Group"
+    elsif !db_user.current_group.miq_user_role
+      "Role"
+    end
+  end
+
+
   def subscribed_widget_sets
     MiqWidgetSet.subscribed_for_user(self)
   end
@@ -315,6 +331,19 @@ class User < ApplicationRecord
   def self.current_tenant
     current_user.try(:current_tenant)
   end
+
+  def self.with_user_group(user, group, &block)
+    return yield if user.nil?
+    user = User.find(user) unless user.kind_of?(User)
+    if group && group.kind_of?(MiqGroup)
+      user.current_group = group
+    elsif group != user.current_group_id
+      group = MiqGroup.find_by(:id => group)
+      user.current_group = group if group
+    end
+    User.with_user(user, &block)
+  end
+
 
   # Save the current user from the session object as a thread variable to allow lookup from other areas of the code
   def self.with_user(user, userid = nil)
@@ -342,9 +371,6 @@ class User < ApplicationRecord
     Thread.current[:user] ||= find_by_userid(current_userid)
   end
 
-  def self.with_current_user_groups
-    current_user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => current_user.miq_group_ids})
-  end
 
   def self.seed
     seed_data.each do |user_attributes|
