@@ -235,6 +235,10 @@ class MiqGroup < ApplicationRecord
     self.build_quota_tree(true)
   end
 
+  def get_title
+    long_description.present? ? long_description : name
+  end
+
   def self.create_tenant_group(tenant)
     tenant_full_name = (tenant.ancestors.map(&:name) + [tenant.name]).join("/")
 
