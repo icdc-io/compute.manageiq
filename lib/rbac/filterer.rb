@@ -49,10 +49,9 @@ module Rbac
       ResourcePool
       SecurityGroup
       Service
-      ServiceTemplate
       Storage
       VmOrTemplate
-    )
+    ) # ServiceTemplate was removed (see ticket #4148)
 
     TAGGABLE_FILTER_CLASSES = CLASSES_THAT_PARTICIPATE_IN_RBAC - %w(EmsFolder) + %w(MiqGroup User Tenant)
 
@@ -117,7 +116,7 @@ module Rbac
       'MiqRequestTask'         => nil, # tenant only
       'MiqTemplate'            => :ancestor_ids,
       'Provider'               => :ancestor_ids,
-      'Service'                => :descendant_ids,
+      'Service'                => :iba_descendant_ids,
       'ServiceTemplate'        => :iba_ancestor_ids,
       'ServiceTemplateCatalog' => :iba_ancestor_ids,
       'Tenant'                 => :iba_descendant_ids,
