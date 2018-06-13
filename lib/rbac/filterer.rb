@@ -510,7 +510,11 @@ module Rbac
       user_or_group = miq_group || user
 
       if user_or_group.try!(:self_service?) && MiqUserRole != klass
-        scope.where(:id => klass == User ? user.id : miq_group.id)
+        if klass == User
+          scope.where(:userid => user.userid )
+        else
+          scope.where(:id => miq_group.id)
+        end
       else
         if user_or_group.disallowed_roles
           scope = scope.with_allowed_roles_for(user_or_group)
