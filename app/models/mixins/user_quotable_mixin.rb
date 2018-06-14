@@ -44,13 +44,14 @@ module UserQuotableMixin
     locations = []
 
     for slave_region in MiqRegion.slave_regions
-      user_in_region = User.find_in_region({ userid: self.userid }, slave_region.region)
-
+      user_in_region = User.in_region(slave_region.region).where(userid: self.userid).first
       next unless user_in_region
+      $log.info("QUOTA next #{user_in_region}")
       if personal
         account = user_in_region.quota_holder
         account_name = account.name if account
       end
+      $log.info("QUOTA personal #{account}")
       next if personal && !account
       location_resources = {
           id:         user_in_region.id,
@@ -69,8 +70,8 @@ module UserQuotableMixin
         location_resources[:quota] = user_in_region.combined_quotas
       end
       locations.push(location_resources)
+      $log.info("QUOTA location #{location_resources}")
     end
-
     locations
   end
 

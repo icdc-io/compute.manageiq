@@ -14,6 +14,7 @@ class Tenant < ApplicationRecord
   include ServiceChargebackMixin
   include ProcessTasksMixin
   include TenantTagsMixin
+  include ResourceConsumptionMixin
 
   acts_as_miq_taggable
 

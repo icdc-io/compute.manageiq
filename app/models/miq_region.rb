@@ -325,4 +325,9 @@ class MiqRegion < ApplicationRecord
   def clear_my_region_cache
     MiqRegion.my_region_clear_cache
   end
+
+  def self.slave_regions
+    @@slave_regions ||= self.where.not(region: DEFAULT)
+  end
+
 end
