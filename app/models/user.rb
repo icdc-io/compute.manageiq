@@ -80,12 +80,8 @@ class User < ApplicationRecord
 
     users_ids = accessible_tenants.collect(&:user_ids).flatten + tenant.user_ids
 
-    ids = []
-    for users_id in users_ids
-      m_id = users_id % 100000
-      t_ids = User.where("id % 100000 = ?", m_id)
-      ids = ids + t_ids
-    end
+    users_userids = User.find(users_ids).map(&:userid)
+    ids = User.where(userid: users_userids).map(&:id)
 
     return if users_ids.empty?
 
@@ -135,7 +131,7 @@ class User < ApplicationRecord
 
   def destroy_zabbix_host
     unless self.my_region_number == 99
-      remove_zabbix_host_by_owner(self)    
+      remove_zabbix_host_by_owner(self)
     end
   end
 
@@ -174,7 +170,7 @@ class User < ApplicationRecord
   def role_allows_any?(options = {})
     Rbac.role_allows?(options.merge(:user => self, :any => true))
   end
- 
+
   def miq_user_role_name
     miq_user_role.try(:name)
   end
@@ -187,8 +183,8 @@ class User < ApplicationRecord
     email.gsub(/[^A-Za-z0-9]/, '_').downcase
   end
 
-  def self.priority_tenant_for(user) 
-    Tenant.in_my_region.find_tagged_with(:any => 
+  def self.priority_tenant_for(user)
+    Tenant.in_my_region.find_tagged_with(:any =>
       ["manager/#{email2tag(user.userid)}"], ns: "/managed").
       min{|tenant1, tenant2| tenant1.depth <=> tenant2.depth }
   end
@@ -201,18 +197,18 @@ class User < ApplicationRecord
   def services_chargeback
     user = User.current_user
     priority_tenant = self.class.priority_tenant_for(user)
-    
+
     if priority_tenant.nil?
       user.current_group.tenant.services_chargeback(user)
     else
       priority_tenant.services_chargeback
     end
-  end 
+  end
 
   def get_user_subnets
     networks = tags(:networks).to_a #fix #3447
     networks.push(*current_group.tags(:networks))
-    networks.push(*current_group.tenant.tags(:networks))  
+    networks.push(*current_group.tenant.tags(:networks))
     for tenant_id in current_group.tenant.ancestry.split('/')
       networks.push(*Tenant.find_by_id(tenant_id).tags(:networks))
     end
@@ -220,10 +216,10 @@ class User < ApplicationRecord
     nets = []
     networks.each do |tag|
       tag_info = {}
-      if /\/managed\/networks\// =~ tag.name 
+      if /\/managed\/networks\// =~ tag.name
         tag_info["subnet"] = tag.categorization["name"]
         tag_info["description"] = tag.categorization["description"]
-        unless tag_info["description"].include? "All IP consumed" 
+        unless tag_info["description"].include? "All IP consumed"
           nets.push(tag_info)
         end
       end
