@@ -38,7 +38,14 @@ class ServiceTemplate < ApplicationRecord
   include OwnershipMixin
   include NewWithTypeStiMixin
   include TenancyMixin
+  include ArchivedMixin
   include_concern 'Filter'
+
+  include ReservedMixin
+  reserve_attribute :deleted_on, :datetime
+
+  scope :archived, -> { includes(:reserved_rec).reject { |st| st.deleted_on.nil? } }
+  scope :active,   -> { includes(:reserved_rec).select { |st| st.deleted_on.nil? } }
 
   belongs_to :tenant
   # # These relationships are used to specify children spawned from a parent service
@@ -56,9 +63,14 @@ class ServiceTemplate < ApplicationRecord
 
   has_many   :dialogs, -> { distinct }, :through => :resource_actions
 
+  has_many   :miq_requests, :as => :source, :dependent => :nullify
+  has_many   :active_requests, -> { where(:request_state => %w(active queued)) }, :as => :source, :class_name => "MiqRequest"
+
   virtual_column   :type_display,                 :type => :string
   virtual_column   :template_valid,               :type => :boolean
   virtual_column   :template_valid_error_message, :type => :string
+  virtual_column   :archived,                     :type => :boolean
+  virtual_column   :active,                       :type => :boolean
 
   default_value_for :service_type, 'unknown'
   default_value_for(:generic_subtype) { |st| 'custom' if st.prov_type == 'generic' }
@@ -148,6 +160,11 @@ class ServiceTemplate < ApplicationRecord
       rsc.destroy if rsc.kind_of?(MiqProvisionRequestTemplate)
     end
     super
+  end
+
+  def archive
+    raise _("Cannot archive while in use") unless active_requests.empty?
+    archive!
   end
 
   def request_class
@@ -417,11 +434,7 @@ class ServiceTemplate < ApplicationRecord
   end
 
   def build_resource_action(ae_endpoint, action)
-    fqname = if ae_endpoint.empty?
-               self.class.send(action[:method], *action[:args]) || ""
-             else
-               ae_endpoint[:fqname]
-             end
+    fqname = ae_endpoint[:fqname] || self.class.send(action[:method], *action[:args]) || ""
 
     build_options = {:action        => action[:name],
                      :fqname        => fqname,

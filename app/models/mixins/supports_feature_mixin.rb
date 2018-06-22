@@ -106,6 +106,8 @@ module SupportsFeatureMixin
     :reboot_guest                        => 'Reboot Guest Operation',
     :reconfigure                         => 'Reconfiguration',
     :reconfigure_disks                   => 'Reconfigure Virtual Machines Disks',
+    :reconfigure_disksize                => 'Reconfigure Virtual Machines Disk Size',
+    :reconfigure_network_adapters        => 'Reconfigure Network Adapters',
     :refresh_network_interfaces          => 'Refresh Network Interfaces for a Host',
     :refresh_new_target                  => 'Refresh non-existing record',
     :regions                             => 'Regions of a Provider',

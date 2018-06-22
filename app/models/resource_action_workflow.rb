@@ -55,7 +55,7 @@ class ResourceActionWorkflow < MiqRequestWorkflow
   end
 
   def validate_dialog
-    @dialog.validate_field_data
+    @dialog.try(:validate_field_data) || []
   end
 
   def create_values
@@ -87,7 +87,7 @@ class ResourceActionWorkflow < MiqRequestWorkflow
 
   def create_values_hash
     {
-      :dialog            => @dialog.automate_values_hash,
+      :dialog            => @dialog.try(:automate_values_hash),
       :workflow_settings => @settings,
       :initiator         => @initiator
     }

@@ -13,6 +13,8 @@ class MiqRequest < ApplicationRecord
   has_many   :miq_approvals,     :dependent   => :destroy
   has_many   :miq_request_tasks, :dependent   => :destroy
 
+  acts_as_miq_taggable
+
   alias_attribute :state, :request_state
 
   serialize   :options, Hash
@@ -91,10 +93,14 @@ class MiqRequest < ApplicationRecord
       :AutomationRequest => {
         :automation => N_("Automation")
       }
-    }
+    },
   }
 
-  REQUEST_TYPES_BACKEND_ONLY = {:MiqProvisionRequestTemplate => {:template => "VM Provision Template"}}
+  REQUEST_TYPES_BACKEND_ONLY = {
+    :MiqProvisionRequestTemplate              => {:template            => "VM Provision Template"},
+    :ServiceTemplateTransformationPlanRequest => {:transformation_plan => "Transformation Plan"}
+  }
+
   REQUEST_TYPES = MODEL_REQUEST_TYPES.values.each_with_object(REQUEST_TYPES_BACKEND_ONLY) { |i, h| i.each { |k, v| h[k] = v } }
   REQUEST_TYPE_TO_MODEL = MODEL_REQUEST_TYPES.values.each_with_object({}) do |i, h|
     i.each { |k, v| v.keys.each { |vk| h[vk] = k } }
