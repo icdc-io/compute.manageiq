@@ -42,7 +42,11 @@ module ZabbixAlertMixin
     end
     enabled_resource
   end
+
+  #Main function
   def create_triggers(data)
+    #data = data["params"]
+    #Need have host to attach triggers
     hosts = connection.query(:method => "host.get",:params => {:output => ["host"],:selectInventory => ["alias"], :searchInventory => {:alias => "#{id}" }})
     if hosts.empty?
       data = create_host(data)
@@ -51,16 +55,17 @@ module ZabbixAlertMixin
       data.merge!("hostname" => hosts.first["host"])
     end
     data = create_item_or_web_scenario(data)
-    create_trigger(data)    
+    create_trigger(data)
   end
-  
+
   def create_item_or_web_scenario(data)
+    #check what we will create
     case data["type"]
       when "web"
         create_httptest(data)
       when "ping", "tcp"
-        create_item(data) 
-    end 
+        create_item(data)
+    end
   end
 
   def get_triggers_from_host
@@ -76,9 +81,12 @@ module ZabbixAlertMixin
     :user => zcfg[:login],
     :password => zcfg[:password])
   end
+
+  #Create trigger
   def create_trigger(data)
-    case data["type"] 
+    case data["type"]
       when "ping", "tcp"
+        #Create expression to check it
         delay_for_trigger  = create_delay_for_trigger(data["delay"],data["attempts"])
         data["expression"] = "{#{data["hostname"]}:#{data["key"]}.count(#{delay_for_trigger},0)}>=#{data["attempts"]}"
       when "web"
@@ -126,7 +134,7 @@ module ZabbixAlertMixin
     connection.httptests.create(
       :name => name,
       :hostid => data["hostid"],
-      :delay => data["delay"], 
+      :delay => data["delay"],
       :steps => [
         {
         :name => name,
@@ -157,6 +165,7 @@ module ZabbixAlertMixin
     end
   end
 
+  #Need to create interface for ping monitoring
   def create_interface(data)
     interface = connection.query(
       :method => "hostinterface.create",
@@ -175,7 +184,7 @@ module ZabbixAlertMixin
 
   def create_item(data)
     name = generate_name
-    case data["type"]  
+    case data["type"]
       when "tcp"
         data = get_interface(data)
         data["key"] = "net.tcp.service[\"tcp\",\"#{data["ip"]}\",\"#{data["port"]}\"]"
@@ -200,12 +209,13 @@ module ZabbixAlertMixin
     data
   end
 
-  def generate_name 
+  #Generate random names
+  def generate_name
     value = ""
     8.times{value  << (65 + rand(25)).chr}
-    value 
+    value
   end
-  
+
   def get_interface(data)
     interface = connection.query(:method => "hostinterface.get",:params => {:output => ["interfaceid"], :hostids => data["hostid"]})
     data["interface_id"] = interface.first["interfaceid"]
@@ -215,11 +225,11 @@ module ZabbixAlertMixin
   def create_delay_for_trigger(delay, attempts)
     (delay[0].to_i * attempts.to_i).to_s + "m"
   end
- 
+
   def create_frontend_data(data)
     new_data = []
-    data.each do |data_item|    
-      time = parse_unix_time(data_item["items"].first["lastclock"]) 
+    data.each do |data_item|
+      time = parse_unix_time(data_item["items"].first["lastclock"])
 
       if time.nil?
         data_item["value"] = nil
@@ -240,7 +250,7 @@ module ZabbixAlertMixin
           triggerid:        data_item["triggerid"],
           enabled:          data_item["status"]
       }
-      new_data << new_item  
+      new_data << new_item
     end
 
     new_data
@@ -248,18 +258,18 @@ module ZabbixAlertMixin
 
   def parse_description(data)
     description_hash = {}
-    if data["comments"] == "web" 
+    if data["comments"] == "web"
       data_description = data["description"].gsub(/\s+/m, ' ').strip.split(" ")
-      description_hash = {"url" => data_description.first, "code" => data_description.second} 
+      description_hash = {"url" => data_description.first, "code" => data_description.second}
     elsif data["comments"] == "tcp"
       data_description = data["description"].gsub(/\s+/m, ' ').strip.split(" ")
       description_hash = {"ip" => data_description.first, "port" => data_description.second}
     else
       data_description = data["description"].gsub(/\s+/m, ' ').strip.split(" ")
       description_hash = {"ip" => data_description.first}
-    end  
+    end
   end
-    
+
    def parse_unix_time(data)
      time = DateTime.strptime(data.to_s,'%s')
      if time == DateTime.strptime(0.to_s,'%s')
@@ -269,4 +279,3 @@ module ZabbixAlertMixin
    end
 
 end
-

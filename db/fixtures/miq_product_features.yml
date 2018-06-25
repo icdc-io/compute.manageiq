@@ -384,6 +384,26 @@
         :description: Retire Services
         :feature_type: control
         :identifier: service_retire_now
+      - :name: Get Triggers
+        :description: Get Triggers
+        :feature_type: control
+        :identifier: triggers_view
+      - :name: Create Triggers
+        :description: Create Triggers
+        :feature_type: control
+        :identifier: triggers_create
+      - :name: Delete Triggers
+        :description: Delete Triggers
+        :feature_type: control
+        :identifier: triggers_delete
+      - :name: Disable
+        :description: Disable Triggers
+        :feature_type: control
+        :identifier: triggers_disable
+      - :name: Enable
+        :description: Enable Alerts
+        :feature_type: control
+        :identifier: triggers_enable
 
 # EmsCloud
 - :name: Cloud Providers
