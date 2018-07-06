@@ -53,7 +53,7 @@ module Rbac
       VmOrTemplate
     ) # ServiceTemplate was removed (see ticket #4148)
 
-    TAGGABLE_FILTER_CLASSES = CLASSES_THAT_PARTICIPATE_IN_RBAC - %w(EmsFolder) + %w(MiqGroup User Tenant)
+    TAGGABLE_FILTER_CLASSES = CLASSES_THAT_PARTICIPATE_IN_RBAC - %w(EmsFolder MiqRequest) + %w(MiqGroup User Tenant)
 
     NETWORK_MODELS_FOR_BELONGSTO_FILTER = %w(
       CloudNetwork
