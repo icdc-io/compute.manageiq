@@ -77,6 +77,7 @@ class Service < ApplicationRecord
   include ServiceScheduleMixin
   include CustomActionMixin
   include ZabbixAlertMixin
+  include IcdcServiceMixin
 
   include_concern 'RetirementManagement'
   include_concern 'Aggregation'
