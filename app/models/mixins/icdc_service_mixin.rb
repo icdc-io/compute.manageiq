@@ -20,7 +20,7 @@ module IcdcServiceMixin
     if project_tag.blank?
       _log.info("OBEKASOV share CREATING TAG")
       project_tag = (0...3).map { ('a'..'z').to_a[rand(26)] }.join.downcase + evm_owner_id.to_s
-      Classification.find_by(:name => 'project').add_entry(:name => project_tag, :description => project_tag)
+      Classification.find_by_name('project').add_entry(:name => project_tag, :description => project_tag)
     end
 
     tag_add(project_tag, :ns => '/managed', :cat => 'project')
