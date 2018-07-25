@@ -1087,3 +1087,14 @@
   :parent_id: 0
   :default: true
   :single_value: "1"
+- :description: Project
+  :entries: []
+
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: project
+  :example_text: project
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
