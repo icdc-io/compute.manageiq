@@ -88,7 +88,6 @@ class Service < ApplicationRecord
   virtual_column :power_status,                             :type => :string
   virtual_column :location,                                 :type => :string
   virtual_column :miq_request_state,                        :type => :string
-  virtual_column :domains,                                  :type => :string
 
   validates :name, :presence => true
 
@@ -515,10 +514,6 @@ class Service < ApplicationRecord
   end
 
   def configuration_script
-  end
-
-  def domains
-    Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
   end
 
   private

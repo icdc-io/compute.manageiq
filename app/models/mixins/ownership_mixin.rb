@@ -76,15 +76,20 @@ module OwnershipMixin
     end
 
     def user_or_group_owned(user, miq_group)
-      if user && miq_group
-        user_owned(user).or(group_owned(miq_group))
-      elsif user
-        user_owned(user)
-      elsif miq_group
-        group_owned(miq_group)
-      else
-        none
-      end
+      list =
+        if user && miq_group
+          user_owned(user).or(group_owned(miq_group))
+        elsif user
+          user_owned(user)
+        elsif miq_group
+          group_owned(miq_group)
+        else
+          none
+        end
+
+      list = list.or(user_shared(user)) if [Service, Vm].include?(self)
+
+      list
     end
 
     private
@@ -95,6 +100,21 @@ module OwnershipMixin
 
     def group_owned(miq_group)
       where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:owning_ldap_group)]).eq(miq_group.description.downcase)))
+    end
+
+    def user_shared(user)
+      list = none
+      project_names = []
+      User.where(userid: user.userid).each do |loc_user|
+        loc_user.tags(:ns => "/managed/project/").each do |tag_project|
+          project_names << tag_project.name.split('/')[-1]
+        end
+      end
+      project_names.uniq.each do |project_name|
+        list = list.or(find_tagged_with(:any => project_name, :ns => '/managed/project'))
+      end
+
+      list
     end
   end
 
