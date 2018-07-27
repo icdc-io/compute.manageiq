@@ -26,19 +26,11 @@ module IcdcServiceMixin
     userids.each do |userid|
       user = User.find_by(:userid => userid)
       Classification.classify(user, 'project', project_tag)
-      # .tag_add(project_tag, :ns => '/managed', :cat => 'project')
 
-      # send = {}
-      # send['name'] = u.name
-      # send['email'] = user
-      # $evm.set_state_var(:send, send)
-      # $evm.instantiate("/Service/Email/Email/SharingService") unless  $evm.root['user'].userid == user
+      # TODO: email user
     end
 
-    vms.each do |vm|
-      Classification.classify(vm, 'project', project_tag)
-      # vm.tag_add(project_tag, :ns => '/managed', :cat => 'project')
-    end
+    vms.each { |vm| Classification.classify(vm, 'project', project_tag) }
   end
 
   def unshare(data)
@@ -51,12 +43,7 @@ module IcdcServiceMixin
   def shared_users
     project_tag = find_project_tag
 
-    if project_tag
-      project_name = project_tag.split('/')[-1]
-      User.find_tagged_with(:any => project_name, :ns => '/managed/project')
-    else
-      []
-    end
+    project_tag ? User.find_tagged_with(:any => project_tag, :ns => '/managed/project') : []
   end
 
   def domains
