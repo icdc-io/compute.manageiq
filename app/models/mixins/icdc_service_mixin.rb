@@ -17,20 +17,16 @@ module IcdcServiceMixin
   end
 
   def share(data)
-    project_tag = find_project_tag
+    project_tag = find_project_tag || create_porject_tag
 
     userids = data['userids']
 
-    if project_tag.blank?
-      project_tag = (0...3).map { ('a'..'z').to_a[rand(26)] }.join.downcase + evm_owner_id.to_s
-      Classification.find_by_name('project').add_entry(:name => project_tag, :description => project_tag)
-    end
-
-    tag_add(project_tag, :ns => '/managed', :cat => 'project')
+    Classification.classify(self, 'project', project_tag)
 
     userids.each do |userid|
       user = User.find_by(:userid => userid)
-      user.tag_add(project_tag, :ns => '/managed', :cat => 'project')
+      Classification.classify(user, 'project', project_tag)
+      # .tag_add(project_tag, :ns => '/managed', :cat => 'project')
 
       # send = {}
       # send['name'] = u.name
@@ -40,7 +36,8 @@ module IcdcServiceMixin
     end
 
     vms.each do |vm|
-      vm.tag_add(project_tag, :ns => '/managed', :cat => 'project')
+      Classification.classify(vm, 'project', project_tag)
+      # vm.tag_add(project_tag, :ns => '/managed', :cat => 'project')
     end
   end
 
@@ -48,7 +45,7 @@ module IcdcServiceMixin
     userid = data['userid']
     user = User.find_by_userid(userid)
     project_tag = find_project_tag
-    Classification.unclassify_by_tag(user, project_tag)
+    Classification.unclassify(user, 'project', project_tag)
   end
 
   def shared_users
@@ -69,6 +66,11 @@ module IcdcServiceMixin
   private
 
   def find_project_tag
-    tags(:ns => "/managed/project/").first&.name
+    tags(:ns => "/managed/project/").first&.classification&.name
+  end
+
+  def create_porject_tag
+    tag = (0...3).map { ('a'..'z').to_a[rand(26)] }.join.downcase + evm_owner_id.to_s
+    Classification.find_by_name('project').add_entry(:name => tag, :description => tag).name
   end
 end
