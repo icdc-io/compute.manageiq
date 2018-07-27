@@ -1097,4 +1097,4 @@
   :example_text: project
   :parent_id: 0
   :default: true
-  :single_value: "1"
+  :single_value: "0"

@@ -537,7 +537,14 @@ module Rbac
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
-        scope = scope_to_tenant(scope, user, miq_group)
+        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm].include?(klass)
+        scope =
+          if shared
+            shared
+          else
+            scope_to_tenant(scope, user, miq_group)
+          end
+
       elsif klass.respond_to?(:scope_by_cloud_tenant?) && klass.scope_by_cloud_tenant?
         scope = scope_to_cloud_tenant(scope, user, miq_group)
       end
@@ -695,6 +702,18 @@ module Rbac
 
     def matches_search_filters?(obj, filter, tz)
       filter.nil? || filter.lenient_evaluate(obj, tz)
+    end
+
+    def scope_to_shared(klass, scope, user, miq_group)
+      shared = klass.send(:user_shared, user)
+      shader_ids = pluck_ids(shared) unless shared.empty?
+      if shader_ids
+        tenant_ids = pluck_ids(scope_to_tenant(scope, user, miq_group))
+        filtered_ids = shader_ids + tenant_ids
+        scope.where(:id => filtered_ids.uniq)
+      else
+        nil
+      end
     end
   end
 end
