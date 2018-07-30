@@ -5,7 +5,17 @@ module IcdcServiceScheduleMixin
   DEFAULT_BACKUP_RETENTION_PERIOD = 'week'
 
   included do
+    extend InterRegionApiMethodRelay
+
     has_many :miq_schedules, as: :schedulable, dependent: :destroy
+
+    api_relay_method :schedule_power_op do |options|
+      options
+    end
+
+    api_relay_method :schedule_backup do |options|
+      options
+    end
   end
 
   def schedule_power_op(params)
