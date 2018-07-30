@@ -21,7 +21,7 @@ module ProcessTasksMixin
       options[:ids] = [id]
       options[:userid] ||= "system"
       region = id_to_region(id)
-      remote_connection = api_client_connection_for_region(region, options[:userid])
+      remote_connection = InterRegionApiMethodRelay.api_client_connection_for_region(region, options[:userid])
       invoke_api_tasks(remote_connection, options)
     end
 
