@@ -20,6 +20,14 @@ class ServiceTemplateTransformationPlanTask < ServiceTemplateProvisionTask
     miq_request.transformation_mapping.destination(source_obj)
   end
 
+  def pre_ansible_playbook_service_template
+    ServiceTemplate.find_by(:id => vm_resource.options["pre_ansible_playbook_service_template_id"])
+  end
+
+  def post_ansible_playbook_service_template
+    ServiceTemplate.find_by(:id => vm_resource.options["post_ansible_playbook_service_template_id"])
+  end
+
   def update_transformation_progress(progress)
     options[:progress] = (options[:progress] || {}).merge(progress)
     save
@@ -92,6 +100,15 @@ class ServiceTemplateTransformationPlanTask < ServiceTemplateProvisionTask
                      :args        => [],
                      :zone        => host.my_zone}
     MiqTask.generic_action_with_callback(options, queue_options)
+  end
+
+  def cancel
+    options['cancel_requested'] = true
+    save!
+  end
+
+  def canceling?
+    options['cancel_requested']
   end
 
   private

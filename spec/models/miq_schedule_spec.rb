@@ -695,4 +695,65 @@ describe MiqSchedule do
       expect(MiqSchedule.updated_since(1.month.ago)).to eq([s])
     end
   end
+
+  context ".queue_scheduled_work" do
+    it "When action exists" do
+      schedule = FactoryGirl.create(:miq_schedule, :sched_action => {:method => "scan"})
+      MiqSchedule.queue_scheduled_work(schedule.id, nil, "abc", nil)
+
+      expect(MiqQueue.first).to have_attributes(
+        :class_name  => "MiqSchedule",
+        :instance_id => schedule.id,
+        :method_name => "invoke_actions",
+        :args        => ["action_scan", "abc"],
+        :msg_timeout => 1200
+      )
+    end
+
+    context "no action method" do
+      it "no resource" do
+        schedule = FactoryGirl.create(:miq_schedule, :sched_action => {:method => "test_method"})
+
+        expect($log).to receive(:warn) do |message|
+          expect(message).to include("no such action: [test_method], aborting schedule")
+        end
+
+        MiqSchedule.queue_scheduled_work(schedule.id, nil, "abc", nil)
+      end
+
+      context "resource exists" do
+        let(:resource) { FactoryGirl.create(:host) }
+
+        before do
+          allow(Host).to receive(:find_by).with(:id => resource.id).and_return(resource)
+        end
+
+        it "and does not respond to the method" do
+          schedule = FactoryGirl.create(:miq_schedule, :towhat => resource.class.name, :resource_id => resource.id, :sched_action => {:method => "test_method"})
+
+          expect($log).to receive(:warn) do |message|
+            expect(message).to include("no such action: [test_method], aborting schedule")
+          end
+
+          MiqSchedule.queue_scheduled_work(schedule.id, nil, "abc", nil)
+        end
+
+        it "and responds to the method" do
+          schedule = FactoryGirl.create(:miq_schedule, :towhat => resource.class.name, :resource_id => resource.id, :sched_action => {:method => "test_method"})
+
+          expect(resource).to receive("test_method").once
+
+          MiqSchedule.queue_scheduled_work(schedule.id, nil, "abc", nil)
+        end
+
+        it "and responds to the method with arguments" do
+          schedule = FactoryGirl.create(:miq_schedule, :towhat => resource.class.name, :resource_id => resource.id, :sched_action => {:method => "test_method", :args => ["abc", 123, :a => 1]})
+
+          expect(resource).to receive("test_method").once.with("abc", 123, :a => 1)
+
+          MiqSchedule.queue_scheduled_work(schedule.id, nil, "abc", nil)
+        end
+      end
+    end
+  end
 end

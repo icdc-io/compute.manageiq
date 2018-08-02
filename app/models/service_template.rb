@@ -39,6 +39,8 @@ class ServiceTemplate < ApplicationRecord
   include NewWithTypeStiMixin
   include TenancyMixin
   include ArchivedMixin
+  include ReservedMixin
+  reserve_attribute :internal, :boolean
   include_concern 'Filter'
 
   include ReservedMixin
@@ -81,6 +83,7 @@ class ServiceTemplate < ApplicationRecord
   scope :without_service_template_catalog_id,       ->         { where(:service_template_catalog_id => nil) }
   scope :with_existent_service_template_catalog_id, ->         { where.not(:service_template_catalog_id => nil) }
   scope :displayed,                                 ->         { where(:display => true) }
+  scope :public_service_templates,                  ->         { where.not(:id => Reserve.where(:resource_type => "ServiceTemplate").all.collect { |r| r.resource_id if r.reserved[:internal] }.compact) }
 
   def self.catalog_item_types
     ci_types = Set.new(Rbac.filtered(ExtManagementSystem.all).flat_map(&:supported_catalog_types))
@@ -399,19 +402,65 @@ class ServiceTemplate < ApplicationRecord
   private_class_method :create_from_options
 
   def provision_request(user, options = nil, request_options = nil)
-    result = provision_workflow(user, options, request_options).submit_request
-    raise result[:errors].join(", ") if result[:errors].any?
+    result = order(user, options, request_options)
+    raise result[:errors].join(", ") if result[:errors] && result[:errors].any?
     result[:request]
+  end
+
+  def miq_schedules
+    schedule_ids = Reserve.where(:resource_type => "MiqSchedule").collect { |r| r.resource_id if r.reserved == {:resource_id => id} }.compact
+    MiqSchedule.where(:towhat => "ServiceTemplate", :id => schedule_ids)
+  end
+
+  def queue_order(user_id, options, request_options)
+    MiqQueue.submit_job(
+      :class_name  => self.class.name,
+      :instance_id => id,
+      :method_name => "order",
+      :args        => [user_id, options, request_options],
+    )
+  end
+
+  def order(user_or_id, options = nil, request_options = nil, schedule_time = nil)
+    user     = user_or_id.kind_of?(User) ? user_or_id : User.find(user_or_id)
+    workflow = provision_workflow(user, options, request_options)
+    if schedule_time
+      require 'time'
+      time = Time.parse(schedule_time).utc
+
+      errors = workflow.validate_dialog
+      return {:errors => errors} unless errors.blank?
+
+      schedule = MiqSchedule.create!(
+        :name         => "Order #{self.class.name} #{id} at #{time}",
+        :description  => "Order #{self.class.name} #{id} at #{time}",
+        :sched_action => {:args => [user.id, options, request_options], :method => "queue_order"},
+        :resource_id  => id,
+        :towhat       => "ServiceTemplate",
+        :run_at       => {
+          :interval   => {:unit => "once"},
+          :start_time => time,
+          :tz         => "UTC",
+        },
+      )
+      {:schedule => schedule}
+    else
+      workflow.submit_request
+    end
   end
 
   def provision_workflow(user, dialog_options = nil, request_options = nil)
     dialog_options ||= {}
     request_options ||= {}
-    ra_options = { :target => self, :initiator => request_options[:initiator] }
-    ResourceActionWorkflow.new({}, user,
-                               provision_action, ra_options).tap do |wf|
+    ra_options = {
+      :target          => self,
+      :initiator       => request_options[:initiator],
+      :submit_workflow => request_options[:submit_workflow]
+    }
+
+    ResourceActionWorkflow.new(dialog_options, user, provision_action, ra_options).tap do |wf|
       wf.request_options = request_options
-      dialog_options.each { |key, value| wf.set_value(key, value) }
+      # dialog_options.each { |key, value| wf.set_value(key, value) }
     end
   end
 
