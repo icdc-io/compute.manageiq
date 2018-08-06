@@ -258,10 +258,10 @@ def override_gem(name, *args)
   end
 end
 
-override_gem 'manageiq-schema', path: => File.expand_path(ENV["SCHEMA_SOURCE"])
-override_gem 'manageiq-api' , path: => File.expand_path(ENV["API_SOURCE"])
-override_gem 'manageiq-automation_engine' , path: => File.expand_path(ENV["AUTOMATION_SOURCE"])
-override_gem 'manageiq-ui-classic' , path: => File.expand_path(ENV["UI_CLASSIC_SOURCE"])
+override_gem 'manageiq-schema', path: => File.expand_path('/opt/manageiq/manageiq-schema')
+override_gem 'manageiq-api' , path: => File.expand_path('/opt/manageiq/manageiq-api')
+override_gem 'manageiq-automation_engine' , path: => File.expand_path('/opt/manageiq/automation')
+override_gem 'manageiq-ui-classic' , path: => File.expand_path('/opt/manageiq/manageiq-ui-classic')
 
 # Load other additional Gemfiles
 #   Developers can create a file ending in .rb under bundler.d/ to specify additional development dependencies
