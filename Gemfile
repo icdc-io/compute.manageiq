@@ -258,10 +258,11 @@ def override_gem(name, *args)
   end
 end
 
-override_gem 'manageiq-schema', path: File.expand_path(ENV["SCHEMA_SOURCE"])
-override_gem 'manageiq-api', path: File.expand_path(ENV["API_SOURCE"])
-override_gem 'manageiq-automation_engine', path: File.expand_path(ENV["AUTOMATION_SOURCE"])
-override_gem 'manageiq-ui-classic', path: File.expand_path(ENV["UI_CLASSIC_SOURCE"])
+#GIT_CRED - Openshift secret variable
+override_gem 'manageiq-schema', git: "https://#{ENV[GIT_CRED]}/icdc-g/manageiq-schema.git", branch: "icdc_g"
+override_gem 'manageiq-api', git: "https://#{ENV[GIT_CRED]}/icdc-g/manageiq-api.git", branch: "icdc_g"
+override_gem 'manageiq-automation_engine', git: "https://#{ENV[GIT_CRED]}/icdc-g/manageiq-api.git", branch: "icdc_g"
+override_gem 'manageiq-ui-classic', git: "https://#{ENV[GIT_CRED]}/icdc-g/manageiq-ui-classic.git", branch: "icdc_g"
 
 # Load other additional Gemfiles
 #   Developers can create a file ending in .rb under bundler.d/ to specify additional development dependencies
