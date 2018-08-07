@@ -14,6 +14,10 @@ module IcdcServiceMixin
     api_relay_method :unshare do |options|
       options
     end
+
+    api_relay_method :invoke_custom_button do |options|
+      options
+    end
   end
 
   def share(data)
@@ -48,6 +52,21 @@ module IcdcServiceMixin
 
   def domains
     Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
+  end
+
+  def invoke_custom_button(data)
+    action = data['task']
+    custom_button = resource_custom_action_button(action)
+
+    if custom_button.resource_action.dialog_id
+      return invoke_custom_action_with_dialog(type, self, action, data, custom_button)
+    end
+
+    custom_button.invoke(self)
+  end
+
+  def resource_custom_action_button(action)
+    custom_action_buttons.find { |b| b.name.downcase == action.downcase }
   end
 
   private
