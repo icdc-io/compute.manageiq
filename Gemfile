@@ -261,7 +261,7 @@ end
 #GIT_CRED - Openshift secret variable
 override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-schema.git", branch: "icdc_g"
 override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-api.git", branch: "icdc_g"
-override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-api.git", branch: "icdc_g"
+override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-automation_engine.git", branch: "icdc_g"
 override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-ui-classic.git", branch: "icdc_g"
 
 # Load other additional Gemfiles
