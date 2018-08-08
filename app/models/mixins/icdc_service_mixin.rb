@@ -65,11 +65,23 @@ module IcdcServiceMixin
     custom_button.invoke(self)
   end
 
+  private
+
+  def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button)
+    submit_custom_action_dialog(resource, custom_button, data)
+  end
+
+  def submit_custom_action_dialog(resource, custom_button, data)
+    wf = ResourceActionWorkflow.new({}, User.current_user, custom_button.resource_action, :target => resource)
+    data.each { |key, value| wf.set_value(key, value) } if data.present?
+    wf_result = wf.submit_request
+    raise StandardError, Array(wf_result[:errors]).join(", ") if wf_result[:errors].present?
+    wf_result
+  end
+
   def resource_custom_action_button(action)
     custom_action_buttons.find { |b| b.name.downcase == action.downcase }
   end
-
-  private
 
   def find_project_tag
     tags(:ns => "/managed/project/").first&.classification&.name
