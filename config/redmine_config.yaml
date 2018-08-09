@@ -1,27 +1,35 @@
-:api_key: 96db8225c27f111754b8fa81d49133fe16fabb1e
-:project_id: 5
-:tracker_id: 3
-:project_url: 'https://support.icdc.io'
-:user: 'admin'
+base: &base
+  :api_key: 96db8225c27f111754b8fa81d49133fe16fabb1e
+  :tracker_id: 3
+  :project_url: 'https://support.icdc.io'
+  :user: 'admin'
 
-:status_map:
-  :comment:
-    :from: 10
-    :to: 16
+  :status_map:
+    :comment:
+      :from: 10
+      :to: 16
 
-:status_name:
-  7: 'New'
-  8: 'In progress'
-  10: 'Need response'
-  11: 'Closed'
-  12: 'Rejected'
-  13: 'Postponed'
-  14: 'Waiting for Updated'
-  16: 'Wait response'
-  15: 'Assigned'
+  :status_name:
+    7: 'New'
+    8: 'In progress'
+    10: 'Need response'
+    11: 'Closed'
+    12: 'Rejected'
+    13: 'Postponed'
+    14: 'Waiting for Updated'
+    16: 'Wait response'
+    15: 'Assigned'
 
-:priority:
-  1: 'Low'
-  2: 'Medium'
-  3: 'High'
-  5: 'Critical'
+  :priority:
+    1: 'Low'
+    2: 'Medium'
+    3: 'High'
+    5: 'Critical'
+
+development:
+  <<: *base
+  :project_id: 2
+
+production:
+  <<: *base
+  :project_id: 5

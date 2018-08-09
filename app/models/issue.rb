@@ -5,7 +5,7 @@ require 'json'
 require 'base64'
 
 module RedmineConfig
-  REDMINE_CONFIG = YAML.load_file('config/redmine_config.yaml')
+  REDMINE_CONFIG = YAML.load_file('config/redmine_config.yaml')[Rails.env]
 end
 
 class IssueFormat
