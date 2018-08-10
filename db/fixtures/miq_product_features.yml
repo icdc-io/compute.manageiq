@@ -6888,3 +6888,31 @@
         :description: Order cart
         :feature_type: control
         :identifier: sui_cart_order
+
+# ICDC Features
+- :name: ICDC Features
+  :description: ICDC Features
+  :feature_type: node
+  :identifier: icdc_features
+  :children:
+  - :name: Tickets
+    :description: Tickets
+    :feature_type: node
+    :identifier: tickets
+    :children:
+    - :name: View
+      :description: View Tickets
+      :feature_type: view
+      :identifier: tickets_view
+    - :name: Create
+      :description: Create Tickets
+      :feature_type: control
+      :identifier: tickets_create
+    - :name: Modify
+      :description: Modify Tickets
+      :feature_type: control
+      :identifier: tickets_modify
+    - :name: Close
+      :description: Close Tickets
+      :feature_type: control
+      :identifier: tickets_close
