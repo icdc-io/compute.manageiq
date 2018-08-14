@@ -215,6 +215,7 @@ end
 #
 unless ENV["APPLIANCE"]
   group :development do
+    gem 'awesome_print', :require => 'ap'
     gem "foreman"
     gem "haml_lint",        "~>0.20.0", :require => false
     gem "rubocop",          "~>0.52.1", :require => false
