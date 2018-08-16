@@ -112,7 +112,7 @@ module Rbac
       'ExtManagementSystem'    => :ancestor_ids,
       'MiqAeNamespace'         => :ancestor_ids,
       'MiqGroup'               => :iba_descendant_ids,
-      'MiqRequest'             => :iba_descendant_ids,
+      'MiqRequest'             => :descendant_ids,
       'MiqRequestTask'         => nil, # tenant only
       'MiqTemplate'            => :ancestor_ids,
       'Provider'               => :ancestor_ids,
