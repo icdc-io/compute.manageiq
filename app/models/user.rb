@@ -45,7 +45,7 @@ class User < ApplicationRecord
   virtual_column :get_user_subnets, :type => :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
-  delegate   :super_admin_user?, :admin_user?, :self_service?, :limited_self_service?, :disallowed_roles,
+  delegate   :super_admin_user?, :admin_user?, :tenant_admin_user?, :self_service?, :limited_self_service?, :disallowed_roles,
              :to => :miq_user_role, :allow_nil => true
 
   validates_presence_of   :name, :userid
@@ -367,6 +367,20 @@ class User < ApplicationRecord
     Thread.current[:user] ||= find_by_userid(current_userid)
   end
 
+  def self.with_current_user_groups(user = nil)
+    user ||= current_user
+    user.tenant_admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
+  end
+
+  def self.missing_user_features(db_user)
+    if !db_user
+      "User"
+    elsif !db_user.current_group
+      "Group"
+    elsif !db_user.current_group.miq_user_role
+      "Role"
+    end
+  end
 
   def self.seed
     seed_data.each do |user_attributes|

@@ -88,7 +88,7 @@ group :amazon, :manageiq_default do
 end
 
 group :ansible, :manageiq_default do
-  gem "ansible_tower_client",           "~>0.13.0",      :require => false
+  gem "ansible_tower_client",           "~>0.17",        :require => false
 end
 
 group :azure, :manageiq_default do
@@ -195,7 +195,7 @@ group :ui_dependencies do # Added to Bundler.require in config/application.rb
 end
 
 group :v2v, :ui_dependencies do
-  gem "miq_v2v_ui", :git => "https://github.com/ManageIQ/miq_v2v_ui_plugin.git", :branch => "gaprindashvili"
+  gem "miq_v2v_ui", :git => "https://github.com/ManageIQ/manageiq-v2v.git", :branch => "gaprindashvili"
 end
 
 group :web_server, :manageiq_default do
