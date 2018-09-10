@@ -1058,6 +1058,8 @@
 :snapshots:
   :create_free_percent: 100
   :remove_free_percent: 100
+  :max_disk_size_terabytes: 1
+  :max_count: 3
 :ssl:
   :ssl_ca_file:
   :ssl_ca_path:
