@@ -56,6 +56,44 @@ namespace :dev do
     provider.password = cred[:password]
     provider.save
   end
+
+  desc "Adjust pglogical host and port for different openshift environments"
+  task :pglogical_openshift, [:env] => :environment do |_, args|
+    region_map = { "region_1" => :idc, "region_2" => :nb5, "region_99" => :main }
+    openshift_map = {
+      stage: {
+        nb5: { host: "miq-nb5-master.icdc.io", port: "31120" }
+      }
+    }
+    deploy_env = ENV["MY_POD_NAMESPACE"][4..-1].to_sym #dev1, dev2, dev3, dev4
+    openshift_map = openshift_map[deploy_env] #hostname:port map for specific project
+    pglogical = ApplicationRecord.connection.pglogical
+    pglogical.nodes.to_a.each do |node|
+      location = region_map[ node["name"] ]
+      cross_cluster_conn = openshift_map ? openshift_map[location] : nil
+      attrs = node["conn_string"].split(" ").map do |p|
+        if p.start_with?("host=")
+          unless cross_cluster_conn
+            "host='postgresql-#{location}'"
+          else
+            "host='#{cross_cluster_conn["host"]}'"
+          end
+        elsif p.start_with?("port=")
+          unless cross_cluster_conn
+            "port='5432'"
+          else
+            "port='#{cross_cluster_conn["port"]}'"
+          end
+        else
+          p
+        end
+      end
+      conn_string = " " + attrs.join(" ")
+      puts "Update pglogical node_dsn #{node["name"]}:#{conn_string}"
+      pglogical.node_dsn_update(node["name"], conn_string)
+    end
+  end
+
 end
 
 
