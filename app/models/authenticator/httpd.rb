@@ -25,7 +25,7 @@ module Authenticator
       true
     end
 
-    def _authenticate(_username, _password, request)
+    def _authenticate(username, _password, request)
       request.present? &&
         request.headers['X-REMOTE-USER'].present? && request.headers['X-REMOTE-USER'] == username
     end
