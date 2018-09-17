@@ -19,8 +19,7 @@ class Service < ApplicationRecord
     :start          => "on",
     :stop           => "off",
     :suspend        => "off",
-    :shutdown_guest => "off",
-    :partial_one    => "partial_one"
+    :shutdown_guest => "off"
   }.freeze
 
   has_ancestry :orphan_strategy => :destroy
@@ -125,25 +124,18 @@ class Service < ApplicationRecord
   end
 
   def power_state
-    if options[:power_status] == 'partial_on'
-      return 'partial_on'
-    elsif options[:power_status] == "starting"
+    if options[:power_status] == "starting"
       return 'on'  if power_states_match?(:start)
     elsif options[:power_status] == "stopping"
       return 'off' if power_states_match?(:stop)
-    elsif options[:power_status] == "suspending"
-      return 'suspend' if power_states_match?(:suspend)
     else
       return 'on'  if power_states_match?(:start)
       return 'off' if power_states_match?(:stop)
-      return 'suspend' if power_states_match?(:suspend)
     end
   end
 
   def power_status
-    if (power_states.include?("on") &&  power_states.include?("off"))
-      update_progress(:power_status => 'partial_on')
-    end
+    options[:power_status]
   end
 
   def miq_request_state
