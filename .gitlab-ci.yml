@@ -28,9 +28,8 @@ cache:
 before_script:
   - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
 
-script1:
-  script:
+test:
+  before_script:
     - bundle exec rake test:$TEST_SUITE:setup
-script2:
   script:
     - bundle exec rake test:$TEST_SUITE
