@@ -6889,6 +6889,17 @@
         :feature_type: control
         :identifier: sui_cart_order
 
+# Announcements (notification)
+- :name: Announcements
+  :description: Everything under Announcements
+  :feature_type: admin
+  :identifier: announcements
+  :children:
+  - :name: Create new Announcement
+    :description: Create a new announcement
+    :feature_type: admin
+    :identifier: announcement_new
+
 # ICDC Features
 - :name: ICDC Features
   :description: ICDC Features
