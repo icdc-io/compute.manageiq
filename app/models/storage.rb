@@ -256,16 +256,6 @@ class Storage < ApplicationRecord
     message
   end
 
-  def self.most_available(options)
-    if options[:tag]
-      storages = find_tagged_with(:all => options[:tag], :ns => '*')
-      raise _("no storages found with tag #{options[:tag]}")if storages.empty?
-    else
-      raise _("must provide options :tag ")
-    end
-    
-  end
-
   def self.scan_collection_timeout
     ::Settings.storage.collection.timeout
   end

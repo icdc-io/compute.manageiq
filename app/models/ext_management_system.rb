@@ -574,13 +574,9 @@ class ExtManagementSystem < ApplicationRecord
     supports_cloud_object_store_container_create?
   end
 
-  def best_available_storage(options={})
-    if options[:tag]
-      available_storages = storages.find_tagged_with(:all => options[:tag], :ns => '*')
-      raise _("no storages found with tag #{options[:tag]}")if available_storages.empty?
-    else
-      raise _("must provide options :tag ")
-    end
+  def best_available_storage(type)
+    available_storages = storages.find_tagged_with(:any => type, :ns => '*')
+    raise _("There is no avaliable storage") if available_storages.empty?
     return available_storages.max_by(&:v_free_space_percent_of_total)
   end
 

@@ -44,7 +44,6 @@ class VmReconfigureTask < MiqRequestTask
 
   def do_request
     config = vm.build_config_spec(options)
-    #throw Error 
     dump_obj(config, "#{_log.prefix} Config spec: ", $log, :info)
     vm.spec_reconfigure(config)
 
