@@ -10,12 +10,12 @@ class Tenant < ApplicationRecord
   include CustomActionsMixin
   include SvmMetricMixin
   include AccountChargebackMixin
-  include QuotableMixin
   include IbaRelationshipMixin 
   include ServiceChargebackMixin
   include ProcessTasksMixin
   include TenantTagsMixin
   include ResourceConsumptionMixin
+  include TenantQuotableMixin
 
   acts_as_miq_taggable
 
@@ -46,7 +46,12 @@ class Tenant < ApplicationRecord
 
   virtual_has_one  :quota
   virtual_has_one  :services_in_regions
+  virtual_has_one  :current_chargeback
+  virtual_has_one  :last_chargeback
   virtual_has_one  :account
+  virtual_has_one  :children
+  virtual_has_one  :managers
+
 
   belongs_to :default_miq_group, :class_name => "MiqGroup", :dependent => :destroy
   belongs_to :source, :polymorphic => true
@@ -176,119 +181,10 @@ class Tenant < ApplicationRecord
     tenant_attribute(:login_text, :custom_login_text)
   end
 
-  def get_quotas
-    tenant_quotas.each_with_object({}) do |q, h|
-      h[q.name.to_sym] = q.quota_hash
-    end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  def set_quotas(quotas)
-    updated_keys = []
-
-    self.class.transaction do
-      quotas.each do |name, values|
-        next if values[:value].nil?
-
-        name = name.to_s
-        q = tenant_quotas.detect { |tq| tq.name == name } || tenant_quotas.build(:name => name)
-        q.update_attributes!(values)
-        updated_keys << name
-      end
-      # Delete any quotas that were not passed in
-      tenant_quotas.destroy_missing(updated_keys)
-      # unfortunatly, an extra scope is created in destroy_missing, so we need to reload the records
-      clear_association_cache
-    end
-
-    get_quotas
-  end
-
-  def used_quotas
-    tenant_quotas.each_with_object({}) do |q, h|
-      h[q.name.to_sym] = q.quota_hash.merge(:value => q.used)
-    end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  # Amount of quotas allocated to the immediate child tenants
-  def allocated_quotas
-    tenant_quotas.each_with_object({}) do |q, h|
-      h[q.name.to_sym] = q.quota_hash.merge(:value => q.allocated)
-    end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  # Amount of quotas available to be allocated to child tenants
-  def available_quotas
-    tenant_quotas.each_with_object({}) do |q, h|
-      h[q.name.to_sym] = q.quota_hash.merge(:value => q.available)
-    end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  def combined_quotas
-    TenantQuota.quota_definitions.each_with_object({}) do |d, h|
-      scope_name, _ = d
-      q = tenant_quotas.send(scope_name).take || tenant_quotas.build(:name => scope_name, :value => 0)
-      h[q.name.to_sym] = q.quota_hash
-      h[q.name.to_sym][:allocated]   = q.allocated
-      h[q.name.to_sym][:available]   = q.available unless q.new_record?
-      h[q.name.to_sym][:used]        = q.used
-    end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  def build_quota_tree
-    region, id = Tenant.split_id(self.id)
-    if MiqRegion.default? region
-      root_tenant_node = {
-          "type" => "tenant",
-          "name" => self.name,
-          "edit_action" => "order",
-          "service_template_id" => Quota.service_template.id,
-          "children" => tenant_subtenants_nodes,
-          "locations" => []
-      }
-      manage_locations(root_tenant_node)
-      set_edit_action_to_children(root_tenant_node)
-    end
-    root_tenant_node
-  end
-
-  def tenant_subtenants_nodes
-    children_nodes = []
-    for subtenant in self.children
-      region, id = Tenant.split_id(subtenant.id)
-      subtenant_node = {
-          "name" => subtenant.name,
-          "type" => "tenant",
-          "quota" => subtenant.combined_quotas,
-          "children" => subtenant.tenant_subtenants_nodes,
-          "locations" => []
-      }
-      set_edit_action_to_children(subtenant_node)
-      manage_locations(subtenant_node, id)
-      children_nodes.push(subtenant_node)
-    end
-
-    for miq_group in self.miq_groups
-      unless miq_group.tenant_group?
-        children_nodes.push(miq_group.build_quota_tree)
-      end
-    end
-    children_nodes
-  end
-
   def services_in_regions
     get_services_in_regions do |tenant_in_region|
       tenant_in_region.subtree.inject([]) { |services, desc| services + desc.services }
     end
-  end
-
-  def quota
-    self.build_quota_tree
-  end
-
-  def quota_holder
-    return self unless self.tenant_quotas.empty?
-    return nil if self.root?
-    return self.parent.quota_holder
   end
 
   # @return [Boolean] Is this a default tenant?
@@ -373,6 +269,11 @@ class Tenant < ApplicationRecord
   #     [["tenant", 1], ["tenant/tenant2", 2]], ["tenant/tenant3", 3]]
   #     [["tenant/tenant2/project4", 4]]
   #   ]
+
+  def region
+    MiqRegion.find_by_region(split_id.first)
+  end
+
   def self.tenant_and_project_names
     all_tenants_and_projects = Tenant.in_my_region.select(:id, :ancestry, :divisible, :use_config_for_attributes, :name)
     tenants_by_id = all_tenants_and_projects.index_by(&:id)

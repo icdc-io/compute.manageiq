@@ -1098,3 +1098,34 @@
   :parent_id: 0
   :default: true
   :single_value: "0"
+- :description: Storage Type
+  :entries:
+  - :description: Slow
+    :read_only: "0"
+    :syntax: string
+    :name: 7k
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Medium
+    :read_only: "0"
+    :syntax: string
+    :name: 10k
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Fast
+    :read_only: "0"
+    :syntax: string
+    :name: 15k
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: storage_type
+  :example_text: storage_type
+  :parent_id: 0
+  :default: true
+  :single_value: "0"

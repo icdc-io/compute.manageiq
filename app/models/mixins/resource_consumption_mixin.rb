@@ -14,11 +14,11 @@ module ResourceConsumptionMixin
   end
 
   def mem_used
-    allocated_memory
+    allocated_memory.to_f / 1.gigabyte
   end
 
   def storage_used
-    allocated_storage
+    allocated_storage / 1.gigabyte
   end
 
   def hours_used

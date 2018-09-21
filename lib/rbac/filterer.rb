@@ -119,8 +119,8 @@ module Rbac
       'Service'                => :iba_descendant_ids,
       'ServiceTemplate'        => :iba_ancestor_ids,
       'ServiceTemplateCatalog' => :iba_ancestor_ids,
-      'Tenant'                 => :iba_descendant_ids,
-      'User'                   => :iba_descendant_ids,
+      'Tenant'                 => :iba_managed_descendant_ids,
+      'User'                   => :iba_managed_descendant_ids,
       'Vm'                     => :iba_descendant_ids
     }
 

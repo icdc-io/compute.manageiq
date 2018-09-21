@@ -31,7 +31,7 @@ module ApiHelper
   end
 
   def self.call_iba_rest_service(req)
-    http = Net::HTTP.new("172.20.140.174", "3000")
+    http = Net::HTTP.new("login.icdc.io", "3000")
     return JSON.parse(http.request(req).body)
   end
 
@@ -202,5 +202,57 @@ namespace :tenant_factory do
     tenant_quota.name = args[:name]
     tenant_quota.value = args[:value]
     tenant_quota.save!
+  end
+
+  desc "Update quota to cpu and memory"
+  task :update_quota => :environment do
+    quotas = TenantQuota.all
+    for quota in quotas
+      if quota.name == 'svm_allocated'
+         new_mem_quota = TenantQuota.new
+         new_mem_quota.tenant_id = quota.tenant_id
+         new_mem_quota.name = "mem_allocated"
+         new_mem_quota.value = quota.value
+         new_mem_quota.save!
+
+         new_cpu_quota = TenantQuota.new
+         new_cpu_quota.tenant_id = quota.tenant_id
+         new_cpu_quota.name = "cpu_allocated"
+         new_cpu_quota.value = quota.value / 4
+         new_cpu_quota.save!
+         quota.destroy
+      end
+      if quota.name == 'hours_allocated'
+        quota.destroy
+      end
+      if quota.name == 'storage_allocated'
+         quota.value = quota.value / 1024**3
+         quota.save
+      end
+    end
+    quotas = UserQuota.all
+    for quota in quotas
+      if quota.name == 'svm_allocated'
+         new_mem_quota = UserQuota.new
+         new_mem_quota.user_id = quota.user_id
+         new_mem_quota.name = "mem_allocated"
+         new_mem_quota.value = quota.value 
+         new_mem_quota.save!
+
+         new_cpu_quota = UserQuota.new
+         new_cpu_quota.user_id = quota.user_id
+         new_cpu_quota.name = "cpu_allocated"
+         new_cpu_quota.value = quota.value / 4
+         new_cpu_quota.save!
+         quota.destroy
+      end
+      if quota.name == 'hours_allocated'
+        quota.destroy
+      end
+      if quota.name == 'storage_allocated'
+         quota.value = quota.value / 1024**3
+         quota.save
+      end
+    end
   end
 end

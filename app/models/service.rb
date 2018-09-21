@@ -392,22 +392,62 @@ class Service < ApplicationRecord
     user
   end
 
-  def total_costs_bydate
+  def actual_chargeback_reports(period)
+    case period
+    when 'current'
+     month = DateTime.now.month
+    when 'last'
+     month = 1.month.ago.month
+    when 'two_months'
+     return actual_chargeback_reports_monthly([DateTime.now.month, 1.month.ago.month])
+    else
+    end
     results = chargeback_report[:results]
-    grouped_results = results.group_by { |r| r["start_date"] }
+    results.select! do |res|
+     res["start_date"].month == month
+    end
+    results.sort_by{ |res| res["start_date"] }.reverse!
+  end
+
+  def actual_chargeback_reports_monthly(chargeback_for)
+    results = chargeback_report[:results]
+    results.select! do |res|
+      chargeback_for.include? res["start_date"].month
+    end
+    results.sort_by{ |res| res["start_date"] }.reverse!
+  end
+
+  def total_costs_bydate(period = 'current')
+    grouped_results = actual_chargeback_reports(period).group_by { |r| r["start_date"] }
     rolled_results = grouped_results.map do |start_date, one_date_results|
       sum = 0
       one_date_results.each do |res|
         res.each do |key, value|
-          match = /allocated_cost/ =~ key
-          if !(match.nil?) && !(value.nil?)
-            sum += value
+          unless value.nil?
+            sum += value if key.end_with?('allocated_cost')
           end
         end
       end
-      {"start_date"=> start_date,"cost"=>sum}
+      sum += license_cost.to_i if license_cost
+      { start_date: start_date, cost: sum}
     end
-    _log.info("DBG cost for #{name} is #{rolled_results}")
+    rolled_results
+  end
+
+  def total_costs_monthly(period)
+    grouped_results = actual_chargeback_reports_monthly(period).group_by { |r| r["start_date"] }
+    rolled_results = grouped_results.map do |start_date, one_date_results|
+      sum = 0
+      one_date_results.each do |res|
+        res.each do |key, value|
+          unless value.nil?
+            sum += value if key.end_with?('allocated_cost')
+          end
+        end
+      end
+      sum += license_cost.to_i if license_cost
+      { start_date: start_date, cost: sum}
+    end
     rolled_results
   end
 
