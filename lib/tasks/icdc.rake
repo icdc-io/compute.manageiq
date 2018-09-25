@@ -57,6 +57,20 @@ namespace :dev do
     provider.save
   end
 
+  desc "Remove all ChargebackRateDetail data, as it cause migration fault"
+  task :fix_cb_seeding, [:env] => :environment do |_, args|
+    puts "ChargebackTier before delete ChargebackRateDetail: #{ChargebackTier.all.count}"
+    #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
+    #It migrates ChargebackRateDetail default data to ChargeableField objects
+    #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
+    puts "ChargebackRateDetail before delete_all: #{ChargebackRateDetail.all.count}"
+    ChargebackRateDetail.delete_all
+
+    #Seeding creates a lot of ChargebackTier on each container run
+    puts "ChargebackTier before delete_all: #{ChargebackTier.all.count}"
+    ChargebackTier.delete_all
+  end
+
   desc "Adjust pglogical host and port for different openshift environments"
   task :pglogical_openshift, [:env] => :environment do |_, args|
     region_map = { "region_1" => :idc, "region_2" => :nb5, "region_99" => :main }
