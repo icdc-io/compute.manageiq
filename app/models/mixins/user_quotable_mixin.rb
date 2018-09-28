@@ -39,7 +39,7 @@ module UserQuotableMixin
       name:                 self.userid,
       title:                self.userid,
       edit_action:          "order",
-      service_template_id:  Quota.service_template.id,
+      service_template_id:  15,
       locations:            user_resources_by_locations(true)
     }
   end

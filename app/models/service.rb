@@ -88,6 +88,8 @@ class Service < ApplicationRecord
   virtual_column :power_status,                             :type => :string
   virtual_column :location,                                 :type => :string
   virtual_column :miq_request_state,                        :type => :string
+  virtual_column :license_type,                             :type => :string
+  virtual_column :license_cost,                             :type => :integer
 
   validates :name, :presence => true
 
@@ -143,6 +145,16 @@ class Service < ApplicationRecord
       return miq_request.request_state
     end
     nil
+  end
+
+  def license_type
+    request = service_resources.where(:resource_type => 'MiqRequest').first
+    MiqRequest.find_by_id(request.resource_id).options[:license_type] if request
+  end
+
+  def license_cost
+    request = service_resources.where(:resource_type => 'MiqRequest').first
+    MiqRequest.find_by_id(request.resource_id).options[:license_cost] if request
   end
 
   def service_id
