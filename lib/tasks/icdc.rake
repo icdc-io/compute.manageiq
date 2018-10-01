@@ -57,6 +57,31 @@ namespace :dev do
     provider.save
   end
 
+  desc "Remove all ChargebackRateDetail data, as it cause migration fault"
+  task :fix_cb_seeding, [:env] => :environment do |_, args|
+    puts "[fix_cb_seeding] ChargebackRateDetail.all: #{ChargebackRateDetail.all.count}"
+    puts "[fix_cb_seeding] ChargebackRateDetailMeasure.all: #{ChargebackRateDetailMeasure.all.count}"
+    puts "[fix_cb_seeding] ChargebackTier.all: #{ChargebackTier.all.count}"
+    puts "[fix_cb_seeding] ChargeableField.all: #{ChargeableField.all.count}"
+    ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}
+    
+    #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
+    #It migrates ChargebackRateDetail default data to ChargeableField objects
+    #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
+    puts "[fix_cb_seeding] ChargebackRateDetail before delete_all: #{ChargebackRateDetail.all.count}"
+    ChargebackRateDetail.delete_all
+    puts "[fix_cb_seeding] ChargebackRateDetail after delete_all: #{ChargebackRateDetail.all.count}"
+    
+    puts "[fix_cb_seeding] ChargebackRateDetailMeasure before delete_all: #{ChargebackRateDetailMeasure.all.count}"
+    ChargebackRateDetailMeasure.delete_all
+    puts "[fix_cb_seeding] ChargebackRateDetailMeasure after delete_all: #{ChargebackRateDetailMeasure.all.count}"
+
+    #Seeding creates a lot of ChargebackTier on each container run
+    puts "[fix_cb_seeding] ChargebackTier before delete_all: #{ChargebackTier.all.count}"
+    ChargebackTier.delete_all
+    puts "[fix_cb_seeding] ChargebackTier after delete_all: #{ChargebackTier.all.count}"
+  end
+
   desc "Adjust pglogical host and port for different openshift environments"
   task :pglogical_openshift, [:env] => :environment do |_, args|
     region_map = { "region_1" => :idc, "region_2" => :nb5, "region_99" => :main }
