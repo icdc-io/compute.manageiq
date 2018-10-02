@@ -40,8 +40,9 @@ class Notification < ApplicationRecord
   def emit_message
     return unless ::Settings.server.asynchronous_notifications
     notification_recipients.pluck(:id, :user_id).each do |id, user|
-      to_h[:id] = id
-      ActionCable.server.broadcast("notifications_#{user}", to_h)
+      notification_data = to_h
+      notification_data[:id] = id
+      ActionCable.server.broadcast("notifications_#{user}", notification_data)
     end
   end
 
