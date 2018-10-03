@@ -2,7 +2,7 @@ class MiqSchedule < ApplicationRecord
   include ReservedMixin
   reserve_attribute :resource_id, :big_integer
 
-  validates :name, :uniqueness => {:scope => [:userid, :towhat]}
+  validates :name, :uniqueness => {:scope => [:userid, :towhat, :zone_id]}
   validates :name, :description, :towhat, :run_at, :presence => true
   validate  :validate_run_at, :validate_file_depot
 
