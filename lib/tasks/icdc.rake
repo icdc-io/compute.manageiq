@@ -21,14 +21,23 @@ namespace :support do
 
 end
 
+desc "Restart DEV app shortcut"
+task :restart => :environment do
+  Rake::Task['icdc:dev:restart'].invoke
+end
 
 namespace :dev do
   desc "Delete all miq_schedules after deployment of DEV environment"
   task :remove_schedules => :environment do
-    #MiqSchedule.all.delete_all
     MiqSchedule.where('description NOT LIKE ?', 'rss_%').where('description NOT LIKE ?', 'report_%').where('description NOT LIKE ?', 'chart_%').where('description NOT LIKE ?', 'tenant_%').delete_all
   end
 
+  desc "Restart DEV app shortcut"
+  task :restart => :environment do
+    Rake::Task['evm:stop'].invoke
+    `pkill -9 httpd`
+    `ruby /var/www/miq/vmdb/lib/workers/bin/evm_server.rb &`
+  end
 
   desc "Setup separate credentials for DEV environment"
   task :redhat_creds, [:env] => :environment do |_, args|
@@ -38,6 +47,8 @@ namespace :dev do
     end
     env = args[:env].to_sym
     location = MiqRegion.my_region.description.downcase.to_sym
+    puts "[redhat_creds] env:#{env}"
+    puts "[redhat_creds] location:#{location}"
     creds = {
       idc: {
         dev1: {userid: "dcdev1@IBA", password: "U7X8Y@D7"},
@@ -68,18 +79,18 @@ namespace :dev do
     #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
     #It migrates ChargebackRateDetail default data to ChargeableField objects
     #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
-    puts "[fix_cb_seeding] ChargebackRateDetail before delete_all: #{ChargebackRateDetail.all.count}"
-    ChargebackRateDetail.delete_all
-    puts "[fix_cb_seeding] ChargebackRateDetail after delete_all: #{ChargebackRateDetail.all.count}"
+    #puts "[fix_cb_seeding] ChargebackRateDetail before delete_all: #{ChargebackRateDetail.all.count}"
+    #ChargebackRateDetail.delete_all
+    #puts "[fix_cb_seeding] ChargebackRateDetail after delete_all: #{ChargebackRateDetail.all.count}"
     
-    puts "[fix_cb_seeding] ChargebackRateDetailMeasure before delete_all: #{ChargebackRateDetailMeasure.all.count}"
-    ChargebackRateDetailMeasure.delete_all
-    puts "[fix_cb_seeding] ChargebackRateDetailMeasure after delete_all: #{ChargebackRateDetailMeasure.all.count}"
+    #puts "[fix_cb_seeding] ChargebackRateDetailMeasure before delete_all: #{ChargebackRateDetailMeasure.all.count}"
+    #ChargebackRateDetailMeasure.delete_all
+    #puts "[fix_cb_seeding] ChargebackRateDetailMeasure after delete_all: #{ChargebackRateDetailMeasure.all.count}"
 
     #Seeding creates a lot of ChargebackTier on each container run
-    puts "[fix_cb_seeding] ChargebackTier before delete_all: #{ChargebackTier.all.count}"
-    ChargebackTier.delete_all
-    puts "[fix_cb_seeding] ChargebackTier after delete_all: #{ChargebackTier.all.count}"
+    #puts "[fix_cb_seeding] ChargebackTier before delete_all: #{ChargebackTier.all.count}"
+    #ChargebackTier.delete_all
+    #puts "[fix_cb_seeding] ChargebackTier after delete_all: #{ChargebackTier.all.count}"
   end
 
   desc "Adjust pglogical host and port for different openshift environments"
