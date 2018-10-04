@@ -6,8 +6,7 @@ module AccountChargebackMixin
     summed_costs = grouped_chbs.map do |start_date, gr_chbs|
       sum = 0
       gr_chbs.each do|chb|
-      sum += chb["cost"]
-      _log.info("DBG chargeback #{chb}")
+      sum += chb["cost"] || 0
       end
       {"start_date"=>start_date, "cost"=>sum}
     end
