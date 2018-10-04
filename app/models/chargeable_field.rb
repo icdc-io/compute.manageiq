@@ -109,7 +109,7 @@ class ChargeableField < ApplicationRecord
   end
 
   def self.seed
-    measures = ChargebackRateDetailMeasure.all.index_by(&:name)
+    measures = ChargebackRateDetailMeasure.in_my_region.index_by(&:name)
     existing = ChargeableField.all.index_by(&:metric)
     seed_data.each do |f|
       measure = f.delete(:measure)
