@@ -59,7 +59,7 @@ namespace :dev do
       nb5: {
       },
     }
-    cred = creds.try(location).try(env)
+    cred = creds.dig(location, env)
     if cred.nil?
       abort("Credentials not specified for location[#{location}] and environment[#{env}]")
     end
