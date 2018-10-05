@@ -86,7 +86,7 @@ module TenantQuotableMixin
         name:                 name,
         title:                description,
         edit_action:          "order",
-        service_template_id:  Quota.service_template.id,
+        service_template_id:  15, #Quota.service_template.id,
         children:             tenant_children,
         locations:            []
     }
