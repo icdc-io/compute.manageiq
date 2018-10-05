@@ -574,6 +574,12 @@ class ExtManagementSystem < ApplicationRecord
     supports_cloud_object_store_container_create?
   end
 
+  def best_available_storage(type)
+    available_storages = storages.find_tagged_with(:any => type, :ns => '*')
+    raise _("There is no avaliable storage") if available_storages.empty?
+    return available_storages.max_by(&:v_free_space_percent_of_total)
+  end
+
   def get_reserve(field)
     (hosts + ems_clusters).inject(0) { |v, obj| v + (obj.send(field) || 0) }
   end
