@@ -1319,4 +1319,11 @@
   - tickets
   - rbac_group_view
   - rbac_tenant_view
-  - sui
+  - sui_language
+  - sui_notifications
+  - sui_dashboard
+  - sui_services
+  - sui_vm
+  - sui_orders
+  - sui_svc_catalog
+  - sui_cart
