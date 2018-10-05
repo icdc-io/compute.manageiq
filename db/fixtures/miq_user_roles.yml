@@ -1280,3 +1280,43 @@
   - sui_services_view
   - sui_orders_view
   - sui_notifications
+
+- :name: ICDC-user
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - rbac_tenant_manage_quotas
+  - miq_request
+  - tickets
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui
