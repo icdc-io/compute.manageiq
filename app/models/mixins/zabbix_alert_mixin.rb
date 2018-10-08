@@ -90,7 +90,7 @@ module ZabbixAlertMixin
         delay_for_trigger  = create_delay_for_trigger(data["delay"],data["attempts"])
         data["expression"] = "{#{data["hostname"]}:#{data["key"]}.count(#{delay_for_trigger},0)}>=#{data["attempts"]}"
       when "web"
-        data["expression"] = "{#{data["hostname"]}:web.test.fail[#{data["httptest"]}].count(#{data["delay"]},0)}<=#{data["attempts"]}"
+        data["expression"] = "{#{data["hostname"]}:web.test.fail[#{data["httptest"]}].count(#{data["delay"]},0)}<#{data["attempts"]}"
         data["description"] = "#{data["url"]} #{data["code"]}"
     end
     connection.triggers.create(
