@@ -219,7 +219,7 @@ unless ENV["APPLIANCE"]
     gem "foreman"
     gem "haml_lint",        "~>0.20.0", :require => false
     gem "rubocop",          "~>0.52.1", :require => false
-    gem "scss_lint",        "~>0.48.0", :require => false
+    gem "scss_lint",        "~>0.57.0", :require => false
     gem "yard"
   end
 
