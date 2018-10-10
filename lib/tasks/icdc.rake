@@ -37,6 +37,7 @@ namespace :dev do
     Rake::Task['evm:stop'].invoke
     `pkill -9 httpd`
     `ipcs -s | awk -v user=apache '$3==user {system("ipcrm -s "$2)}'`
+    puts "Starting MiqServer"
     `ruby /var/www/miq/vmdb/lib/workers/bin/evm_server.rb &`
   end
 
@@ -84,10 +85,7 @@ namespace :dev do
     puts "[fix_cb_seeding] ChargebackRateDetailMeasure.all: #{ChargebackRateDetailMeasure.all.count}"
     puts "[fix_cb_seeding] ChargebackTier.all: #{ChargebackTier.all.count}"
     puts "[fix_cb_seeding] ChargeableField.all: #{ChargeableField.all.count}"
-    ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}
-    ChargeableField.delete_all
-    puts "[fix_cb_seeding] all ChargeableField deleted"
-    
+    ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}    
     #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
     #It migrates ChargebackRateDetail default data to ChargeableField objects
     #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
