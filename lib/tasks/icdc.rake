@@ -79,6 +79,12 @@ namespace :dev do
     provider.save
   end
 
+  desc "Remove all ChargeableField after migration of backup data"
+  task :fix_cb_field, [:env] => :environment do |_, args|
+    puts "[fix_cb_field] ChargeableField.all: #{ChargeableField.all.count}"
+    ChargeableField.delete_all
+  end
+
   desc "Remove all ChargebackRateDetail data, as it cause migration fault"
   task :fix_cb_seeding, [:env] => :environment do |_, args|
     puts "[fix_cb_seeding] ChargebackRateDetail.all: #{ChargebackRateDetail.all.count}"
