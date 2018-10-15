@@ -2,21 +2,29 @@ module QuotaMixin
   extend ActiveSupport::Concern
 
   QUOTA_BASE = {
+     :cpu_allocated       => {
+       :unit          => :fixnum,
+       :format        => :general_number_precision_0,
+       :text_modifier => "Count".freeze
+      },
+     :mem_allocated       => {
+       :unit          => :gigabytes,
+       :format        => :general_number_precision_0,
+       :text_modifier => "GB".freeze
+      },
       :storage_allocated   => {
-          :unit          => :bytes,
-          :format        => :gigabytes_human,
+          :unit          => :gigabytes,
+          :format        => :general_number_precision_0,
           :text_modifier => "GB".freeze
       },
-      :svm_allocated => {
-          :unit          => :fixnum,
-          :format        => :general_number_precision_0,
-          :text_modifier => "Count".freeze
-      },
-      :hours_allocated => {
-          :unit          => :fixnum,
-          :format        => :general_number_precision_0,
-          :text_modifier => "Count".freeze
-      },
+      #:svm_allocated => {
+      #    :unit          => :fixnum,
+      #    :text_modifier => "Count".freeze
+      #},
+      #:hours_allocated => {
+      #    :unit          => :fixnum,
+      #    :text_modifier => "Count".freeze
+      #},
   }
 
   DEFAULT_TEXT_FOR_ZERO_VALUES = {
@@ -31,9 +39,11 @@ module QuotaMixin
     validates :value, :numericality => {:greater_than => 0}
     validates :warn_value, :numericality => {:greater_than => 0}, :if => "warn_value.present?"
 
+    scope :cpu_allocated,       -> { where(:name => :cpu_allocated) }
+    scope :mem_allocated,       -> { where(:name => :mem_allocated) }
     scope :storage_allocated,   -> { where(:name => :storage_allocated) }
-    scope :svm_allocated,       -> { where(:name => :svm_allocated) }
-    scope :hours_allocated,     -> { where(:name => :hours_allocated) }
+    #scope :svm_allocated,       -> { where(:name => :svm_allocated) }
+    #scope :hours_allocated,     -> { where(:name => :hours_allocated) }
 
     virtual_column :name, :type => :string
     virtual_column :total, :type => :integer
@@ -51,6 +61,7 @@ module QuotaMixin
 
 
   def quota_hash
+    _log.info("DBG name #{name.to_sym}")
     self.class.quota_definitions[name.to_sym].merge(:unit => unit, :value => value, :warn_value => warn_value, :format => format) # attributes
   end
 
@@ -143,10 +154,10 @@ module QuotaMixin
           _("Allocated Number of Virtual Machines")
         when :templates_allocated
           _("Allocated Number of Templates")
-        when :svm_allocated
-          _("Allocated Number of SVM")
-        when :hours_allocated
-          _("Allocated Number of SVM Hours")
+        #when :svm_allocated
+        #  _("Allocated Number of SVM")
+        #when :hours_allocated
+        #  _("Allocated Number of SVM Hours")
       end
     end
     
@@ -154,12 +165,12 @@ module QuotaMixin
 
     def quota_definitions
       @quota_definitions ||= QUOTA_BASE.each_with_object({}) do |(name, value), h|
-        h[name] = value.merge(:description => quota_description(name), :value => nil, :warn_value => nil)
+        h[name] = value.merge(:value => nil, :warn_value => nil)
       end
     end
 
     def service_template
-      ServiceTemplate.find_by_generic_subtype("quota")
+      @service_template ||= ServiceTemplate.find_by_generic_subtype("quota")
     end
   end
 end

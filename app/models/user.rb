@@ -42,6 +42,10 @@ class User < ApplicationRecord
   virtual_has_one  :quota
   virtual_has_one  :services_chargeback
   virtual_has_one  :tenant_quota
+  virtual_has_one  :real_quota
+  virtual_has_one  :last_chargeback
+  virtual_has_one  :current_chargeback
+  virtual_has_one  :managed_tenants
   virtual_column :get_user_subnets, :type => :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
@@ -69,7 +73,7 @@ class User < ApplicationRecord
     @admin ||= self.in_my_region.find_by(userid: 'admin')
   end
 
-  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors}.freeze
+  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants}.freeze
 
   def self.tenant_id_clause(user_or_group)
     strategy = Rbac.accessible_tenant_ids_strategy(self)
@@ -175,13 +179,24 @@ class User < ApplicationRecord
     miq_user_role.try(:name)
   end
 
+  def services_chargeback
+     user = User.current_user
+     priority_tenant = self.class.priority_tenant_for(user)
+
+     if priority_tenant.nil?
+       user.current_group.tenant.services_chargeback(user)
+     else
+       priority_tenant.services_chargeback
+     end
+  end
+
   def quota
     personal_quotas
   end
 
-  def self.email2tag(email)
-    email.gsub(/[^A-Za-z0-9]/, '_').downcase
-  end
+   def real_quota
+     combined_quotas
+   end
 
   def self.priority_tenant_for(user)
     Tenant.in_my_region.find_tagged_with(:any =>
@@ -189,9 +204,31 @@ class User < ApplicationRecord
       min{|tenant1, tenant2| tenant1.depth <=> tenant2.depth }
   end
 
-  def tenant_quota
-    priority_tenant = self.class.priority_tenant_for(User.current_user)
-    priority_tenant.present? ? priority_tenant.quota : {}
+  def email2tag
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
+  end
+
+  def managed_tenants
+    res = []
+    managed_tenants = Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], ns: "/managed")
+    for tenant in managed_tenants
+      res.push({"id": tenant.id, "region_name": tenant.region.name})
+    end
+    res
+  end
+
+  def managed_tenant
+    managed_tenants = Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], ns: "/managed")
+  end
+
+  def current_chargeback
+    services_chargebacks('current').first || {"start_date": Date.today.at_beginning_of_month, "cost": 0}
+  end
+
+  def last_chargeback
+    services_chargebacks('last').first || {"start_date": Date.today.at_beginning_of_month - 1.month  , "cost": 0}
   end
 
   def services_chargeback

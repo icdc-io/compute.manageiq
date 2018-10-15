@@ -97,6 +97,9 @@ class Chargeback < ActsAsArModel
   def new_chargeback_calculate_costs(consumption, rates)
     self.fixed_compute_metric = consumption.chargeback_fields_present if consumption.chargeback_fields_present
 
+    _log.info("DBG chargeback caluclate cost consumption #{consumption}")
+    _log.info("DBG chargeback caluclate cost consumption #{rates}")
+
     rates.each do |rate|
       plan = ManageIQ::Consumption::ShowbackPricePlan.find_or_create_by(:description => rate.description,
                                                                         :name        => rate.description,
