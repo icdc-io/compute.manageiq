@@ -6,6 +6,7 @@
 - ChargebackVm
 - ChargebackContainerProject
 - ChargebackContainerImage
+- ChargebackAccount
 - CloudResourceQuota
 - CloudTenant
 - CloudVolume

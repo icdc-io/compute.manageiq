@@ -217,6 +217,8 @@ class Chargeback < ActsAsArModel
   end
 
   def self.load_custom_attributes_for(cols)
+    _log.info("DBG chargeback class #{self.to_s}")
+    return if self.to_s == 'ChargebackAccount'
     chargeback_klass = report_cb_model(self.to_s).safe_constantize
     chargeback_klass.load_custom_attributes_for(cols)
     cols.each do |x|
