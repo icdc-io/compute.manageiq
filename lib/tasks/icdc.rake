@@ -93,8 +93,9 @@ namespace :dev do
     puts "[fix_cb_seeding] ChargebackRateDetail.all: #{ChargebackRateDetail.all.count}"
     puts "[fix_cb_seeding] ChargebackRateDetailMeasure.all: #{ChargebackRateDetailMeasure.all.count}"
     puts "[fix_cb_seeding] ChargebackTier.all: #{ChargebackTier.all.count}"
-    puts "[fix_cb_seeding] ChargeableField.all: #{ChargeableField.all.count}"
-    ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}    
+    ## We do not have ChargeableField before migration finished
+    ##puts "[fix_cb_seeding] ChargeableField.all: #{ChargeableField.all.count}"
+    ##ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}    
     #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
     #It migrates ChargebackRateDetail default data to ChargeableField objects
     #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
