@@ -52,7 +52,6 @@ namespace :dev do
 
   desc "Setup separate credentials for DEV environment"
   task :redhat_creds, [:env] => :environment do |_, args|
-    provider = ManageIQ::Providers::Redhat::InfraManager.first.authentications.where(authtype: "default").first
     if args.nil? or args[:env].nil?
       abort("Provide env name. For example: rake #{_}[dev3]")
     end
@@ -74,9 +73,13 @@ namespace :dev do
     if cred.nil?
       abort("Credentials not specified for location[#{location}] and environment[#{env}]")
     end
-    provider.userid = cred[:userid]
-    provider.password = cred[:password]
-    provider.save
+    provider = ManageIQ::Providers::Redhat::InfraManager.first
+    auth = provider.authentications.where(authtype: "default").first
+    auth.userid = cred[:userid]
+    auth.password = cred[:password]
+    auth.save
+    #self-signed certificate for RHV systems
+    provider.default_endpoint.update_attributes(verify_ssl: 0)
   end
 
   desc "Remove all ChargeableField after migration of backup data"
