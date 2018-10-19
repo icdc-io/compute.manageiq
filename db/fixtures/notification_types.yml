@@ -264,3 +264,24 @@
   :expires_in: 24.hours
   :level: :error
   :audience: superadmin
+- :name: status_warning
+  :message: '%{message}'
+  :expires_in: 7.days
+  :level: :warning
+  :audience: :global
+- :name: status_info
+  :message: '%{message}'
+  :expires_in: 7.days
+  :level: :info
+  :audience: :global
+- :name: status_success
+  :message: '%{message}'
+  :expires_in: 7.days
+  :level: :success
+  :audience: :global
+- :name: status_error
+  :message: '%{message}'
+  :expires_in: 7.days
+  :level: :error
+  :audience: :global
+
