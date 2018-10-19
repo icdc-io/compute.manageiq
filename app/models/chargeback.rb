@@ -164,6 +164,16 @@ class Chargeback < ActsAsArModel
     end
   end
 
+  def calculate_uptime(consumption)
+    uptime = 0
+    _log.info("DBG consumption #{consumption.inspect}")
+    for rollup in JSON.parse(consumption.to_json)["rollup_array"]
+      uptime += 1 if consumption.chargeback_fields_present > 1 
+    end
+    uptime
+  end
+
+
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end
