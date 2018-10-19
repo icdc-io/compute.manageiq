@@ -166,9 +166,8 @@ class Chargeback < ActsAsArModel
 
   def calculate_uptime(consumption)
     uptime = 0
-    _log.info("DBG consumption #{consumption.inspect}")
     for rollup in JSON.parse(consumption.to_json)["rollup_array"]
-      uptime += 1 if consumption.chargeback_fields_present > 1 
+      uptime += 1 if rollup[3] #cpu_usage_rate_average metric, always > 0 if vm was powered on during any hour 
     end
     uptime
   end
