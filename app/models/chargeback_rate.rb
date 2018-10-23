@@ -16,6 +16,7 @@ class ChargebackRate < ApplicationRecord
   before_destroy :ensure_nondefault
 
   include AssignmentMixin
+  include ArRegion
 
   has_many :chargeback_rate_details, :dependent => :destroy, :autosave => true
 
@@ -63,6 +64,39 @@ class ChargebackRate < ApplicationRecord
     end
     result
   end
+
+  def self.load_prices
+    prices = {}
+    groups = %w(cpu memory storage)
+    assignments = ChargebackRate.get_assignments(:compute)
+    assignments += ChargebackRate.get_assignments(:storage)
+
+    assignments.each do |assignment|
+      chargeback_rate = assignment[:cb_rate]
+      location = chargeback_rate.region_description.to_sym
+      prices[location] = {} if prices[location].nil?
+      chargeback_tiers_by_rate = ChargebackTier.joins("INNER JOIN chargeback_rate_details ON chargeback_tiers.chargeback_rate_detail_id = chargeback_rate_details.id")
+        .joins("INNER JOIN chargeback_rates ON chargeback_rate_details.chargeback_rate_id =   chargeback_rates.id")
+        .where('chargeback_rates.id' => chargeback_rate.id)
+
+      groups.each do |group|
+        chargeback_tier = chargeback_tiers_by_rate.where('chargeback_rate_details.group' => group)
+          .find_by('chargeback_rate_details.source' => 'allocated')
+        unless chargeback_tier.nil? || chargeback_tier.chargeback_rate_detail.nil?
+          key_str = 
+            if group == 'storage'
+              "d_#{chargeback_tier.chargeback_rate_detail.chargeback_rate.description.split("_").last}_price"
+            else
+               "#{group}_price"
+            end
+          prices[location][key_str.to_sym] = chargeback_tier.variable_rate
+        end
+      end
+    end
+
+    prices
+  end
+
 
   def self.set_assignments(type, cb_rates)
     validate_rate_type(type)
