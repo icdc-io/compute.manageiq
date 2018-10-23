@@ -164,6 +164,15 @@ class Chargeback < ActsAsArModel
     end
   end
 
+  def calculate_uptime(consumption)
+    uptime = 0
+    for rollup in JSON.parse(consumption.to_json)["rollup_array"]
+      uptime += 1 if rollup[3] #cpu_usage_rate_average metric, always > 0 if vm was powered on during any hour 
+    end
+    uptime
+  end
+
+
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end
@@ -217,6 +226,8 @@ class Chargeback < ActsAsArModel
   end
 
   def self.load_custom_attributes_for(cols)
+    _log.info("DBG chargeback class #{self.to_s}")
+    return if self.to_s == 'ChargebackAccount'
     chargeback_klass = report_cb_model(self.to_s).safe_constantize
     chargeback_klass.load_custom_attributes_for(cols)
     cols.each do |x|

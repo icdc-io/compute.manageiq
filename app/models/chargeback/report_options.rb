@@ -21,6 +21,8 @@ class Chargeback
     :group_by_tenant?,
     :group_by_date_only?,
     :cumulative_rate_calculation,
+    :account_id,
+    :backup_id
   ) do
     def self.new_from_h(hash)
       new(*hash.values_at(*members))

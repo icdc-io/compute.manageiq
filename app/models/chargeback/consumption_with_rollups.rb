@@ -8,6 +8,8 @@ class Chargeback
 
     def initialize(metric_rollup_records, start_time, end_time)
       super(start_time, end_time)
+      #_log.info("DBG consumption records #{metric_rollup_records.inspect}")
+      #_log.info("DBG consumption hours #{metric_rollup_records.metering_used_hours}")
       @rollup_array = metric_rollup_records
     end
 
