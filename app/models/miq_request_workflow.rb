@@ -1069,7 +1069,9 @@ class MiqRequestWorkflow
     MiqPreloader.preload(hosts, :storages => {}, :host_storages => :storage)
 
     storages = hosts.each_with_object({}) do |host, hash|
+    #ICDC fix, skip nil value writable storages    
       host.writable_storages.select{|s| !s.nil?}.each { |s| hash[s.id] = s }
+    #end fix  
     end.values
     selected_storage_profile_id = get_value(@values[:placement_storage_profile])
     if selected_storage_profile_id
