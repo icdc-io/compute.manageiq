@@ -6927,3 +6927,7 @@
       :description: Close Tickets
       :feature_type: control
       :identifier: tickets_close
+  - :name: FAQ List
+    :description: FAQ List
+    :feature_type: view
+    :identifier: faq_list
