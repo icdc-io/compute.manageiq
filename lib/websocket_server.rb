@@ -6,6 +6,7 @@ class WebsocketServer
   def initialize(options = {})
     @logger = options.fetch(:logger, $websocket_log)
     logger.info('Initializing websocket worker!')
+    logger.info(options)
     @pairing = {}
     @sockets = Concurrent::Array.new
 
@@ -14,9 +15,17 @@ class WebsocketServer
         begin
           reads, writes, errors = IO.select(@sockets, @sockets, @sockets, 1)
         rescue IOError
-          @sockets.select(&:closed?).each { |err| cleanup(err) }
+          logger.info('IOError')
+          @sockets.select(&:closed?).each do |err|
+            logger.info(err.to_s)           
+            cleanup(err) 
+          end
         else
-          Array(errors).each { |err| cleanup(err) }
+          logger.info('errors')
+          Array(errors).each do |err| 
+            logger.info(err)
+            cleanup(err)
+          end
         end
 
         # Skip this loop if we can't do anything
@@ -30,6 +39,7 @@ class WebsocketServer
           begin
             @pairing[socket].proxy.transmit(writes, @pairing[socket].is_ws)
           rescue => error
+            logger.info('error')
             cleanup(socket, error)
           end
         end
