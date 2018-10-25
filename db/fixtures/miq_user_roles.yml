@@ -1316,7 +1316,7 @@
   - triggers_enable
   - rbac_tenant_manage_quotas
   - miq_request
-  - tickets
+  - icdc_features
   - rbac_group_view
   - rbac_tenant_view
   - sui_language
