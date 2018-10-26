@@ -41,6 +41,19 @@ namespace :dev do
     `ruby /var/www/miq/vmdb/lib/workers/bin/evm_server.rb &`
   end
 
+  desc "Show Slave catalog items"
+  task :catalog_init => :environment do
+    for service in ServiceTemplate.all
+      if service.name.index("-IDC") || service.name.index("-NB5")
+         service.display = "t"
+         service.save
+      else
+        service.display = "f"
+        service.save 
+      end 
+    end
+  end
+
   desc "Set log level in Vmdb::Settings"
   task :log_level, [:log_name, :level_value] => :environment do |_, args|
     name = args[:log_name].to_sym
