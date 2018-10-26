@@ -160,5 +160,32 @@ namespace :dev do
 
 end
 
+  task :catalog_init => :environment do
+    for service in ServiceTemplate.all
+      if service.name.index("-IDC") || service.name.index("-NB5")
+         service.display = "t"
+         service.save
+      else
+        service.display = "f"
+        service.save
+      end
+    end
+    exit if MiqRegion.default? 99
+    for action in ResourceAction.all
+     if (action.action == 'Retirement' && action.resource_type == 'ServiceTemplate')
+       if action.ae_instance == 'RHEVService1VM'
+         action.ae_instance = 'Service_redhat'
+       elsif action.ae_instance == 'Service1VM'
+         action.ae_instance = 'Service_vmware'
+       elsif action.ae_instance == 'Default'
+         action.ae_instance = 'Service_generic'
+       end
+     elsif (action.action == 'Provision' && action.resource_type == 'ServiceTemplate')
+       action.dialog_id = Dialog.where(name: 'SimpleService').first.id
+     end
+     action.save
+    end
+
+  end
 
 end
