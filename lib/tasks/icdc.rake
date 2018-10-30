@@ -181,7 +181,7 @@ end
          action.ae_instance = 'Service_generic'
        end
      elsif (action.action == 'Provision' && action.resource_type == 'ServiceTemplate')
-       action.dialog_id = Dialog.where(name: 'SimpleService').first.id
+       action.dialog_id = Dialog.where(name: 'SimpleService_new').first.id
      end
      action.save
     end
