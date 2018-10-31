@@ -92,11 +92,6 @@ module ManagerRefresh::SaveCollection
           attributes_index[index]        = attributes
           inventory_objects_index[index] = inventory_object
         end
-         #ICDC very bad kostyl, fix asap
-         return if inventory_collection.to_s.index("HostStorage")
-         _log.info("DBG host inventory collection #{inventory_collection.to_s}")
-        _log.debug("Processing #{inventory_collection} of size #{inventory_collection.size}...")
-        #ICDC end of the kostyl
         # Records that are in the DB, we will be updating or deleting them.
         ActiveRecord::Base.transaction do
           association.find_each do |record|
