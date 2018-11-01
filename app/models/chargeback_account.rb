@@ -53,7 +53,8 @@ class ChargebackAccount < Chargeback
     :tenant                   => :string,
     :cpu_allocated_total      => :float,
     :memory_allocated_total   => :float,
-    :uptime                   => :string
+    :uptime                   => :string,
+    :disk_type                => :string
   )
 
   def self.build_results_for_report_ChargebackAccount(options)
@@ -126,6 +127,7 @@ class ChargebackAccount < Chargeback
       "cpu_allocated_total"      => {:grouping => [:total]},
       "memory_allocated_total"   => {:grouping => [:total]},
       "uptime"                   => {:grouping => [:total]},
+      "disk_type"                => {:grouping => [:total]},
     }
   end
 
@@ -199,6 +201,7 @@ class ChargebackAccount < Chargeback
     self.uptime        = calculate_uptime(consumption)
     self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
     self.memory_allocated_total  = consumption.resource.try(:ram_size)
+    self.disk_type     = get_disk_type(consumption)
   end
 end
 

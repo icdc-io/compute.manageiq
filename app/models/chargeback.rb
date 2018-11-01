@@ -172,6 +172,15 @@ class Chargeback < ActsAsArModel
     uptime
   end
 
+  def get_disk_type(consumption)
+    disks = consumption.resource.disks
+    res = ""
+    return res unless disks
+    disks.each do |disk|
+      res += Storage.find_by_id(disk.storage_id).name + disk.size / 1.gigabyte
+    end
+    res
+  end
 
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
