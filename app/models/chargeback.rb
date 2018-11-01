@@ -177,7 +177,7 @@ class Chargeback < ActsAsArModel
     res = ""
     return res unless disks
     disks.each do |disk|
-      res += Storage.find_by_id(disk.storage_id).name + disk.size / 1.gigabyte
+      res += "#{Storage.find_by_id(disk.storage_id).name} : #{disk.size / 1.gigabyte}GB; "
     end
     res
   end
