@@ -49,6 +49,7 @@ class ChargebackAccount < Chargeback
     :total_cost               => :float,
     :entity                   => :binary,
     :license_cost             => :float,
+    :license_type             => :string,
     :account                  => :string,
     :tenant                   => :string,
     :cpu_allocated_total      => :float,
@@ -124,6 +125,7 @@ class ChargebackAccount < Chargeback
       "storage_used_metric"      => {:grouping => [:total]},
       "total_cost"               => {:grouping => [:total]},
       "license_cost"             => {:grouping => [:total]},
+      "license_type"             => {:grouping => [:total]},
       "cpu_allocated_total"      => {:grouping => [:total]},
       "memory_allocated_total"   => {:grouping => [:total]},
       "uptime"                   => {:grouping => [:total]},
@@ -196,6 +198,7 @@ class ChargebackAccount < Chargeback
     self.provider_name = consumption.parent_ems.try(:name)
     self.provider_uid  = consumption.parent_ems.try(:guid)
     self.license_cost  = consumption.resource.try(:license_cost)
+    self.license_type  = consumption.resource.try(:license_type)
     self.account       = consumption.resource.tenant.get_account.description
     self.tenant        = consumption.resource.tenant.description
     self.uptime        = calculate_uptime(consumption)

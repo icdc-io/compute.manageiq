@@ -177,7 +177,9 @@ class Chargeback < ActsAsArModel
     res = ""
     return res unless disks
     disks.each do |disk|
-      res += "#{Storage.find_by_id(disk.storage_id).name} : #{disk.size / 1.gigabyte}GB; "
+      tags = disk.tags.where("name LIKE ?", '/managed/storage_type%')
+      return res if tags.empty?
+      res += "#{Classification.find_by_tag_id(tags.first.id).description} : #{disk.size / 1.gigabyte}GB; "
     end
     res
   end
