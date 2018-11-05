@@ -87,7 +87,7 @@ module OwnershipMixin
           none
         end
 
-      list = list.or(user_shared(user)) if [Service, Vm].include?(self)
+      list = list.or(user_shared(user)) if [Service, Vm, VmOrTemplate].include?(self)
 
       list
     end

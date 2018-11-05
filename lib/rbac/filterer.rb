@@ -538,7 +538,7 @@ module Rbac
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
-        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm].include?(klass)
+        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass)
         scope =
           if shared
             shared
