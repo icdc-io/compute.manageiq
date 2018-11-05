@@ -4,8 +4,9 @@ module IcdcServiceMixin
   included do
     extend InterRegionApiMethodRelay
 
-    virtual_column :domains,      :type => :string
-    virtual_column :shared_users, :type => :string
+    virtual_column :domains,           :type => :string
+    virtual_column :shared_users,      :type => :string
+    virtual_column :miq_request_state, :type => :string
 
     api_relay_method :share do |options|
       options
@@ -63,6 +64,10 @@ module IcdcServiceMixin
     end
 
     custom_button.invoke(self)
+  end
+
+  def miq_request_state
+    miq_request.nil? ? 'finished' : miq_request.request_state
   end
 
   private
