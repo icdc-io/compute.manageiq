@@ -170,7 +170,10 @@ end
         service.save
       end
     end
-    exit if MiqRegion.default? 99
+  end
+
+   desc "Next 2 tasks assign new provision dialog and new retirement methods to templates"
+   task :retirement_methods => :environment do
     for action in ResourceAction.all
      if (action.action == 'Retirement' && action.resource_type == 'ServiceTemplate')
        if action.ae_instance == 'RHEVService1VM'
@@ -180,12 +183,18 @@ end
        elsif action.ae_instance == 'Default'
          action.ae_instance = 'Service_generic'
        end
-     elsif (action.action == 'Provision' && action.resource_type == 'ServiceTemplate')
-       action.dialog_id = Dialog.where(name: 'SimpleService_new').first.id
+      end
+      action.save
      end
-     action.save
     end
-
-  end
+  
+    task :dialog_assignment => :environment do
+      for action in ResourceAction.all
+        if (action.resource_type == 'ServiceTemplate')
+          action.dialog_id = Dialog.where(name: 'SimpleService_new').first.id
+        end
+        action.save
+      end
+    end
 
 end
