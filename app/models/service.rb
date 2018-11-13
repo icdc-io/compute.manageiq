@@ -87,7 +87,6 @@ class Service < ApplicationRecord
   virtual_column :power_state,                              :type => :string
   virtual_column :power_status,                             :type => :string
   virtual_column :location,                                 :type => :string
-  virtual_column :miq_request_state,                        :type => :string
   virtual_column :license_type,                             :type => :string
   virtual_column :license_cost,                             :type => :integer
 
@@ -138,13 +137,6 @@ class Service < ApplicationRecord
 
   def power_status
     options[:power_status]
-  end
-
-  def miq_request_state
-    unless miq_request.nil?
-      return miq_request.request_state
-    end
-    nil
   end
 
   def license_type
