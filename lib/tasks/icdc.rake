@@ -94,11 +94,8 @@ namespace :dev do
   end
 
   desc "Cross openshift urls on production"
-  task :fix_ws_url, [:env] => :environment do |_, args|
-    if args.nil? or args[:env].nil?
-      abort("Provide env name. For example: rake #{_}[dev3]")
-    end
-    env = args[:env].to_sym
+  task :fix_ws_url => :environment do
+    env = ENV["MY_POD_NAMESPACE"][4..-1].to_sym #dev1, dev2, dev3, dev4, prod
     location = MiqRegion.my_region.description.downcase.to_sym
     puts "[fix_ws_url] env:#{env}"
     puts "[fix_ws_url] location:#{location}"
@@ -162,12 +159,27 @@ namespace :dev do
     puts "[fix_cb_seeding] all ChargebackRate deleted"
   end
 
+  desc "Activate MiqServer role"
+  task :activate_role, [:role] => :environment do |_,args|
+    if args.nil? or args[:role].nil?
+      abort("Provide valid MiqServer role name. For example: rake #{_}[cockpit_ws]")
+    end
+    server = MiqServer.in_my_region.first
+    roles = server.settings_for_resource.server.role.split(",")
+    roles.push(args[:role])
+    setting = {server: {role: roles.sort.join(",")}}
+    Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
+  end
+
   desc "Adjust pglogical host and port for different openshift environments"
   task :pglogical_openshift, [:env] => :environment do |_, args|
     region_map = { "region_1" => :idc, "region_2" => :nb5, "region_99" => :main }
     openshift_map = {
       stage: {
         nb5: { host: "miq-nb5-master.icdc.io", port: "31120" }
+      },
+      prod: {
+        nb5: { host: "miq-nb5-master.icdc.io", port: "31020" }
       }
     }
     deploy_env = ENV["MY_POD_NAMESPACE"][4..-1].to_sym #dev1, dev2, dev3, dev4
