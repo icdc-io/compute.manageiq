@@ -91,6 +91,45 @@ namespace :dev do
     auth.userid = cred[:userid]
     auth.password = cred[:password]
     auth.save
+  end
+
+  desc "Cross openshift urls on production"
+  task :fix_ws_url, [:env] => :environment do |_, args|
+    if args.nil? or args[:env].nil?
+      abort("Provide env name. For example: rake #{_}[dev3]")
+    end
+    env = args[:env].to_sym
+    location = MiqRegion.my_region.description.downcase.to_sym
+    puts "[fix_ws_url] env:#{env}"
+    puts "[fix_ws_url] location:#{location}"
+    urls = {
+      idc: {
+        dev1: "",
+        dev2: "",
+        dev3: "",
+        dev4: "",
+	prod: "https://miq-idc.icdc.io"
+      },
+      nb5: {
+        dev1: "",
+        dev2: "",
+        dev3: "",
+        dev4: "",
+	prod: "https://miq-nb5.icdc.io"
+      },
+    }
+    url = urls.dig(location, env)
+    if urls.nil?
+      abort("Webservices url is not specified for location[#{location}] and environment[#{env}]")
+    end
+    setting = {webservices: {url: url}}
+    Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
+  end
+
+
+  desc "Setup separate credentials for DEV environment"
+  task :redhat_tls_off, [:env] => :environment do |_, args|
+    provider = ManageIQ::Providers::Redhat::InfraManager.first
     #self-signed certificate for RHV systems
     provider.default_endpoint.update_attributes(verify_ssl: 0)
   end
@@ -119,6 +158,8 @@ namespace :dev do
     #Seeding creates a lot of ChargebackTier on each container run
     ChargebackTier.delete_all
     puts "[fix_cb_seeding] ChargebackTier after delete_all"
+    ChargebackRate.delete_all
+    puts "[fix_cb_seeding] all ChargebackRate deleted"
   end
 
   desc "Adjust pglogical host and port for different openshift environments"
@@ -158,22 +199,8 @@ namespace :dev do
     end
   end
 
-end
-
-  task :catalog_init => :environment do
-    for service in ServiceTemplate.all
-      if service.name.index("-IDC") || service.name.index("-NB5")
-         service.display = "t"
-         service.save
-      else
-        service.display = "f"
-        service.save
-      end
-    end
-  end
-
-   desc "Next 2 tasks assign new provision dialog and new retirement methods to templates"
-   task :retirement_methods => :environment do
+  desc "Next 2 tasks assign new provision dialog and new retirement methods to templates"
+  task :retirement_methods => :environment do
     for action in ResourceAction.all
      if (action.action == 'Retirement' && action.resource_type == 'ServiceTemplate')
        if action.ae_instance == 'RHEVService1VM'
@@ -186,15 +213,16 @@ end
       end
       action.save
      end
-    end
+   end
   
-    task :dialog_assignment => :environment do
+  task :dialog_assignment => :environment do
       for action in ResourceAction.all
         if (action.resource_type == 'ServiceTemplate')
           action.dialog_id = Dialog.where(name: 'SimpleService_new').first.id
         end
         action.save
       end
-    end
+  end
 
+end
 end
