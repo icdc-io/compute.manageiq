@@ -89,6 +89,7 @@ class Service < ApplicationRecord
   virtual_column :location,                                 :type => :string
   virtual_column :license_type,                             :type => :string
   virtual_column :license_cost,                             :type => :integer
+  virtual_column :get_user_subnets,                         :type => :string
 
   validates :name, :presence => true
 
@@ -147,6 +148,29 @@ class Service < ApplicationRecord
   def license_cost
     request = service_resources.where(:resource_type => 'MiqRequest').first
     MiqRequest.find_by_id(request.resource_id).options[:license_cost] if request
+  end
+
+  def get_user_subnets
+    networks = tags(:networks).to_a #fix #3447
+    current_group = evm_owner.current_group
+    networks.push(*current_group.tags(:networks))
+    networks.push(*current_group.tenant.tags(:networks))
+    for tenant_id in current_group.tenant.ancestry.split('/')
+      networks.push(*Tenant.find_by_id(tenant_id).tags(:networks))
+    end
+    networks = networks.uniq()
+    nets = []
+    networks.each do |tag|
+      tag_info = {}
+      if /\/managed\/networks\// =~ tag.name
+        tag_info["subnet"] = tag.categorization["name"]
+        tag_info["description"] = tag.categorization["description"]
+        unless tag_info["description"].include? "All IP consumed"
+          nets.push(tag_info)
+        end
+      end
+    end
+    nets
   end
 
   def service_id
