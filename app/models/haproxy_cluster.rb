@@ -37,11 +37,6 @@ class HaproxyCluster < ApplicationRecord
     conn = connection
     request = post_request("/api/1/routes", body)
     response = conn.request(request)
-    if response.kind_of?(Net::HTTPSuccess)
-      user = User.current_user ? User.current_user.email : "system"
-      issue_data = {"name" => "New haproxy request for #{user}", "description" => "Haproxy config: #{body}", "priority" => 3}
-      Issue.new_support_issue(issue_data)
-    end
     response
   end
 
@@ -50,8 +45,6 @@ class HaproxyCluster < ApplicationRecord
     conn = connection
     request = put_request("/api/1/routes/#{data["route_id"]}", body)
     response = conn.request(request)
-    issue_data = {"name" => "New haproxy request for #{User.current_user.email}", "description" => "Haproxy config: #{body}", "priority" => 3}
-    Issue.new_support_issue(issue_data)
     response
   end
 
@@ -65,13 +58,6 @@ class HaproxyCluster < ApplicationRecord
 
     request = delete_request("/api/1/routes/#{data[:route_id]}")
     response = conn.request(request)
-
-    if response.kind_of?(Net::HTTPSuccess)
-      user = User.current_user ? User.current_user.email : "system"
-      issue_data = {"name" => "Haproxy delete request for #{user}", "description" => "Haproxy config: #{haproxy_config}", "priority" => 3}
-      Issue.new_support_issue(issue_data)
-    end
-
     response
   end
 
@@ -141,7 +127,6 @@ class HaproxyCluster < ApplicationRecord
   def post_request(url, body)
     request = Net::HTTP::Post.new(url)
     request.add_field("X_HAPROXYAPI_KEY", api_key)
-    _log.info("DBG send body #{body.to_json}")
     request.body = body.to_json
     request
   end
@@ -149,7 +134,6 @@ class HaproxyCluster < ApplicationRecord
   def put_request(url, body)
     request = Net::HTTP::Put.new(url)
     request.add_field("X_HAPROXYAPI_KEY", api_key)
-    _log.info("DBG send body #{body.to_json}")
     request.body = body.to_json
     request
   end
@@ -161,7 +145,7 @@ class HaproxyCluster < ApplicationRecord
   end
 
   def generate_body(object, data)
-    data = data.symbolize_keys
+    data = data.deep_symbolize_keys
     body = {
       "name"           => data[:name],
       "host"           => data[:dns],
@@ -169,7 +153,15 @@ class HaproxyCluster < ApplicationRecord
       "service_id"     => object.id,
       "approve_status" => "approved",
       "project"        => data[:project],
-      "purpose"        => data[:purpose],
+      "security"       => {
+        "status"  => "approved",
+        "purpose" => data[:purpose],
+        "project" => {
+          "code"    => data[:project][:code],
+          "name"    => data[:project][:name],
+        }
+      },
+
       "backend"        => {
         "balance" => "roundrobin",
         "proto"   => data[:internalProtocol].downcase,
@@ -180,11 +172,11 @@ class HaproxyCluster < ApplicationRecord
     @region = object.region_number
 
     data[:vms].each do |vm|
-      vm = vm.symbolize_keys
       raise "Wrong or private IP address #{vm[:host]}" unless ip_allowed(vm[:host])
       server = {"name" => vm[:id], "host" => vm[:host], "port" => data[:port]}
       body["backend"]["servers"].push(server)
     end
+    _log.info("Haproxy body: #{body.inspect}")
     body
   end
 
