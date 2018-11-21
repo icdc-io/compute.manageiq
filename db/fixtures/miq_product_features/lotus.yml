@@ -1,0 +1,5 @@
+# Lotus Api
+:name: Lotus
+:description: lotus api requests
+:feature_type: node
+:identifier: lotus_api_request 
