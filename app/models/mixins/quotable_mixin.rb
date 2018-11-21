@@ -134,5 +134,12 @@ module QuotableMixin
   end
 
   module ClassMethods
+   def search_attribute
+      if self.column_names.include? 'name'
+        :name
+      elsif self.column_names.include? 'description'
+        :description
+      end
+    end
   end
 end
