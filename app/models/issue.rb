@@ -88,7 +88,7 @@ class Issue < ActiveResource::Base
   def self.headers
     new_headers = {}
     new_headers["X-Redmine-API-Key"] = RedmineConfig::REDMINE_CONFIG[:api_key]
-    new_headers["X-Redmine-Switch-User"] = User.current_user.email if User.current_user.present?
+    new_headers["X-Redmine-Switch-User"] = User.current_user.userid if User.current_user.present?
     new_headers
   end
 
@@ -197,8 +197,8 @@ class Issue < ActiveResource::Base
   end
 
   def self.format_issue(issue, user_id = nil)
-    issue.uploads = issue.try(:uploads)&.map(&:filename)
-    issue.attachments = issue.try(:attachments)&.map(&:filename)
+    issue.uploads = issue.try(:uploads)&.map { |file| {'name' => file.filename, 'id' => file.id} }
+    issue.attachments = issue.try(:attachments)&.map { |file| {'name' => file.filename, 'id' => file.id } }
     issue.project = issue.project.name
     issue.tracker = issue.tracker.name
     issue.stat_id = issue.status.id.to_i
@@ -225,7 +225,7 @@ class Issue < ActiveResource::Base
         note = {"created_on" => journal.created_on, "note" => journal.notes.encode("UTF-8")}
         note["user"] = journal.user.id == user_id ? "_Me" : journal.user.name
         note['uploads'] = []
-        journal.details.each { |d| note['uploads'] << d.new_value if d.property == 'attachment' }
+        journal.details.each { |d| note['uploads'] << { 'name' => d.new_value, "id" => d.name } if d.property == 'attachment' }
         issue.attachments.pop(note['uploads'].size)
         details.push(note)
       end
@@ -259,6 +259,7 @@ class Issue < ActiveResource::Base
         :token        => upload["upload"]["token"],
         :filename     => file["filename"],
         :content_type => "image/*",
+        :id           => upload["upload"]["id"],
       }
     end
 
