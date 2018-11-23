@@ -6,7 +6,9 @@ module UserQuotableMixin
     has_many :user_quotas
 
     belongs_to :quota_holder, :class_name => "Tenant"
-    after_commit :update_quota_holder_associations
+# FIX ASAP bug 7296. TODO: Find a permanent solution and fix it.
+#    after_commit :update_quota_holder_associations
+# END FIX
   end
 
   def get_quotas
