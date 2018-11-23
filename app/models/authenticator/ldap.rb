@@ -1,27 +1,16 @@
 module Authenticator
+
   class Ldap < Base
+
+    include AccountsStructureHelper
+
     def self.proper_name
       'LDAP'
     end
 
-    def self.authenticates_for
-      super + %w(ldaps)
-    end
-
-    def self.validate_config(config)
-      if config[:ldaphost].blank?
-        [:ldaphost, "ldaphost can't be blank"]
-      else
-        []
-      end
-    end
-
-    def autocreate_user(username)
-      # when default group for ldap users is enabled, create the user
-      return unless config[:default_group_for_users]
-      default_group = MiqGroup.in_my_region.find_by(:description => config[:default_group_for_users])
-      return unless default_group
-      create_user_from_ldap(username) { [default_group] }
+    def lookup_by_identity(username)
+      super ||
+        find_or_create_by_ldap(username)
     end
 
     def user_authorizable_without_authentication?
@@ -34,7 +23,7 @@ module Authenticator
       @ldap ||= ldap_bind(config[:bind_dn], config[:bind_pwd])
     end
 
-    # Unbound LDAP handle
+
     def miq_ldap
       @miq_ldap ||= MiqLdap.new(:auth => config)
     end
@@ -42,6 +31,21 @@ module Authenticator
     def ldap_bind(username, password)
       ldap = MiqLdap.new(:auth => config)
       ldap if ldap.bind(username, password)
+    end
+
+    def find_or_create_by_ldap(username)
+      username = miq_ldap.fqusername(username)
+      user = User.find_by_userid(username)
+      return user unless user.nil?
+      user = create_default_user(username)
+    end
+
+    def autocreate_user(username)
+
+      return unless config[:default_group_for_users]
+      default_group = MiqGroup.find_by(:description => config[:default_group_for_users])
+      return unless default_group
+      create_user_from_ldap(username) { [default_group] }
     end
 
     def create_user_from_ldap(username)
@@ -72,13 +76,17 @@ module Authenticator
     end
 
     def find_external_identity(username, *_args)
-      # Ldap will be used for authentication and role assignment
       _log.info("Bind DN: [#{config[:bind_dn]}]")
-      _log.info(" User FQDN: [#{username}]")
+      _log.info(" ldap obj: [#{ldap}]")
       lobj = ldap.get_user_object(username)
       _log.debug("User obj from LDAP: #{lobj.inspect}")
 
       lobj
+    end
+
+    def userprincipal_for(username)
+      lobj = find_external_identity(username)
+      User.find_by_userid(userid_for(lobj, username))
     end
 
     def userid_for(lobj, username)
