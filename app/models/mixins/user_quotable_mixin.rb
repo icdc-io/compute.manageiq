@@ -7,7 +7,7 @@ module UserQuotableMixin
 
     belongs_to :quota_holder, :class_name => "Tenant"
 # FIX ASAP bug 7296. TODO: Find a permanent solution and fix it.
-#    after_commit :update_quota_holder_associations
+    after_commit :update_quota_holder_associations, on: [:create]
 # END FIX
   end
 
