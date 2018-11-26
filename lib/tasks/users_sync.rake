@@ -8,10 +8,10 @@ namespace :users_sync do
     end
     groups = MiqGroup.all
     groups_arr = []
-    for group in groups 
+    for group in groups
       group_hash = group.as_json
-      group_hash['miq_user_role'] = group.miq_user_role.name unless group.group_type == 'tenant' 
-      groups_arr.push(group_hash) 
+      group_hash['miq_user_role'] = group.miq_user_role.name unless group.group_type == 'tenant'
+      groups_arr.push(group_hash)
     end
     groups = groups_arr
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
@@ -29,7 +29,7 @@ namespace :users_sync do
         group.tenant_id = group_master['tenant_id'] - 99000000000000 + region.provider_region * 1000000000000
         group.save!
       end
-      for user_master in users     
+      for user_master in users
         user = User.new
         user.id = user_master['id'] - 99000000000000 + region.provider_region * 1000000000000
         user.userid = user_master['userid']
@@ -53,7 +53,6 @@ namespace :users_sync do
       user = User.where(userid: user_master['userid']).first
       unless user
         user = User.new
-        user.id = user_master['id'] - 99000000000000 + region.provider_region * 1000000000000
         user.userid = user_master['userid']
       end
       user.email = user_master['email']
