@@ -177,10 +177,13 @@ class Chargeback < ActsAsArModel
     res = ""
     return res unless disks
     disks.each do |disk|
+       #FIX ICDC-G
+    if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
       tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type%')
       return res if tags.empty?
       res += "#{Classification.find_by_tag_id(tags.first.id).description} : #{disk.size / 1.gigabyte}GB; "
-    end
+   end 
+   end
     res
   end
 
