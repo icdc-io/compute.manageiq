@@ -28,7 +28,7 @@ class ChargebackRateDetailMeasure < ApplicationRecord
     if File.exist?(fixture_file_measure)
       fixture = YAML.load_file(fixture_file_measure)
       fixture.each do |cbr|
-        rec = ChargebackRateDetailMeasure.find_by(:name => cbr[:name])
+        rec = ChargebackRateDetailMeasure.in_my_region.find_by(:name => cbr[:name])
         if rec.nil?
           _log.info("Creating [#{cbr[:name]}] with units=[#{cbr[:units]}]")
           rec = ChargebackRateDetailMeasure.create(cbr)

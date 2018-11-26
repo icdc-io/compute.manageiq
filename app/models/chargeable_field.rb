@@ -16,7 +16,7 @@ class ChargeableField < ApplicationRecord
 
   belongs_to :detail_measure, :class_name => 'ChargebackRateDetailMeasure', :foreign_key => :chargeback_rate_detail_measure_id
 
-  validates :metric, :uniqueness => true, :presence => true
+  validates :metric, :uniqueness => true, :presence => true, if: proc { |cf| cf.class.in_my_region.exists?(id: cf.id) }
   validates :group, :source, :presence => true
 
   def showback_measure
@@ -110,7 +110,7 @@ class ChargeableField < ApplicationRecord
 
   def self.seed
     measures = ChargebackRateDetailMeasure.in_my_region.index_by(&:name)
-    existing = ChargeableField.all.index_by(&:metric)
+    existing = ChargeableField.in_my_region.index_by(&:metric)
     seed_data.each do |f|
       measure = f.delete(:measure)
       if measure
