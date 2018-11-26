@@ -6933,6 +6933,6 @@
     :identifier: faq_list
   - :name: Lotus
     :description: lotus api requests
-    :feature_type: node
+    :feature_type: control
     :identifier: lotus_api_request
 
