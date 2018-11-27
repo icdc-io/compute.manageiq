@@ -187,6 +187,28 @@ class Chargeback < ActsAsArModel
     res
   end
 
+  def get_disk_type_proxy(consumption, type)
+    disks = consumption.resource.disks
+    res = 0
+    return res unless disks
+    disks.each do |disk|
+      #FIX ICDC-G
+      if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
+        if type == 'fast'
+          tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/15k%')
+          return res if tags.empty?
+          res += disk.size / 1.gigabyte
+          return res
+        elsif type == 'slow'
+          tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/7k%')
+          return res if tags.empty?
+          res += disk.size / 1.gigabyte
+          return res
+        end
+      end
+    end
+  end
+
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end

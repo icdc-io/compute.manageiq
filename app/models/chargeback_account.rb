@@ -55,7 +55,11 @@ class ChargebackAccount < Chargeback
     :cpu_allocated_total      => :float,
     :memory_allocated_total   => :float,
     :uptime                   => :string,
-    :disk_type                => :string
+    :disk_type                => :string,
+    :fast_disk                => :string,
+    :slow_disk                => :string,
+    :medium_disk              => :string,
+    :ssd_disk                 => :string 
   )
 
   def self.build_results_for_report_ChargebackAccount(options)
@@ -130,7 +134,11 @@ class ChargebackAccount < Chargeback
       "memory_allocated_total"   => {:grouping => [:total]},
       "uptime"                   => {:grouping => [:total]},
       "disk_type"                => {:grouping => [:total]},
-    }
+      "fast_disk"                => {:grouping => [:total]},
+      "slow_disk"                => {:grouping => [:total]},
+      "medium_disk"              => {:grouping => [:total]}, 
+      "ssd_disk"                 => {:grouping => [:total]}
+ }
   end
 
   def self.vm_owner(consumption)
@@ -205,6 +213,9 @@ class ChargebackAccount < Chargeback
     self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte
     self.disk_type     = get_disk_type(consumption)
+    self.fast_disk     = get_disk_type_proxy(consumption, 'fast')
+    self.slow_disk     = get_disk_type_proxy(consumption, 'slow')
+    _log.info("[DBG] ahr fast disk #{self.vm_name} :: #{self.fast_disk.inspect} :: slow_disk #{self.slow_disk.inspect}" ) 
   end
 end
 
