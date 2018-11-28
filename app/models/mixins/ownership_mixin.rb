@@ -103,18 +103,13 @@ module OwnershipMixin
     end
 
     def user_shared(user)
-      list = none
-      project_names = []
+      tag_ids = []
+
       User.where(userid: user.userid).each do |loc_user|
-        loc_user.tags(:ns => "/managed/project/").each do |tag_project|
-          project_names << tag_project.name.split('/')[-1]
-        end
-      end
-      project_names.uniq.each do |project_name|
-        list = list.or(find_tagged_with(:any => project_name, :ns => '/managed/project'))
+        tag_ids << loc_user.tags(:ns => "/managed/project/").pluck(:id)
       end
 
-      list
+      with_any_tags(tag_ids.flatten)
     end
   end
 
