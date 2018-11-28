@@ -57,9 +57,10 @@ class ChargebackAccount < Chargeback
     :uptime                   => :string,
     :disk_type                => :string,
     :fast_disk                => :string,
-    :slow_disk                => :string,
     :medium_disk              => :string,
-    :ssd_disk                 => :string 
+    :slow_disk                => :string,
+    :ssd_disk                 => :string,
+    :backup_disk              => :string 
   )
 
   def self.build_results_for_report_ChargebackAccount(options)
@@ -135,9 +136,10 @@ class ChargebackAccount < Chargeback
       "uptime"                   => {:grouping => [:total]},
       "disk_type"                => {:grouping => [:total]},
       "fast_disk"                => {:grouping => [:total]},
-      "slow_disk"                => {:grouping => [:total]},
-      "medium_disk"              => {:grouping => [:total]}, 
-      "ssd_disk"                 => {:grouping => [:total]}
+      "medium_disk"              => {:grouping => [:total]},
+      "slow_disk"                => {:grouping => [:total]}, 
+      "ssd_disk"                 => {:grouping => [:total]},
+      "backup_disk"              => {:grouping => [:total]}
  }
   end
 
@@ -198,6 +200,7 @@ class ChargebackAccount < Chargeback
   private
 
   def init_extra_fields(consumption)
+    test_arr = []
     self.vm_id         = consumption.resource_id
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
@@ -213,9 +216,13 @@ class ChargebackAccount < Chargeback
     self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte
     self.disk_type     = get_disk_type(consumption)
-    self.fast_disk     = get_disk_type_proxy(consumption, 'fast')
-    self.slow_disk     = get_disk_type_proxy(consumption, 'slow')
-    _log.info("[DBG] ahr fast disk #{self.vm_name} :: #{self.fast_disk.inspect} :: slow_disk #{self.slow_disk.inspect}" ) 
+    test_arr = get_disk_type_proxy(consumption)
+    self.fast_disk = test_arr[0]
+    self.medium_disk = test_arr[1]
+    self.slow_disk = test_arr[2]
+    self.ssd_disk = test_arr[3]
+    self.backup_disk = test_arr[4]    
+    _log.info("[DBG] ahr cb reports :: #{test_arr.inspect}") 
   end
 end
 

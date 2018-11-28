@@ -187,26 +187,32 @@ class Chargeback < ActsAsArModel
     res
   end
 
-  def get_disk_type_proxy(consumption, type)
+  def get_disk_type_proxy(consumption)
     disks = consumption.resource.disks
-    res = 0
-    return res unless disks
+    res_f = res_s = res_m = res_ssd = res_b = 0
+    return [res_f, res_s, res_m, res_ssd, res_b] unless disks
     disks.each do |disk|
-      #FIX ICDC-G
-      if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
-        if type == 'fast'
-          tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/15k%')
-          return res if tags.empty?
-          res += disk.size / 1.gigabyte
-          return res
-        elsif type == 'slow'
-          tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/7k%')
-          return res if tags.empty?
-          res += disk.size / 1.gigabyte
-          return res
+      if !Storage.find_by_id(disk.storage_id).nil?
+        if tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/%') || tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/vm_disk_type/%')
+          return [res_f, res_s, res_m, res_ssd, res_b] if tags.empty?
+          for x in Storage.find_by_id(disk.storage_id).tags
+          if x.name == '/managed/storage_type/15k'
+            res_f += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/10k'
+            res_m += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/7k'
+            res_s += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/ssd' 
+            res_ssd += disk.size / 1.gigabyte
+          elsif x.name == '/managed/vm_disk_type/backup_disk'
+            res_s = 0
+            res_b += disk.size / 1.gigabyte
+          end
         end
       end
     end
+  end
+    return [res_f, res_m, res_s, res_ssd, res_b]
   end
 
   def self.report_cb_model(model)
