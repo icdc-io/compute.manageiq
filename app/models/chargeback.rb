@@ -190,6 +190,7 @@ class Chargeback < ActsAsArModel
   def get_disk_type_proxy(consumption)
     disks = consumption.resource.disks
     res_f = res_s = res_m = res_ssd = res_b = 0
+    backup = false
     return [res_f, res_s, res_m, res_ssd, res_b] unless disks
     disks.each do |disk|
       if !Storage.find_by_id(disk.storage_id).nil?
@@ -205,13 +206,14 @@ class Chargeback < ActsAsArModel
           elsif x.name == '/managed/storage_type/ssd' 
             res_ssd += disk.size / 1.gigabyte
           elsif x.name == '/managed/vm_disk_type/backup_disk'
-            res_s = 0
+            backup = true
             res_b += disk.size / 1.gigabyte
           end
         end
       end
     end
   end
+    res_s = 0 if backup  
     return [res_f, res_m, res_s, res_ssd, res_b]
   end
 

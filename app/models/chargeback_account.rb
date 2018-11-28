@@ -200,7 +200,7 @@ class ChargebackAccount < Chargeback
   private
 
   def init_extra_fields(consumption)
-    test_arr = []
+    disk_size = []
     self.vm_id         = consumption.resource_id
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
@@ -216,13 +216,12 @@ class ChargebackAccount < Chargeback
     self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte
     self.disk_type     = get_disk_type(consumption)
-    test_arr = get_disk_type_proxy(consumption)
-    self.fast_disk = test_arr[0]
-    self.medium_disk = test_arr[1]
-    self.slow_disk = test_arr[2]
-    self.ssd_disk = test_arr[3]
-    self.backup_disk = test_arr[4]    
-    _log.info("[DBG] ahr cb reports :: #{test_arr.inspect}") 
+    disk_size = get_disk_type_proxy(consumption)
+    self.fast_disk = disk_size[0]
+    self.medium_disk = disk_size[1]
+    self.slow_disk = disk_size[2]
+    self.ssd_disk = disk_size[3]
+    self.backup_disk = disk_size[4]     
   end
 end
 
