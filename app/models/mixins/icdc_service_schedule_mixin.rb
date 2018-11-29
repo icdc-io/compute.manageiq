@@ -50,7 +50,7 @@ module IcdcServiceScheduleMixin
       :prod_default => "system"
     )
 
-    backup_retention_period = "quarter" if incorrect_term?(backup_retention_period)
+    self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
   end
 
   def backup_retention_period
