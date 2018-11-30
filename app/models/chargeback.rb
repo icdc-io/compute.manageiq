@@ -21,6 +21,7 @@ class Chargeback < ActsAsArModel
       rates_to_apply = rates.get(consumption)
 
       key = report_row_key(consumption)
+      _log.info("DBG ahr key #{key}")
       data[key] ||= new(options, consumption)
 
       chargeback_rates = data[key]["chargeback_rates"].split(', ') + rates_to_apply.collect(&:description)
@@ -189,22 +190,20 @@ class Chargeback < ActsAsArModel
 
   def get_disk_type_proxy(consumption)
     disks = consumption.resource.disks
-    res_f = res_s = res_m = res_ssd = res_b = 0
+    res_f = res_s = res_m = res_b = 0
     backup = false
-    return [res_f, res_s, res_m, res_ssd, res_b] unless disks
+    return [res_f, res_s, res_m, res_b] unless disks
     disks.each do |disk|
       if !Storage.find_by_id(disk.storage_id).nil?
         if tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/%') || tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/vm_disk_type/%')
-          return [res_f, res_s, res_m, res_ssd, res_b] if tags.empty?
+          return [res_f, res_s, res_m, res_b] if tags.empty?
           for x in Storage.find_by_id(disk.storage_id).tags
           if x.name == '/managed/storage_type/15k'
             res_f += disk.size / 1.gigabyte
           elsif x.name == '/managed/storage_type/10k'
             res_m += disk.size / 1.gigabyte
           elsif x.name == '/managed/storage_type/7k'
-            res_s += disk.size / 1.gigabyte
-          elsif x.name == '/managed/storage_type/ssd' 
-            res_ssd += disk.size / 1.gigabyte
+            res_s += disk.size / 1.gigabyte 
           elsif x.name == '/managed/vm_disk_type/backup_disk'
             backup = true
             res_b += disk.size / 1.gigabyte
@@ -214,9 +213,9 @@ class Chargeback < ActsAsArModel
     end
   end
     res_s = 0 if backup  
-    return [res_f, res_m, res_s, res_ssd, res_b]
+    return [res_f, res_m, res_s, res_b]
   end
-
+  
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end

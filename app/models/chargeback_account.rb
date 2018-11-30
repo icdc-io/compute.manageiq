@@ -57,10 +57,13 @@ class ChargebackAccount < Chargeback
     :uptime                   => :string,
     :disk_type                => :string,
     :fast_disk                => :string,
+    :fast_disk_cost	      => :float,
     :medium_disk              => :string,
+    :medium_disk_cost         => :float,
     :slow_disk                => :string,
-    :ssd_disk                 => :string,
-    :backup_disk              => :string 
+    :slow_disk_cost           => :float,
+    :backup_disk              => :string,
+    :backup_disk_cost         => :float
   )
 
   def self.build_results_for_report_ChargebackAccount(options)
@@ -137,9 +140,9 @@ class ChargebackAccount < Chargeback
       "disk_type"                => {:grouping => [:total]},
       "fast_disk"                => {:grouping => [:total]},
       "medium_disk"              => {:grouping => [:total]},
-      "slow_disk"                => {:grouping => [:total]}, 
-      "ssd_disk"                 => {:grouping => [:total]},
-      "backup_disk"              => {:grouping => [:total]}
+      "slow_disk"                => {:grouping => [:total]},
+      "backup_disk"              => {:grouping => [:total]},
+
  }
   end
 
@@ -219,9 +222,8 @@ class ChargebackAccount < Chargeback
     disk_size = get_disk_type_proxy(consumption)
     self.fast_disk = disk_size[0]
     self.medium_disk = disk_size[1]
-    self.slow_disk = disk_size[2]
-    self.ssd_disk = disk_size[3]
-    self.backup_disk = disk_size[4]     
+    self.slow_disk = disk_size[2] 
+    self.backup_disk = disk_size[3]
   end
 end
 
