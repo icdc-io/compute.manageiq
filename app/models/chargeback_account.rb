@@ -55,7 +55,15 @@ class ChargebackAccount < Chargeback
     :cpu_allocated_total      => :float,
     :memory_allocated_total   => :float,
     :uptime                   => :string,
-    :disk_type                => :string
+    :disk_type                => :string,
+    :fast_disk                => :string,
+    :fast_disk_cost	      => :float,
+    :medium_disk              => :string,
+    :medium_disk_cost         => :float,
+    :slow_disk                => :string,
+    :slow_disk_cost           => :float,
+    :backup_disk              => :string,
+    :backup_disk_cost         => :float
   )
 
   def self.build_results_for_report_ChargebackAccount(options)
@@ -130,7 +138,12 @@ class ChargebackAccount < Chargeback
       "memory_allocated_total"   => {:grouping => [:total]},
       "uptime"                   => {:grouping => [:total]},
       "disk_type"                => {:grouping => [:total]},
-    }
+      "fast_disk"                => {:grouping => [:total]},
+      "medium_disk"              => {:grouping => [:total]},
+      "slow_disk"                => {:grouping => [:total]},
+      "backup_disk"              => {:grouping => [:total]},
+
+ }
   end
 
   def self.vm_owner(consumption)
@@ -190,6 +203,7 @@ class ChargebackAccount < Chargeback
   private
 
   def init_extra_fields(consumption)
+    disk_size = []
     self.vm_id         = consumption.resource_id
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
@@ -205,6 +219,11 @@ class ChargebackAccount < Chargeback
     self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte
     self.disk_type     = get_disk_type(consumption)
+    disk_size = get_disk_type_proxy(consumption)
+    self.fast_disk = disk_size[0]
+    self.medium_disk = disk_size[1]
+    self.slow_disk = disk_size[2] 
+    self.backup_disk = disk_size[3]
   end
 end
 

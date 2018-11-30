@@ -187,6 +187,34 @@ class Chargeback < ActsAsArModel
     res
   end
 
+  def get_disk_type_proxy(consumption)
+    disks = consumption.resource.disks
+    res_f = res_s = res_m = res_b = 0
+    backup = false
+    return [res_f, res_s, res_m, res_b] unless disks
+    disks.each do |disk|
+      if !Storage.find_by_id(disk.storage_id).nil?
+        if tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/%') || tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/vm_disk_type/%')
+          return [res_f, res_s, res_m, res_b] if tags.empty?
+          for x in Storage.find_by_id(disk.storage_id).tags
+          if x.name == '/managed/storage_type/15k'
+            res_f += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/10k'
+            res_m += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/7k'
+            res_s += disk.size / 1.gigabyte 
+          elsif x.name == '/managed/vm_disk_type/backup_disk'
+            backup = true
+            res_b += disk.size / 1.gigabyte
+          end
+        end
+      end
+    end
+  end
+    res_s = 0 if backup  
+    return [res_f, res_m, res_s, res_b]
+  end
+  
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end
