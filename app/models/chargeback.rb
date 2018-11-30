@@ -21,7 +21,6 @@ class Chargeback < ActsAsArModel
       rates_to_apply = rates.get(consumption)
 
       key = report_row_key(consumption)
-      _log.info("DBG ahr key #{key}")
       data[key] ||= new(options, consumption)
 
       chargeback_rates = data[key]["chargeback_rates"].split(', ') + rates_to_apply.collect(&:description)
