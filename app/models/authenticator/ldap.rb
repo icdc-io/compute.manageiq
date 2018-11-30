@@ -8,7 +8,7 @@ module Authenticator
       'LDAP'
     end
 
-    def lookup_by_identity(username)
+    def lookup_by_identity(username, _request = nil)
       super ||
         find_or_create_by_ldap(username)
     end
