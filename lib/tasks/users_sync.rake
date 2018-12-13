@@ -49,7 +49,8 @@ namespace :users_sync do
     user_master['miq_group'] = MiqGroup.find_by_id(user_master['current_group_id']).description
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     for region in regions
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}/#{region.dbname}")
+      #HOT FIX 7609
+      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
       user = User.where(userid: user_master['userid']).first
       unless user
         user = User.new
