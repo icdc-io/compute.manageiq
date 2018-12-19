@@ -73,7 +73,11 @@ class CustomButton < ApplicationRecord
   end
 
   def invoke(target)
-    args = resource_action.automate_queue_hash(target, {}, User.current_user)
+    user = User.current_user
+    if user.nil? && target.class == Service
+      user = User.find(target.evm_owner_id)
+    end
+    args = resource_action.automate_queue_hash(target, {}, user)
     MiqQueue.put(queue_opts(target, args))
   end
 

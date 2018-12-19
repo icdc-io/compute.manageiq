@@ -26,7 +26,8 @@ module IcdcServiceScheduleMixin
       :filter       => MiqExpression.new("=" => {"field" => "Service-id", "value" => id}),
       :towhat       => self.class.name,
       :run_at       => { :interval => {unit: params['interval_unit'], value: '1'}, :start_time => params['start_time'] },
-      :prod_default => "system"
+      :prod_default => "system",
+      :userid       => evm_owner.userid
     )
   end
 
@@ -47,7 +48,8 @@ module IcdcServiceScheduleMixin
       :filter       => MiqExpression.new("=" => {"field" => "Service-id", "value" => id}),
       :towhat       => self.class.name,
       :run_at       => { :interval => { :unit => params['interval_unit'], :value => '1' }, :start_time => params['start_time'] },
-      :prod_default => "system"
+      :prod_default => "system",
+      :userid       => evm_owner.userid
     )
 
     self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
@@ -98,10 +100,10 @@ module IcdcServiceScheduleMixin
 
   module ClassMethods
     def delete_outdated_backups
-      find_each do |backupable|
+      self.find_each do |backupable|
         backupable.outdated_backups.each do |backup|
           begin
-            backupable.invoke_custom_action('delete_backup', User.admin, {'backup_name' => backup.name })
+            backupable.invoke_custom_button({'task'=>'delete_backup'}, {'backup_name' => backup.name })
           rescue
           end
         end

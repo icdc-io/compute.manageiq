@@ -117,7 +117,7 @@ class MiqSchedule < ApplicationRecord
         send(action, obj, at)
       rescue => err
         _log.error("[#{name}] Attempting to run action [#{action}] on target [#{obj.name}], #{err}")
-        # _log.log_backtrace(err)
+        _log.log_backtrace(err)
       end
     end
     update_attribute(:last_run_on, Time.now.utc)
@@ -140,8 +140,9 @@ class MiqSchedule < ApplicationRecord
       _log.warn("[#{name}] Filter is empty")
       return []
     end
-
-    Rbac.filtered(towhat, :filter => my_filter)
+    params = {:filter => my_filter}
+    params[:userid] = userid if userid.present? && userid != "system"
+    Rbac.filtered(towhat, params)
   end
 
   def get_filter
@@ -246,7 +247,7 @@ class MiqSchedule < ApplicationRecord
   end
 
   def action_service_backup(obj, at)
-    obj.invoke_custom_action('backup_now')
+    obj.invoke_custom_button({'task'=>'backup_now'})
     _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
   end
 

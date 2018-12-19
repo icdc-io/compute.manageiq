@@ -58,11 +58,9 @@ module IcdcServiceMixin
   def invoke_custom_button(data)
     action = data['task']
     custom_button = resource_custom_action_button(action)
-
     if custom_button.resource_action.dialog_id
       return invoke_custom_action_with_dialog(type, self, action, data, custom_button)
     end
-
     custom_button.invoke(self)
   end
 
