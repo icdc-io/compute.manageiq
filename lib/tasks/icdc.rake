@@ -101,18 +101,25 @@ namespace :dev do
     puts "[fix_ws_url] location:#{location}"
     urls = {
       idc: {
-        dev1: "https://httpd-nb5-miq-dev1.dev.icdc.io",
-        dev2: "https://httpd-nb5-miq-dev2.dev.icdc.io",
-        dev3: "https://httpd-nb5-miq-dev3.dev.icdc.io",
-        dev4: "https://httpd-nb5-miq-dev4.dev.icdc.io",
-	prod: "https://miq-idc.icdc.io"
-      },
-      nb5: {
         dev1: "https://httpd-idc-miq-dev1.dev.icdc.io",
         dev2: "https://httpd-idc-miq-dev2.dev.icdc.io",
         dev3: "https://httpd-idc-miq-dev3.dev.icdc.io",
         dev4: "https://httpd-idc-miq-dev4.dev.icdc.io",
+	prod: "https://miq-idc.icdc.io"
+      },
+      nb5: {
+        dev1: "https://httpd-nb5-miq-dev1.dev.icdc.io",
+        dev2: "https://httpd-nb5-miq-dev2.dev.icdc.io",
+        dev3: "https://httpd-nb5-miq-dev3.dev.icdc.io",
+        dev4: "https://httpd-nb5-miq-dev4.dev.icdc.io",
 	prod: "https://miq-nb5.icdc.io"
+      },
+      main: {
+        dev1: "https://httpd-main-miq-dev1.dev.icdc.io",
+        dev2: "https://httpd-main-miq-dev2.dev.icdc.io",
+        dev3: "https://httpd-main-miq-dev3.dev.icdc.io",
+        dev4: "https://httpd-main-miq-dev4.dev.icdc.io",
+	prod: "https://miq-main.icdc.io"
       },
     }
     url = urls.dig(location, env)
