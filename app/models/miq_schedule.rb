@@ -37,7 +37,7 @@ class MiqSchedule < ApplicationRecord
 
   SYSTEM_SCHEDULE_CLASSES = %w(MiqReport MiqAlert MiqWidget).freeze
   VALID_INTERVAL_UNITS = %w(minutely hourly daily weekly monthly once).freeze
-  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request  collect_svm delete_backups).freeze
+  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request delete_backups run_asu).freeze
 
   default_value_for :userid,  "system"
   default_value_for :enabled, true
@@ -202,13 +202,12 @@ class MiqSchedule < ApplicationRecord
     obj.scan_queue(userid, sched_action[:options])
     _log.info("Action [#{name}] has been run for target: [#{obj.name}]")
   end
-
-  def action_collect_svm(obj, _at)
-    sched_action[:options] ||= {}
-    obj.collect_svm
-    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
+  
+  def action_run_asu(klass, _at)
+    klass.run_asu
+    _log.info("Action [#{name}] has been run for target type: [#{klass}]")
   end
-
+	
   def action_delete_backups(klass, _at)
     klass.delete_outdated_backups
     _log.info("Action [#{name}] has been run for target type: [#{klass}]")
