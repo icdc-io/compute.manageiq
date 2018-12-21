@@ -75,7 +75,6 @@ class Service < ApplicationRecord
   include SupportsFeatureMixin
   include Metric::CiMixin
   include IcdcServiceScheduleMixin
-  include CustomActionMixin
   include ZabbixAlertMixin
   include IcdcServiceMixin
 
