@@ -56,10 +56,17 @@ module IcdcServiceMixin
   end
 
   def invoke_custom_button(data)
+    _log.info("dbg schedule data1 #{data}")
     action = data['task']
     custom_button = resource_custom_action_button(action)
+    user = User.current_user 
+    if data['task'] == "delete_backup"
+      data.delete("task")
+      user = User.admin
+    end
     if custom_button.resource_action.dialog_id
-      return invoke_custom_action_with_dialog(type, self, action, data, custom_button)
+      _log.info("dbg schedule test11")
+      return invoke_custom_action_with_dialog(type, self, action, data, custom_button, user)
     end
     custom_button.invoke(self)
   end
@@ -70,12 +77,14 @@ module IcdcServiceMixin
 
   private
 
-  def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button)
-    submit_custom_action_dialog(resource, custom_button, data)
+  def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button, user)
+    _log.info("dbg schedule test12")
+    submit_custom_action_dialog(resource, custom_button, data, user)
   end
 
-  def submit_custom_action_dialog(resource, custom_button, data)
-    wf = ResourceActionWorkflow.new({}, User.current_user, custom_button.resource_action, :target => resource)
+  def submit_custom_action_dialog(resource, custom_button, data, user)
+    wf = ResourceActionWorkflow.new({}, user, custom_button.resource_action, :target => resource)
+    _log.info("dbg schedule data12 #{data}")
     data.each { |key, value| wf.set_value(key, value) } if data.present?
     wf_result = wf.submit_request
     raise StandardError, Array(wf_result[:errors]).join(", ") if wf_result[:errors].present?

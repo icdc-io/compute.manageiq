@@ -91,10 +91,11 @@ module IcdcServiceScheduleMixin
   def outdated_backup?(backup)
     backup_created_at = DateTime.parse(backup[:serialized_value]["end_date"])
     delete_at = backup_created_at + retention_period_to_duration
+    _log.info("DBG AHR #{delete_at}:: #{delete_at < self.class.time_now}")
     delete_at < self.class.time_now
   end
 
-  def outdated_backups
+  def outdated_backups 
     backups.select { |backup| outdated_backup?(backup) }
   end
 
@@ -103,7 +104,13 @@ module IcdcServiceScheduleMixin
       self.find_each do |backupable|
         backupable.outdated_backups.each do |backup|
           begin
-            backupable.invoke_custom_button({'task'=>'delete_backup'}, {'backup_name' => backup.name })
+            _log.info("dbg schedule test")
+          #  backupable.invoke_custom_button({'task'=>'delete_backup', 'backup_name' => backup.name })
+            _log.info("DBG AHR backupable id #{backupable.id}")
+            options = {"service" =>"#{backupable.id}","backup_name"=>"#{backup.name}"}
+	    uri = { "namespace" => "System", "class" => "Request", "instance" => "RemoveBackup"}
+   	    user = User.first
+            AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
           rescue
           end
         end
