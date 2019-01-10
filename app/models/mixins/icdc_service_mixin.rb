@@ -55,18 +55,11 @@ module IcdcServiceMixin
     Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
   end
 
-  def invoke_custom_button(data)
-    _log.info("dbg schedule data1 #{data}")
+  def invoke_custom_button(data) 
     action = data['task']
     custom_button = resource_custom_action_button(action)
-    user = User.current_user 
-    if data['task'] == "delete_backup"
-      data.delete("task")
-      user = User.admin
-    end
     if custom_button.resource_action.dialog_id
-      _log.info("dbg schedule test11")
-      return invoke_custom_action_with_dialog(type, self, action, data, custom_button, user)
+      return invoke_custom_action_with_dialog(type, self, action, data, custom_button)
     end
     custom_button.invoke(self)
   end
@@ -77,14 +70,12 @@ module IcdcServiceMixin
 
   private
 
-  def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button, user)
-    _log.info("dbg schedule test12")
-    submit_custom_action_dialog(resource, custom_button, data, user)
+  def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button)
+    submit_custom_action_dialog(resource, custom_button, data)
   end
 
-  def submit_custom_action_dialog(resource, custom_button, data, user)
-    wf = ResourceActionWorkflow.new({}, user, custom_button.resource_action, :target => resource)
-    _log.info("dbg schedule data12 #{data}")
+  def submit_custom_action_dialog(resource, custom_button, data)
+    wf = ResourceActionWorkflow.new({}, User.current_user, custom_button.resource_action, :target => resource)
     data.each { |key, value| wf.set_value(key, value) } if data.present?
     wf_result = wf.submit_request
     raise StandardError, Array(wf_result[:errors]).join(", ") if wf_result[:errors].present?
