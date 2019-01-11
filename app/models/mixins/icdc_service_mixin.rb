@@ -55,7 +55,7 @@ module IcdcServiceMixin
     Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
   end
 
-  def invoke_custom_button(data)
+  def invoke_custom_button(data) 
     action = data['task']
     custom_button = resource_custom_action_button(action)
     if custom_button.resource_action.dialog_id
