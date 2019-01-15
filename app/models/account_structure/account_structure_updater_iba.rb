@@ -478,15 +478,10 @@ class AccountStructure::AccountStructureUpdaterIBA
 
   def send_transfer_service_mail(user_from, user_to, services)
     subject = "[ICDC.IO] Received services from #{user_from.email}"
-    body_template = File.read(Rails.root.join('app/views/mails/transfer_service.html.erb'))
-    body = ERB.new(body_template).result(binding)
-    
-    MiqAeMethodService::MiqAeServiceMethods.send_email(
-        user_to.email,
-        user_from.email,
-        subject,
-        body
-      )
+    options = {"user_to"=>"#{user_to}","user_from"=>"#{user_from}","services"=>"#{services}","subject"=>"#{subject}"}
+    uri = { "namespace" => "Service/Email", "class" => "Actions", "instance" => "AsuTransferServicesEmail"}
+    user = User.first
+    AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
   end
 
   def create_support_ticket(title, body)
