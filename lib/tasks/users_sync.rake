@@ -16,7 +16,7 @@ namespace :users_sync do
     groups = groups_arr
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     for region in regions
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}/#{region.dbname}")
+      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
       conn.connection.execute("DELETE from users")
       conn.connection.execute("DELETE from miq_groups_users")
       conn.connection.execute("DELETE from miq_groups")
@@ -71,7 +71,7 @@ namespace :users_sync do
     user_master['miq_group'] = MiqGroup.find_by_id(user_master['current_group_id']).description
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     for region in regions
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}/#{region.dbname}")
+      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
       user = User.where(userid: user_master['userid']).first
       unless user
         user = User.new
@@ -102,7 +102,7 @@ namespace :users_sync do
     group_master['tenant_name'] = Tenant.find_by_id(group_master['tenant_id']).name
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     for region in regions
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}/#{region.dbname}")
+      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
       group = MiqGroup.new
       group.id = group_master['id'] - 99000000000000 + region.provider_region * 1000000000000
       group.tenant = Tenant.find_by_name(group_master['tenant_name'])
@@ -118,7 +118,7 @@ namespace :users_sync do
     tenant_master = Tenant.find_by_id(args[:id]).as_json
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     for region in regions
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}/#{region.dbname}")
+      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
       tenant = Tenant.new
       tenant.id = tenant_master['id'] - 99000000000000 + region.provider_region * 1000000000000
       tenant.ancestry = tenant_master['ancestry'].split('/').map{ |x| x.sub("99", "#{region.provider_region}")}.join("/")
