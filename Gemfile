@@ -261,11 +261,11 @@ end
 
 if ENV["RAILS_ENV"] == "production"
   #GIT_CRED - Openshift secret variable
-  override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-schema.git", branch: "icdc_g"
-  override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-api.git", branch: "icdc_g"
-  override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-automation_engine.git", branch: "icdc_g"
-  override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-ui-classic.git", branch: "icdc_g"
-  override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc-g/manageiq-providers-ovirt.git", branch: "icdc_g"
+  override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/miq/manageiq-schema.git", branch: "icdc_g"
+  override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc/miq/manageiq-api.git", branch: "icdc_g"
+  override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc/miq/manageiq-automation_engine.git", branch: "icdc_g"
+  override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc/miq/manageiq-ui-classic.git", branch: "icdc_g"
+  override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc/miq/manageiq-providers-ovirt.git", branch: "icdc_g"
 end
 
 # Load other additional Gemfiles
