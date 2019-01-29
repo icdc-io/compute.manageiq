@@ -216,8 +216,8 @@ class ChargebackAccount < Chargeback
     self.account       = consumption.resource.tenant.get_account.description
     self.tenant        = consumption.resource.tenant.description
     self.uptime        = calculate_uptime(consumption)
-    self.cpu_allocated_total     = consumption.resource.try(:num_cpu)
-    self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte
+    self.cpu_allocated_total     = consumption.resource.cpu_total_cores
+    self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte 
     self.disk_type     = get_disk_type(consumption)
     disk_size = get_disk_type_proxy(consumption)
     self.fast_disk = disk_size[0]
