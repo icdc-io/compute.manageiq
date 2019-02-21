@@ -34,11 +34,11 @@ namespace :dev do
 
   desc "Restart DEV app shortcut"
   task :restart => :environment do
-    Rake::Task['evm:stop'].invoke
     `pkill -9 httpd`
     `ipcs -s | awk -v user=apache '$3==user {system("ipcrm -s "$2)}'`
+    Rake::Task['evm:stop'].invoke
     puts "Starting MiqServer"
-    `ruby /var/www/miq/vmdb/lib/workers/bin/evm_server.rb &`
+    Rake::Task['evm:start'].invoke
   end
 
   desc "Show Slave catalog items"
