@@ -78,6 +78,9 @@ class Service < ApplicationRecord
   include ZabbixAlertMixin
   include IcdcServiceMixin
 
+  extend InterRegionApiMethodRelay
+
+  include_concern 'Operations'
   include_concern 'RetirementManagement'
   include_concern 'Aggregation'
   include_concern 'ResourceLinking'
