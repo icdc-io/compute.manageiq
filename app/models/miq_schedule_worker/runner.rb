@@ -244,6 +244,8 @@ class MiqScheduleWorker::Runner < MiqWorker::Runner
   end
 
   def schedule_chargeback_report_for_service_daily
+    flag = worker_settings[:chargeback_service_report]
+    return unless flag 
     every = worker_settings[:chargeback_generation_interval]
     at = worker_settings[:chargeback_generation_time_utc]
     time_at = Time.current.strftime("%Y-%m-%d #{at}").to_time(:utc)

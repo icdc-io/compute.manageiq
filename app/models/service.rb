@@ -482,7 +482,7 @@ class Service < ApplicationRecord
   end
 
   def chargeback_report
-    report_result = MiqReportResult.where(name: chargeback_report_name).order("last_run_on DESC").first
+    report_result = MiqReportResult.where(name: chargeback_report_name).where.not(last_run_on: nil).order("last_run_on DESC").first
     if report_result.nil?
       {:results => []}
     else
@@ -497,7 +497,7 @@ class Service < ApplicationRecord
   end
 
   def chargeback_report_name
-    "Chargeback-Vm-Monthly-#{name}-#{id}"
+    "Chargeback-Vm-Monthly-#{id}"
   end
 
   def generate_chargeback_report(options = {})
