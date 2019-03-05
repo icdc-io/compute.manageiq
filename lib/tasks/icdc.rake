@@ -32,6 +32,40 @@ namespace :dev do
     MiqSchedule.where('description NOT LIKE ?', 'rss_%').where('description NOT LIKE ?', 'report_%').where('description NOT LIKE ?', 'chart_%').where('description NOT LIKE ?', 'tenant_%').delete_all
   end
 
+  desc "Fix replication ticket#8082"
+  task :replica_fix => :environment do
+    puts "Fixing replication..."
+    location = MiqRegion.my_region.description.downcase.to_s
+    puts "[replica_fix] location: #{location}"
+    case location
+    when "main"
+      puts "MAIN"
+      regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
+      for region in regions
+        ex=0
+        max=0
+        until ex==1 || max < 300
+          sleep(1)
+          puts " #{region.host}"
+          conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
+          conn.connection
+          max+=1
+          ex=1 if conn.connected?
+        end
+      end
+        ActiveRecord::Base.connection.execute("select pglogical.alter_subscription_enable('region_1_subscription');")
+        ActiveRecord::Base.connection.execute("select pglogical.alter_subscription_enable('region_2_subscription');")
+    when "idc"
+      puts "IDC"
+      ActiveRecord::Base.connection.execute("select * from pg_create_logical_replication_slot('pgl_vmdb_production_region_1_region_116df111', 'pglogical_output')")
+    when "nb5"
+      puts "NB5"
+      ActiveRecord::Base.connection.execute("select * from pg_create_logical_replication_slot('pgl_vmdb_production_region_2_region_2110c88d', 'pglogical_output')")
+    else
+      puts "unknown region"
+    end
+  end
+
   desc "Restart DEV app shortcut"
   task :restart => :environment do
     `pkill -9 httpd`
