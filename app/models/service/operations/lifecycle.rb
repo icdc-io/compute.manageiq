@@ -5,5 +5,7 @@ module Service::Operations::Lifecycle
     api_relay_method :retire do |options|
       options
     end
+
+    api_relay_method :retire_now, :retire
   end
 end
