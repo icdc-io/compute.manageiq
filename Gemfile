@@ -215,10 +215,9 @@ end
 #
 unless ENV["APPLIANCE"]
   group :development do
-    gem 'awesome_print', :require => 'ap'
+    gem 'awesome_print'
     gem "foreman"
     gem "haml_lint",        "~>0.20.0", :require => false
-    gem "rubocop",          "~>0.52.1", :require => false
     gem "scss_lint",        "~>0.55.0", :require => false
     gem "yard"
   end
@@ -234,6 +233,7 @@ unless ENV["APPLIANCE"]
   end
 
   group :development, :test do
+    gem "rubocop",          "~>0.52.1", :require => false
     gem "parallel_tests"
     gem "rspec-rails",      "~>3.6.0"
   end
