@@ -117,7 +117,7 @@ module ManageIQ
     end
 
     def self.create_database_user
-      system!(%q(psql -c "CREATE USER root SUPERUSER PASSWORD 'smartvm';" -U postgres))
+      system!(%q(psql -h localhost -c "CREATE USER root SUPERUSER PASSWORD 'smartvm';" -U postgres))
     end
 
     def self.update_ui

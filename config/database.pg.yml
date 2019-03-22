@@ -31,4 +31,5 @@ production:
 test: &test
   <<: *base
   pool: 3
+  host: localhost
   database: vmdb_test<%= ENV['TEST_ENV_NUMBER'] %>

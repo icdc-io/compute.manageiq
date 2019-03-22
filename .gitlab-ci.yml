@@ -1,0 +1,44 @@
+image: "docker-registry.default.svc:5000/miq-build/ruby-psql:latest"
+
+variables:
+  POSTGRES_DB: vmdb_test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: ""
+  
+  RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 300000
+  RUBY_GC_HEAP_INIT_SLOTS: 600000
+  RUBY_GC_HEAP_GROWTH_FACTOR: '1.25'
+  PARALLEL_TEST_PROCESSORS: 2
+
+services:
+  - postgres:9.5
+
+before_script:
+  - ruby -v
+  - bundle config --global jobs 3
+  - bundle config --global retry 3
+  - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
+  - bundle install 
+
+stages:
+  - test
+
+rubocop:
+  stage: test
+  tags: [icdc-g]
+  script:
+    - bundle exec rubocop --format fuubar
+
+brakeman:
+  stage: test
+  tags: [icdc-g]
+  script:
+    - bundle exec rake test:brakeman:setup
+    - bundle exec rake test:brakeman
+
+vmdb:
+  stage: test
+  tags: [icdc-g]
+  script:
+    - bundle exec rake test:vmdb:setup
+    #- bundle exec rake test:vmdb
