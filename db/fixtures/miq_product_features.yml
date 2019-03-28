@@ -5912,6 +5912,10 @@
         :description: Open a web-based console for VMs
         :feature_type: control
         :identifier: vm_console
+      - :name: Download remote viewer connection file
+        :description: Download VV console file (Ovirt, RHV)
+        :feature_type: control
+        :identifier: vm_console_file 
       - :name: Console using WebMKS
         :description: Open a web-based console for VMs
         :feature_type: control
@@ -6782,6 +6786,10 @@
         :description: Open Remote Console
         :feature_type: control
         :identifier: sui_vm_console
+      - :name: Download remote viewer connection file
+        :description: Download remote viewer connection file (Ovirt, RHV)
+        :feature_type: control
+        :identifier: sui_vm_console_file 
       - :name: Open Web Console
         :description: Open Web Console
         :feature_type: control
