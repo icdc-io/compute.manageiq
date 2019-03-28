@@ -1,17 +1,8 @@
 AllCops:
   Exclude:
-    - app/**/*
-    - config/**/*
-    - spec/**/*
     - spec/manageiq/**/*
     - vendor/**/*
-    - tools/**/*
-    - bin/**/*
-    - lib/**/*
-    - Rakefile
-    - Gemfile
-    - mime-types-redirector/**/*
-    - product/**/*
+    - lib/generators/provider/templates/**/*
   TargetRubyVersion: 2.3
 Layout/AlignHash:
   EnforcedHashRocketStyle: table

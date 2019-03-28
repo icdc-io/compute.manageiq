@@ -4,7 +4,8 @@ variables:
   POSTGRES_DB: vmdb_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: ""
-  
+  GIT_CRED: gitlab-ci-token:${CI_JOB_TOKEN}@git.icdc.io
+  RAILS_ENV: test
   RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 300000
   RUBY_GC_HEAP_INIT_SLOTS: 600000
   RUBY_GC_HEAP_GROWTH_FACTOR: '1.25'
@@ -15,11 +16,10 @@ services:
 
 before_script:
   - ruby -v
-  - bundle config --global jobs 3
-  - bundle config --global retry 3
   - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
   - bundle install 
 
+  
 stages:
   - test
 
@@ -27,7 +27,8 @@ rubocop:
   stage: test
   tags: [icdc-g]
   script:
-    - bundle exec rubocop --format fuubar
+    - bundle exec rubocop -v
+    - bundle exec rubocop --format simple --fail-level E 
 
 brakeman:
   stage: test
@@ -40,5 +41,6 @@ vmdb:
   stage: test
   tags: [icdc-g]
   script:
+    - export PARALLEL=true
     - bundle exec rake test:vmdb:setup
     #- bundle exec rake test:vmdb

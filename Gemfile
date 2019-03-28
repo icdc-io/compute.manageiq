@@ -259,7 +259,7 @@ def override_gem(name, *args)
   end
 end
 
-if ENV["RAILS_ENV"] == "production"
+if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   #GIT_CRED - Openshift secret variable
   override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-schema.git", branch: "icdc_g"
   override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-api.git", branch: "icdc_g"
