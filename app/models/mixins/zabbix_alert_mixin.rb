@@ -253,7 +253,7 @@ module ZabbixAlertMixin
       new_data << new_item
     end
 
-    new_data
+    new_data.empty? ? {} : new_data
   end
 
   def parse_description(data)
