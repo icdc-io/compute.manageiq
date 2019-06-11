@@ -34,6 +34,7 @@ class ServiceTemplate < ApplicationRecord
                                   :configuration_template_type].freeze
 
   include CustomActionsMixin
+  include CustomAttributeMixin
   include ServiceMixin
   include OwnershipMixin
   include NewWithTypeStiMixin
@@ -74,6 +75,8 @@ class ServiceTemplate < ApplicationRecord
   virtual_column   :archived,                     :type => :boolean
   virtual_column   :active,                       :type => :boolean
 
+  virtual_has_many   :custom_attributes
+
   default_value_for :service_type, 'unknown'
   default_value_for(:generic_subtype) { |st| 'custom' if st.prov_type == 'generic' }
 
@@ -95,7 +98,7 @@ class ServiceTemplate < ApplicationRecord
           }
         end,
         :name => name,
-        :picture => tmpls.first.picture
+        :picture => tmpls.first.picture&.image_href
        }
     end
   end
