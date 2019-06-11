@@ -25,7 +25,7 @@ task :rename_templates => :environment do
     regions.each do |region|
       st = ServiceTemplate.where(name: "#{old_name}-#{region}").first
       if st
-        st.name = "#{new_name}:region"
+        st.name = "#{new_name}:#{region}"
         st.save
         success << {old_name => new_name}
         puts "Template #{old_name} changed name to #{new_name}"
