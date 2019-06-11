@@ -20,16 +20,21 @@ task :rename_templates => :environment do
   fails = []
 
   templates_name_map.each do |old_name, new_name|
-    st = ServiceTemplate.where(name: "#{old_name}-IDC").first
-    if st
-      st.name = new_name
-      st.save
-      success << {old_name => new_name}
-      puts "Template #{old_name} changed name to #{new_name}"
-    else
-      fails << old_name
-      puts "Template #{old_name} not found"
+    regions = MiqRegion.all.map(&:description).map(&:upcase)
+
+    regions.each do |region|
+      st = ServiceTemplate.where(name: "#{old_name}-#{region}").first
+      if st
+        st.name = "#{new_name}:region"
+        st.save
+        success << {old_name => new_name}
+        puts "Template #{old_name} changed name to #{new_name}"
+      else
+        fails << old_name
+        puts "Template #{old_name} not found"
+      end
     end
+
   end
 
   puts "success: #{success}"
