@@ -233,7 +233,8 @@ unless ENV["APPLIANCE"]
   end
 
   group :development, :test do
-    gem "rubocop",          "~>0.52.1", :require => false
+    gem "rubocop",             "~>0.69.0", :require => false
+    gem "rubocop-performance", "~>1.3", :require => false
     gem "parallel_tests"
     gem "rspec-rails",      "~>3.6.0"
   end
