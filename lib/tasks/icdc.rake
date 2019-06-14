@@ -12,23 +12,35 @@ task :rename_templates => :environment do
 
   templates_name_map = {}
 
-  TEMPLATES_NAME_MAP_CSV.each do |cat|
-    templates_name_map[cat[1]&.strip] = "#{cat[2]&.strip}:#{cat[3]&.strip}"
+  CATEGORIES = ["Content Management", "Development Tools", "Databases", "Distributions", "Misc Apps"]
+
+  last_category = nil
+  new_cat_id = nil
+
+  TEMPLATES_NAME_MAP_CSV.each do |row|
+    if CATEGORIES.include?(row[0])
+      last_category = row[0]
+      new_cat_id = ServiceTemplateCatalog.find_or_create_by(name: last_category).id
+    end
+
+    templates_name_map[row[1]&.strip] = {name: "#{row[2]&.strip}:#{row[3]&.strip}", cat_id: new_cat_id }
   end
+
 
   success = []
   fails = []
 
-  templates_name_map.each do |old_name, new_name|
+  templates_name_map.each do |old_name, new_info|
     regions = MiqRegion.all.map(&:description).map(&:upcase)
 
     regions.each do |region|
-      st = ServiceTemplate.where(name: "#{old_name}-#{region}").first
+      st = ServiceTemplate.where(name: "#{old_name}-#{region}").first || ServiceTemplate.where(name: "#{new_info[:name]}-#{region}").first || ServiceTemplate.where(name: "#{new_info[:name]}").first || ServiceTemplate.where(name: "#{new_info[:name]}:#{region}").first
       if st
-        st.name = "#{new_name}:#{region}"
+        st.name = "#{new_info[:name]}:#{region}"
+        st.service_template_catalog_id = new_info[:cat_id]
         st.save
-        success << {old_name => new_name}
-        puts "Template #{old_name} changed name to #{new_name}"
+        success << {old_name => new_info}
+        puts "Template #{old_name} changed name to #{new_info}"
       else
         fails << old_name
         puts "Template #{old_name} not found"
