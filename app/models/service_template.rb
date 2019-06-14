@@ -94,7 +94,11 @@ class ServiceTemplate < ApplicationRecord
         :versions => tmpls.group_by{|t| t.name.split(':')[1]}.map do |ver, tmpls|
           {
             :version => ver,
-            :templates => tmpls
+            :templates => tmpls.map do |t|
+              t_hash = t.attributes
+              t_hash[:icdc_info] = t.custom_attributes.map {|ca| {ca.name => ca.value}}.reduce({}, :merge)
+              t_hash
+            end
           }
         end,
         :name => name,
