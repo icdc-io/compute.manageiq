@@ -1,5 +1,57 @@
 namespace :icdc do
 
+desc "OB Templates Renamer"
+task :rename_templates => :environment do
+  require 'csv'
+
+  SEPARATOR = ';'
+
+  TEMPLATES_NAME_MAP_FILE = Rails.root.join("tmp", "cats.csv")
+
+  TEMPLATES_NAME_MAP_CSV = CSV.read(TEMPLATES_NAME_MAP_FILE, {:col_sep => SEPARATOR})
+
+  templates_name_map = {}
+
+  CATEGORIES = ["Content Management", "Development Tools", "Databases", "Distributions", "Misc Apps"]
+
+  last_category = nil
+  new_cat_id = nil
+
+  TEMPLATES_NAME_MAP_CSV.each do |row|
+    if CATEGORIES.include?(row[0])
+      last_category = row[0]
+      new_cat_id = ServiceTemplateCatalog.find_or_create_by(name: last_category).id
+    end
+
+    templates_name_map[row[1]&.strip] = {name: "#{row[2]&.strip}:#{row[3]&.strip}", cat_id: new_cat_id }
+  end
+
+
+  success = []
+  fails = []
+
+  templates_name_map.each do |old_name, new_info|
+    regions = MiqRegion.all.map(&:description).map(&:upcase)
+
+    regions.each do |region|
+      st = ServiceTemplate.where(name: "#{old_name}-#{region}").first || ServiceTemplate.where(name: "#{new_info[:name]}-#{region}").first || ServiceTemplate.where(name: "#{new_info[:name]}").first || ServiceTemplate.where(name: "#{new_info[:name]}:#{region}").first
+      if st
+        st.name = "#{new_info[:name]}:#{region}"
+        st.service_template_catalog_id = new_info[:cat_id]
+        st.save
+        success << {old_name => new_info}
+        puts "Template #{old_name} changed name to #{new_info}"
+      else
+        fails << old_name
+        puts "Template #{old_name} not found"
+      end
+    end
+
+  end
+
+  puts "success: #{success}"
+  puts "fails: #{fails}"
+end
 
 namespace :support do
   desc "Remove incorrect backups records, that has no template or vms"
@@ -83,8 +135,8 @@ namespace :dev do
          service.save
       else
         service.display = "f"
-        service.save 
-      end 
+        service.save
+      end
     end
   end
 
@@ -185,7 +237,7 @@ namespace :dev do
     puts "[fix_cb_seeding] ChargebackTier.all: #{ChargebackTier.all.count}"
     ## We do not have ChargeableField before migration finished
     ##puts "[fix_cb_seeding] ChargeableField.all: #{ChargeableField.all.count}"
-    ##ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}    
+    ##ChargeableField.all.collect{|x| {id: x.id, crdm_id: x.chargeback_rate_detail_measure_id, metric: x.metric} }.each{|x| puts x}
     #Seeding failed with migration 20170109142011_extract_field_data_from_rate_detail.rb
     #It migrates ChargebackRateDetail default data to ChargeableField objects
     #But for MAIN server (with replica of slave servers) it creates MAIN ChargeableField object for Slave entries
@@ -267,7 +319,7 @@ namespace :dev do
       action.save
      end
    end
-  
+
   task :dialog_assignment => :environment do
       for action in ResourceAction.all
         if (action.resource_type == 'ServiceTemplate')

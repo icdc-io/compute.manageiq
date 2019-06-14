@@ -8,7 +8,7 @@ class ServiceTemplate < ApplicationRecord
     "hosted_database" => _("Hosted Database"),
     "load_balancer"   => _("Load Balancer"),
     "storage"         => _("Storage"),
-    "quota"           => "Quota" 
+    "quota"           => "Quota"
   }.freeze
 
   CATALOG_ITEM_TYPES = {
@@ -34,6 +34,7 @@ class ServiceTemplate < ApplicationRecord
                                   :configuration_template_type].freeze
 
   include CustomActionsMixin
+  include CustomAttributeMixin
   include ServiceMixin
   include OwnershipMixin
   include NewWithTypeStiMixin
@@ -74,6 +75,8 @@ class ServiceTemplate < ApplicationRecord
   virtual_column   :archived,                     :type => :boolean
   virtual_column   :active,                       :type => :boolean
 
+  virtual_has_many   :custom_attributes
+
   default_value_for :service_type, 'unknown'
   default_value_for(:generic_subtype) { |st| 'custom' if st.prov_type == 'generic' }
 
@@ -84,6 +87,25 @@ class ServiceTemplate < ApplicationRecord
   scope :with_existent_service_template_catalog_id, ->         { where.not(:service_template_catalog_id => nil) }
   scope :displayed,                                 ->         { where(:display => true) }
   scope :public_service_templates,                  ->         { where.not(:id => Reserve.where(:resource_type => "ServiceTemplate").all.collect { |r| r.resource_id if r.reserved[:internal] }.compact) }
+
+  def self.group_templates(templates)
+    templates.group_by{|t| t.name.split(':')[0]}.map do |name, tmpls|
+      {
+        :versions => tmpls.group_by{|t| t.name.split(':')[1]}.map do |ver, tmpls|
+          {
+            :version => ver,
+            :templates => tmpls.map do |t|
+              t_hash = t.attributes
+              t_hash[:icdc_info] = t.custom_attributes.map {|ca| {ca.name => ca.value}}.reduce({}, :merge)
+              t_hash
+            end
+          }
+        end,
+        :name => name,
+        :picture => tmpls.first.picture&.image_href
+       }
+    end
+  end
 
   def self.catalog_item_types
     ci_types = Set.new(Rbac.filtered(ExtManagementSystem.all).flat_map(&:supported_catalog_types))
