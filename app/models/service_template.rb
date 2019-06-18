@@ -102,7 +102,8 @@ class ServiceTemplate < ApplicationRecord
           }
         end,
         :name => name,
-        :picture => tmpls.first.picture&.image_href
+        :picture => tmpls.first.picture&.image_href,
+        :last_created => tmpls.map(&:created_at).max
        }
     end
   end
