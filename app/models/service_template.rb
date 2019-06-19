@@ -88,8 +88,11 @@ class ServiceTemplate < ApplicationRecord
   scope :displayed,                                 ->         { where(:display => true) }
   scope :public_service_templates,                  ->         { where.not(:id => Reserve.where(:resource_type => "ServiceTemplate").all.collect { |r| r.resource_id if r.reserved[:internal] }.compact) }
 
-  def self.group_templates(templates)
-    templates.group_by{|t| t.name.split(':')[0]}.map do |name, tmpls|
+  def self.group_templates(templates, limit, offset)
+    grouped_by_version = templates.group_by{|t| t.name.split(':')[0]}
+    count = grouped_by_version.size
+    grouped_by_version = grouped_by_version.drop(offset).first(limit) if limit && offset
+    grouped = grouped_by_version.map do |name, tmpls|
       {
         :versions => tmpls.group_by{|t| t.name.split(':')[1]}.map do |ver, tmpls|
           {
@@ -106,6 +109,7 @@ class ServiceTemplate < ApplicationRecord
         :last_created => tmpls.map(&:created_at).max
        }
     end
+    [grouped, count]
   end
 
   def self.catalog_item_types
