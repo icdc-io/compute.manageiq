@@ -55,7 +55,8 @@ module IcdcServiceMixin
     Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
   end
 
-  def invoke_custom_button(data) 
+  def invoke_custom_button(data)
+    _log.info("DBG AHR #{data.inspect}") 
     action = data['task']
     custom_button = resource_custom_action_button(action)
     if custom_button.resource_action.dialog_id
@@ -75,6 +76,7 @@ module IcdcServiceMixin
   end
 
   def submit_custom_action_dialog(resource, custom_button, data)
+    _log.info("DBG AHR #{User.currnect_user.inspect}")
     wf = ResourceActionWorkflow.new({}, User.current_user, custom_button.resource_action, :target => resource)
     data.each { |key, value| wf.set_value(key, value) } if data.present?
     wf_result = wf.submit_request
