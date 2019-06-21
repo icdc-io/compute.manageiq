@@ -44,14 +44,14 @@ module IcdcServiceScheduleMixin
     miq_schedules.create(
       :name         => "service #{name} backup scheduled at #{params["start_time"]}",
       :description  => "backup",
-      :sched_action => { :method => "service_backup", :options => {} },
+      :sched_action => { :method => "service_backup", :options => {} },    
       :filter       => MiqExpression.new("=" => {"field" => "Service-id", "value" => id}),
       :towhat       => self.class.name,
       :run_at       => { :interval => { :unit => params['interval_unit'], :value => '1' }, :start_time => params['start_time'] },
       :prod_default => "system",
       :userid       => evm_owner.userid
     )
-
+    _log.info("[DBG backups] schedule created")
     self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
   end
 

@@ -245,12 +245,12 @@ class MiqSchedule < ApplicationRecord
     _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
   end
 
-  def action_service_backup(obj, at)
-   # obj.invoke_custom_button({'task'=>'backup_now'})
-     _log.info("DBG AHR backup schedule #{parameters.inspect}")
-     parameters = filter[:parameters]
-     user = User.find_by_userid(userid)
-     AutomationRequest.create_from_scheduled_task(user, filter[:uri_parts], parameters)  
+  def action_service_backup(_obj, at)
+     _log.info("[DBG backups] schedule will be run with params #{parameters.inspect}")
+     uri = { :namespace => "GenericObject/Methods", :class => "Redhat", :instance => "create" }
+     options = {"service" =>"#{backupable_id}","backup_name"=>"Scheduled backup"} 
+     user = User.find_by(userid: userid)
+     AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
   end
 
   def action_check_compliance(obj, _at)
