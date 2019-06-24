@@ -571,11 +571,18 @@ class Service < ApplicationRecord
   end
 
   def backups
-    backups_with_states.select{|b| /BACKUP_([0-9_])+/ =~ b.name }
+    backups_with_states
   end
 
   def backups_with_states
-    custom_attributes.where("name LIKE ?", "BACKUP_%")
+    backups = []
+    backups.push(self.generic_objects.select{|b| /^bkp_([0-9_])+/ =~ b.name })
+    if self.all_service_children
+      self.all_service_children.each do |bkp|
+        backups.push(bkp.generic_objects.select{|b| /^bkp_([0-9_])+/ =~ b.name })
+      end
+    end
+    backups.flatten
   end
 
   def configuration_script

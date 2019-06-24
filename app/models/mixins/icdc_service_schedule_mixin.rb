@@ -44,14 +44,13 @@ module IcdcServiceScheduleMixin
     miq_schedules.create(
       :name         => "service #{name} backup scheduled at #{params["start_time"]}",
       :description  => "backup",
-      :sched_action => { :method => "service_backup", :options => {} },    
+      :sched_action => { :method => "service_backup", :options => {} }, 
       :filter       => MiqExpression.new("=" => {"field" => "Service-id", "value" => id}),
       :towhat       => self.class.name,
       :run_at       => { :interval => { :unit => params['interval_unit'], :value => '1' }, :start_time => params['start_time'] },
       :prod_default => "system",
       :userid       => evm_owner.userid
     )
-    _log.info("[DBG backups] schedule created")
     self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
   end
 
@@ -81,6 +80,7 @@ module IcdcServiceScheduleMixin
 
   def retention_period_to_duration
     case backup_retention_period
+    when "day"     then 1.day
     when "week"    then 1.week
     when "month"   then 1.month
     when "quarter" then 3.months
@@ -89,12 +89,12 @@ module IcdcServiceScheduleMixin
   end
 
   def outdated_backup?(backup)
-    backup_created_at = DateTime.parse(backup[:serialized_value]["end_date"])
+    backup_created_at = backup.created_at
     delete_at = backup_created_at + retention_period_to_duration
     delete_at < self.class.time_now
   end
 
-  def outdated_backups 
+  def outdated_backups
     backups.select { |backup| outdated_backup?(backup) }
   end
 
@@ -103,14 +103,12 @@ module IcdcServiceScheduleMixin
       self.find_each do |backupable|
         backupable.outdated_backups.each do |backup|
           begin
-          #  backupable.invoke_custom_button({'task'=>'delete_backup', 'backup_name' => backup.name })
-          # ICDC-G FIX
-            options = {"service" =>"#{backupable.id}","backup_name"=>"#{backup.name}"}
-	    uri = { "namespace" => "System", "class" => "Request", "instance" => "RemoveBackup"}
+            options = {"service" =>"#{backupable.id}","backup_id"=>"#{backup.id}"}
+	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete"}
    	    user = User.first
             AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
-          #END FIX
           rescue
+            next
           end
         end
       end
