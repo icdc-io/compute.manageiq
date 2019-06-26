@@ -1,10 +1,4 @@
 ---
-:location:
-  1:
-    :url: http://zabbix-idc.icdc.io/api_jsonrpc.php
-    :login: Admin
-    :password: zabbix
-  2:
-    :url: https://zabbix-nb5.icdc.io/api_jsonrpc.php
-    :login: api_user
-    :password: B1gb0sss
+:url: http://zabbix-compute.icdc.io/api_jsonrpc.php
+:login: Admin
+:password: zabbix

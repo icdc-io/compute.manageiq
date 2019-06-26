@@ -75,7 +75,7 @@ module ZabbixAlertMixin
 
   def connection
     return @connection unless @connection.nil?
-    zcfg = ZabbixConfig::ZCFG[:location][region_id]
+    zcfg = ZabbixConfig::ZCFG
     @connection = ZabbixApi.connect(
     :url => zcfg[:url],
     :user => zcfg[:login],
