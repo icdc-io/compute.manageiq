@@ -246,9 +246,8 @@ class MiqSchedule < ApplicationRecord
   end
 
   def action_service_backup(_obj, at)
-     _log.info("[DBG backups] schedule will be run with params #{parameters.inspect}")
-     uri = { :namespace => "GenericObject/Methods", :class => "Redhat", :instance => "create" }
-     options = {"service" =>"#{backupable_id}","backup_name"=>"Scheduled backup"} 
+     uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "create" }
+     options = {"service_id" =>"#{schedulable_id}","backup_name"=>"Scheduled backup"} 
      user = User.find_by(userid: userid)
      AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
   end
