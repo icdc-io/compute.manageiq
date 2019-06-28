@@ -576,11 +576,10 @@ class Service < ApplicationRecord
 
   def backups_with_states
     backups = []
-    backups.push(self.generic_objects.select{|b| /^bkp_([0-9_])+/ =~ b.name })
-    if self.all_service_children
-      self.all_service_children.each do |bkp|
-        backups.push(bkp.generic_objects.select{|b| /^bkp_([0-9_])+/ =~ b.name })
-      end
+    regexp = /^bkp_([0-9_])+/
+    backups.push(self.generic_objects.select{|b| regexp  =~ b.name })
+    self.all_service_children.each do |bkp|
+      backups.push(bkp.generic_objects.select{|b| regexp =~ b.name })
     end
     backups.flatten
   end
