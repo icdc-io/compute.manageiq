@@ -100,15 +100,15 @@ module IcdcServiceScheduleMixin
 
   module ClassMethods
     def delete_outdated_backups
-      self.find_each do |backupable|
+      self.find_each do |backupable| 
         backupable.outdated_backups.each do |backup|
           begin
-            options = { "service" =>"#{backupable.id}","backup_id"=>"#{backup.id}" }
+            options = { "service" => "#{backupable.id}", "backup_id" => "#{backup.id}" }
 	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete" }
-   	    user = User.first
-            AutomationRequest.create_from_ws("1.1",user,uri,options, { 'auto_approve' => true })
-          rescue
-            next
+   	    user = backupable.user
+            AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
+          rescue => e
+            _log.error("Error while deleting outdated backup #{backup.id} for service #{backupable.id} with message => #{e.message}")
           end
         end
       end
