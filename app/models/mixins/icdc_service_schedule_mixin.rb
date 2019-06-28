@@ -103,10 +103,10 @@ module IcdcServiceScheduleMixin
       self.find_each do |backupable|
         backupable.outdated_backups.each do |backup|
           begin
-            options = {"service" =>"#{backupable.id}","backup_id"=>"#{backup.id}"}
-	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete"}
+            options = { "service" =>"#{backupable.id}","backup_id"=>"#{backup.id}" }
+	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete" }
    	    user = User.first
-            AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
+            AutomationRequest.create_from_ws("1.1",user,uri,options, { 'auto_approve' => true })
           rescue
             next
           end
