@@ -51,7 +51,6 @@ module IcdcServiceScheduleMixin
       :prod_default => "system",
       :userid       => evm_owner.userid
     )
-
     self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
   end
 
@@ -81,6 +80,7 @@ module IcdcServiceScheduleMixin
 
   def retention_period_to_duration
     case backup_retention_period
+    when "day"     then 1.day
     when "week"    then 1.week
     when "month"   then 1.month
     when "quarter" then 3.months
@@ -89,28 +89,26 @@ module IcdcServiceScheduleMixin
   end
 
   def outdated_backup?(backup)
-    backup_created_at = DateTime.parse(backup[:serialized_value]["end_date"])
+    backup_created_at = backup.created_at
     delete_at = backup_created_at + retention_period_to_duration
     delete_at < self.class.time_now
   end
 
-  def outdated_backups 
+  def outdated_backups
     backups.select { |backup| outdated_backup?(backup) }
   end
 
   module ClassMethods
     def delete_outdated_backups
-      self.find_each do |backupable|
+      self.find_each do |backupable| 
         backupable.outdated_backups.each do |backup|
           begin
-          #  backupable.invoke_custom_button({'task'=>'delete_backup', 'backup_name' => backup.name })
-          # ICDC-G FIX
-            options = {"service" =>"#{backupable.id}","backup_name"=>"#{backup.name}"}
-	    uri = { "namespace" => "System", "class" => "Request", "instance" => "RemoveBackup"}
-   	    user = User.first
-            AutomationRequest.create_from_ws("1.1",user,uri,options, {'auto_approve' => true })
-          #END FIX
-          rescue
+            options = { "service" => "#{backupable.id}", "backup_id" => "#{backup.id}" }
+	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete" }
+   	    user = backupable.user
+            AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
+          rescue => e
+            _log.error("Error while deleting outdated backup #{backup.id} for service #{backupable.id} with message => #{e.message}")
           end
         end
       end

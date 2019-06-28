@@ -245,9 +245,11 @@ class MiqSchedule < ApplicationRecord
     _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
   end
 
-  def action_service_backup(obj, at)
-    obj.invoke_custom_button({'task'=>'backup_now'})
-    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
+  def action_service_backup(_obj, at)
+     uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "create" }
+     options = {"service_id" =>"#{schedulable_id}","backup_name"=>"Scheduled backup"} 
+     user = User.find_by(userid: userid)
+     AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
   end
 
   def action_check_compliance(obj, _at)
