@@ -1,5 +1,5 @@
 require 'erb'
-require 'passgen'
+require 'securerandom'
 
 class AncestryError < StandardError
 end
@@ -255,7 +255,7 @@ class AccountStructure::AccountStructureUpdaterIBA
     user = User.new(userid: email,
                     email:  email,
                     name: build_user_name(user_infokadry[FIRST_NAME], user_infokadry[LAST_NAME]),
-                    password: Passgen::generate
+                    password: SecureRandom.base64(10) 
     )
 
     current_group = find_user_group(user_infokadry[DEP_NUMBER])
