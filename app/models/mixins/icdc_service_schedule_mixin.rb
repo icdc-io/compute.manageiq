@@ -75,7 +75,7 @@ module IcdcServiceScheduleMixin
   end
 
   def create_default_backup_retention_period
-    custom_attributes.create(:name => BACKUP_RETENTION_NAME, :value => DEFAULT_BACKUP_RETENTION_PERIOD)
+    custom_attributes.create(:name => BACKUP_RETENTION_NAME, :value => DEFAULT_BACKUP_RETENTION_PERIOD, :source => "EVM")
   end
 
   def retention_period_to_duration
