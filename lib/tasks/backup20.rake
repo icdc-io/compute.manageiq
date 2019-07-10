@@ -35,9 +35,40 @@ namespace :backup20 do
           :created_at    => created_at,
           :description   => "#{name}_old_backup",
           :status        => "ready",
-          :configuration => configuration)   
+          :configuration => (configuration).to_json)   
     new_backup.template = [template]
     new_backup.service = [vm.service]
     new_backup.save!
+    new_backup.add_to_service(vm.service) 
+  end
+
+  desc "Delete outdated old backups"
+  task :remove_outdated_backups => :environment do
+    connection = ExtManagementSystem.first.connect
+    backups_v1 = CustomAttribute.where("name LIKE?", "%BACKUP_201%")
+    backups_v1.each do |backup|
+      begin
+        backup_created_at = DateTime.parse(backup[:serialized_value]["end_date"])
+        retention_period = Service.find(backup.resource_id).custom_attributes.where(:name => 'backup_retention_period').first.value
+        delete_in = ""
+        case retention_period
+        when 'week'    then delete_in = 1.week
+        when 'month'   then delete_in = 1.month
+        when 'quarter' then delete_in = 3.months
+        when 'year'    then delete_in = 1.year
+        end
+        delete_at = backup_created_at + delete_in
+        JSON.parse(backup.value.gsub('=>', ':'))['vms'].each_value do |x|
+          template_uuid = ""
+          template_uuid = VmOrTemplate.find(x['t_id']).uid_ems
+          connection.system_service.templates_service.template_service(template_uuid).remove if (delete_at < DateTime.now && template_uuid != "")
+          VmOrTemplate.find(x['t_id']).delete if (delete_at < DateTime.now && template_uuid != "")
+          backup.delete  if delete_at < DateTime.now
+        end
+      rescue => e
+        p "Error :: #{e.message}"
+        retention_period = 'week'
+      end
+    end
   end
 end
