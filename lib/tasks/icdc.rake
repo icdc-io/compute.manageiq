@@ -73,6 +73,22 @@ namespace :support do
 
 end
 
+desc "Create service for new vm"
+task :service_for_new_vm, [:service_name, :user_id, :vm_id] => :environment do | _, args|
+  begin
+    service = Service.new
+    service.name = args[:service_name]
+    owner = User.find(args[:user_id])
+    service.evm_owner = owner
+    service.miq_group = owner.current_group
+    service.save!
+    VmOrTemplate.find(args[:vm_id]).add_to_service(service)
+    puts "New service #{service.name} creation finished completed"
+  rescue => e
+    puts "New service creatin failed with error => #{e.message}"
+  end
+end
+
 desc "Restart DEV app shortcut"
 task :restart => :environment do
   Rake::Task['icdc:dev:restart'].invoke
