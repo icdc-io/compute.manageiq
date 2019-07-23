@@ -1294,12 +1294,15 @@
   - service_view
   - service_edit
   - service_reconfigure
+  - storage_view
   - service_retire
   - service_create
   - service_retire_now
   - my_settings_visuals
   - my_settings_default_views
   - provider_foreman_explorer
+  - generic_object_view
+  - generic_object_definition_view
   - all_vm_rules
   - svc_catalog_accord
   - rbac_user_view
