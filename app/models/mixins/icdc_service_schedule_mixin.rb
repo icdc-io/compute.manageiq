@@ -105,7 +105,7 @@ module IcdcServiceScheduleMixin
           begin
             options = { "service" => "#{backupable.id}", "backup_id" => "#{backup.id}" }
 	    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "delete" }
-   	    user = backupable.user
+   	    user = backupable.evm_owner
             AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
           rescue => e
             _log.error("Error while deleting outdated backup #{backup.id} for service #{backupable.id} with message => #{e.message}")
