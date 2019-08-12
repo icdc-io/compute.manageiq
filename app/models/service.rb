@@ -137,6 +137,7 @@ class Service < ApplicationRecord
       ps = 'off' if power_states_match?(:stop)
     end
     ps = 'partial_on' if ps == 'on' && power_states.include?('off')
+    ps = 'partial_on' if ps == 'off' && power_states.include?('on')
     ps
   end
 
