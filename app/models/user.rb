@@ -138,6 +138,10 @@ class User < ApplicationRecord
       remove_zabbix_host_by_owner(self)
     end
   end
+  
+  def set_settings(key, value)
+    self.update_attribute(:settings, :"#{key}" => value)
+  end
 
   def nil_email_field_if_blank
     self.email = nil if email.blank?
