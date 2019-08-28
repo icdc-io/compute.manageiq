@@ -54,7 +54,7 @@ module QuotableMixin
   end
 
   def combine_quotas(quota1, quota2)
-    quota_names = [:storage_allocated, :svm_allocated, :hours_allocated]
+    quota_names = [:storage_allocated]
     quota_fields = [:value, :allocated, :available, :used]
     if quota1["quota"]
       quota_names.each do |quota_name|

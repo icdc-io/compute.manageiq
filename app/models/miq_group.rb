@@ -43,7 +43,7 @@ class MiqGroup < ApplicationRecord
   include CustomActionsMixin
   include MiqGroupQuotaMixin
   include AccountChargebackMixin
-  include SvmMetricMixin
+
   include ServiceChargebackMixin
   include ProcessTasksMixin
 

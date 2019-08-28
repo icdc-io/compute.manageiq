@@ -8,7 +8,6 @@ class Tenant < ApplicationRecord
 
   include ActiveVmAggregationMixin
   include CustomActionsMixin
-  include SvmMetricMixin
   include AccountChargebackMixin
   include IbaRelationshipMixin 
   include ServiceChargebackMixin

@@ -191,7 +191,7 @@ class HaproxyCluster < ApplicationRecord
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
 
     req = Net::HTTP::Get.new('/api/subnets')
     req.basic_auth(foreman_config[:user], foreman_config[:password])

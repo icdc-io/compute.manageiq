@@ -240,7 +240,7 @@ class Issue < ActiveResource::Base
     uri = URI(RedmineConfig::REDMINE_CONFIG[:project_url])
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     req = Net::HTTP::Post.new('/uploads.json')
 
     req.content_type = "application/octet-stream"

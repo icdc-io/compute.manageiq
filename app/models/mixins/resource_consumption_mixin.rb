@@ -5,10 +5,6 @@ module ResourceConsumptionMixin
     send("#{resource_name}_used")
   end
 
-  def svm_used
-    [cpu_used, (mem_used.to_f / 1.gigabyte).ceil].max
-  end
-
   def cpu_used
     allocated_vcpu
   end
@@ -20,11 +16,7 @@ module ResourceConsumptionMixin
   def storage_used
     allocated_storage / 1.gigabyte
   end
-
-  def hours_used
-    svmh_used
-  end
-
+  
   def vms_used
     active_vms.count
   end
