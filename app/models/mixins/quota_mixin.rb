@@ -17,14 +17,7 @@ module QuotaMixin
           :format        => :general_number_precision_0,
           :text_modifier => "GB".freeze
       },
-      #:svm_allocated => {
-      #    :unit          => :fixnum,
-      #    :text_modifier => "Count".freeze
-      #},
-      #:hours_allocated => {
-      #    :unit          => :fixnum,
-      #    :text_modifier => "Count".freeze
-      #},
+      
   }
 
   DEFAULT_TEXT_FOR_ZERO_VALUES = {
@@ -42,8 +35,7 @@ module QuotaMixin
     scope :cpu_allocated,       -> { where(:name => :cpu_allocated) }
     scope :mem_allocated,       -> { where(:name => :mem_allocated) }
     scope :storage_allocated,   -> { where(:name => :storage_allocated) }
-    #scope :svm_allocated,       -> { where(:name => :svm_allocated) }
-    #scope :hours_allocated,     -> { where(:name => :hours_allocated) }
+   
 
     virtual_column :name, :type => :string
     virtual_column :total, :type => :integer
@@ -154,10 +146,6 @@ module QuotaMixin
           _("Allocated Number of Virtual Machines")
         when :templates_allocated
           _("Allocated Number of Templates")
-        #when :svm_allocated
-        #  _("Allocated Number of SVM")
-        #when :hours_allocated
-        #  _("Allocated Number of SVM Hours")
       end
     end
     

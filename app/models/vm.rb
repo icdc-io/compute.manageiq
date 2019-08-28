@@ -7,7 +7,6 @@ class Vm < VmOrTemplate
 
   extend InterRegionApiMethodRelay
   include CustomActionsMixin
-  include SvmMetricMixin
 
   include_concern 'Operations'
 

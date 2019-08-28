@@ -9,7 +9,6 @@ class User < ApplicationRecord
   include UserQuotableMixin
   include UserAccountChargebackMixin
   include AccountChargebackMixin
-  include SvmMetricMixin
   include ProcessTasksMixin
   include TagsEmailsMixin
   include ResourceConsumptionMixin

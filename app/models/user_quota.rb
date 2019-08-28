@@ -30,10 +30,6 @@ class UserQuota < Quota
     @used ||= send(method)
   end
 
-  def svm_used
-   [ cpu_used, (mem_used.to_f / 1.gigabyte).ceil ].max
-  end
-
   def cpu_used
     user.allocated_vcpu
   end
@@ -48,10 +44,6 @@ class UserQuota < Quota
 
   def vms_used
     user.active_vms.count
-  end
- 
-  def hours_used
-    user.svmh_used
   end
 
   def templates_used# remove all quotas that are not listed in the keys to keep

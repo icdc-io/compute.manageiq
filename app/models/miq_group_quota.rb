@@ -39,10 +39,6 @@ class MiqGroupQuota < Quota
     end.compact.sum
   end
 
-  def svm_used
-   [ cpu_used, (mem_used.to_f / 1.gigabyte).ceil ].max
-  end
-
   def cpu_used
     miq_group.allocated_vcpu
   end
@@ -63,9 +59,6 @@ class MiqGroupQuota < Quota
     miq_group.miq_templates.count
   end
 
-  def hours_used
-    miq_group.svmh_used
-  end
 
   def validate_quota
     validate_quota_base(miq_group.current_tenant)

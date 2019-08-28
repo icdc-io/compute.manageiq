@@ -21,7 +21,6 @@ module QuotaApproveRequestMixin
   def quota_request_test
     dialog = options[:dialog]
     quota_hash = {
-        "svm_allocated" => dialog["dialog_svm"],
         "storage_allocated" => dialog["dialog_storage"],
         "hours_allocated" => dialog["dialog_hours"]
     }
