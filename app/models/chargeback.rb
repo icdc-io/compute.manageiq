@@ -236,7 +236,7 @@ class Chargeback < ActsAsArModel
 
     static_cols       = report_static_cols
     static_cols      -= ["image_name"] if group_by == "project"
-    static_cols      -= ["vm_name"] if group_by == "date-only"
+    static_cols      -= ["vm_name", "service_name", "service_id"] if group_by == "date-only"
     static_cols       = group_by == "tag" ? [report_tag_field] : static_cols
     static_cols       = group_by == "label" ? [report_label_field] : static_cols
     static_cols       = group_by == "tenant" ? ['tenant_name'] : static_cols

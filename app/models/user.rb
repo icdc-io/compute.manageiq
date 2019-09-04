@@ -6,7 +6,6 @@ class User < ApplicationRecord
   include CustomAttributeMixin
   include ActiveVmAggregationMixin
   include TimezoneMixin
-  include UserQuotableMixin
   include UserAccountChargebackMixin
   include AccountChargebackMixin
   include ProcessTasksMixin
@@ -38,10 +37,8 @@ class User < ApplicationRecord
   }
 
   virtual_has_many :active_vms, :class_name => "VmOrTemplate"
-  virtual_has_one  :quota
   virtual_has_one  :services_chargeback
   virtual_has_one  :tenant_quota
-  virtual_has_one  :real_quota
   virtual_has_one  :last_chargeback
   virtual_has_one  :current_chargeback
   virtual_has_one  :managed_tenants
@@ -192,14 +189,6 @@ class User < ApplicationRecord
        priority_tenant.services_chargeback
      end
   end
-
-  def quota
-    personal_quotas
-  end
-
-   def real_quota
-     combined_quotas
-   end
 
   def self.priority_tenant_for(user)
     Tenant.in_my_region.find_tagged_with(:any =>
@@ -358,6 +347,14 @@ class User < ApplicationRecord
     else
       Vm.all
     end
+  end
+
+  def regional_users
+    self.class.regional_users(self)
+  end
+
+  def self.regional_users(user)
+    where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:userid)]).eq(user.userid.downcase)))
   end
 
   def self.super_admin

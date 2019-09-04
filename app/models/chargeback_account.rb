@@ -6,6 +6,8 @@ class ChargebackAccount < Chargeback
     :display_range            => :string,
     :chargeback_rates         => :string,
     :vm_id                    => :integer,
+    :service_id               => :integer,
+    :service_name             => :string,
     :vm_name                  => :string,
     :tag_name                 => :string,
     :vm_uid                   => :string,
@@ -94,7 +96,7 @@ class ChargebackAccount < Chargeback
   end
 
   def self.report_static_cols
-    %w(vm_name)
+    %w(vm_name service_name service_id)
   end
 
   def self.report_col_options
@@ -151,6 +153,14 @@ class ChargebackAccount < Chargeback
     @vm_owners[consumption.resource_id] ||= consumption.resource.evm_owner_name
   end
 
+  def self.get_service(guid)
+    return nil 
+    if Vm.find_by(:guid => guid).service
+      return Vm.find_by(:guid => guid).service
+    else
+      return name = Vm.find_by(:guid => guid)
+    end
+  end
 
   def self.vms
     @vms ||=
@@ -171,7 +181,7 @@ class ChargebackAccount < Chargeback
           if tenant.nil?
             _log.error("Unable to find tenant '#{@options[:tenant_id]}'. Calculating chargeback costs aborted.")
             raise MiqException::Error, "Unable to find tenant '#{@options[:tenant_id]}'"
-          end
+          end 
           tenant.vms
         elsif @options[:service_id]
           service = Service.find(@options[:service_id])
@@ -189,8 +199,11 @@ class ChargebackAccount < Chargeback
           end
           vms = []
           for tenant in  account.subtree
-            for vm in tenant.vm_or_templates
-              vms.push(vm) if !vm.template? || vm.name.index('-B-')
+            tenant.regional_tenants.each do |t|
+              next if tenant.region_number == 99 
+              for vm in t.vm_or_templates
+                vms.push(vm) if !vm.template? || vm.name.index('-B-')
+              end
             end
           end
           vms 
@@ -205,6 +218,8 @@ class ChargebackAccount < Chargeback
   def init_extra_fields(consumption)
     disk_size = []
     self.vm_id         = consumption.resource_id
+    self.service_id    = self.class.get_service(consumption.resource.try(:guid)).id
+    self.service_name  = self.class.get_service(consumption.resource.try(:guid)).name
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
     self.vm_guid       = consumption.resource.try(:guid)
@@ -214,7 +229,7 @@ class ChargebackAccount < Chargeback
     self.license_cost  = consumption.resource.try(:license_cost)
     self.license_type  = consumption.resource.try(:license_type)
     self.account       = consumption.resource.tenant.get_account.description
-    self.tenant        = consumption.resource.tenant.description
+    self.tenant        = consumption.resource.tenant.id
     self.uptime        = calculate_uptime(consumption)
     self.cpu_allocated_total     = consumption.resource.cpu_total_cores
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte 

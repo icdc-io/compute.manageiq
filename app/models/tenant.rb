@@ -9,12 +9,13 @@ class Tenant < ApplicationRecord
   include ActiveVmAggregationMixin
   include CustomActionsMixin
   include AccountChargebackMixin
-  include IbaRelationshipMixin 
+  include IbaRelationshipMixin
   include ServiceChargebackMixin
   include ProcessTasksMixin
   include TenantTagsMixin
+  include TenantQuotasMixin
   include ResourceConsumptionMixin
-  include TenantQuotableMixin
+  extend InterRegionApiMethodRelay
 
   acts_as_miq_taggable
 
@@ -43,7 +44,6 @@ class Tenant < ApplicationRecord
   has_many :services, :dependent => :destroy
   has_many :shares
 
-  virtual_has_one  :quota
   virtual_has_one  :services_in_regions
   virtual_has_one  :current_chargeback
   virtual_has_one  :last_chargeback
@@ -74,30 +74,89 @@ class Tenant < ApplicationRecord
   virtual_column :get_account, :type => :string
   virtual_column :get_account_subnet, :type => :string
   virtual_column :get_tenant_users, :type => :string
+  virtual_column :combined_quotas, :type => :string
 
   before_save :nil_blanks
   after_create :create_tenant_group, :create_users_group
   before_destroy :ensure_can_be_destroyed
+  
+  api_relay_method :set_quotas
 
   def get_account_users
     account_users = []
     account_users = get_account.users if get_account.descendants.empty?
-    get_account.descendants.each do |descendant| 
+    get_account.descendants.each do |descendant|
       account_users += descendant.users
-    end        
-    account_users.map do |account_user|  
+    end
+    account_users.map do |account_user|
       group = MiqGroup.find_by_id(account_user.current_group_id)
       user = account_user.as_json
       user["tags"] = account_user.tags
       user["group"] = group.description
       user
-    end  
-  end  
+    end
+  end
+
+  def get_quotas
+    tenant_quotas.each_with_object({}) do |q, h|
+      h[q.name.to_sym] = q.quota_hash
+    end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def set_quotas(quotas)
+    updated_keys = []
+
+    self.class.transaction do
+      quotas.each do |name, values|
+        next if values[:value].nil?
+
+        name = name.to_s
+        q = tenant_quotas.detect { |tq| tq.name == name } || tenant_quotas.build(:name => name)
+        q.update_attributes!(values)
+        updated_keys << name
+      end
+      # Delete any quotas that were not passed in
+      tenant_quotas.destroy_missing(updated_keys)
+      # unfortunatly, an extra scope is created in destroy_missing, so we need to reload the records
+      clear_association_cache
+    end
+
+    get_quotas
+  end
+
+  def used_quotas
+    tenant_quotas.each_with_object({}) do |q, h|
+      h[q.name.to_sym] = q.quota_hash.merge(:value => q.used)
+    end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def allocated_quotas
+    tenant_quotas.each_with_object({}) do |q, h|
+      h[q.name.to_sym] = q.quota_hash.merge(:value => q.allocated)
+    end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def available_quotas
+    tenant_quotas.each_with_object({}) do |q, h|
+      h[q.name.to_sym] = q.quota_hash.merge(:value => q.available)
+    end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def combined_quotas
+    TenantQuota.quota_definitions.each_with_object({}) do |d, h|
+      scope_name, _ = d
+      q = tenant_quotas.send(scope_name).take || tenant_quotas.build(:name => scope_name, :value => 0)
+      h[q.name.to_sym] = q.quota_hash
+      h[q.name.to_sym][:allocated]   = q.allocated
+      h[q.name.to_sym][:available]   = q.available unless q.new_record?
+      h[q.name.to_sym][:used]        = q.used
+    end.reverse_merge(TenantQuota.quota_definitions)
+  end
 
   def get_account
-    ancestors.each do |ancestor| 
+    ancestors.each do |ancestor|
       return ancestor if check_account(ancestor.tags) == 0
-    end  
+    end
     self
   end
   alias_method :account, :get_account
@@ -106,7 +165,7 @@ class Tenant < ApplicationRecord
     return 0 if tags.find_index { |tag| /\/managed\/account\// =~ tag.name }
   end
 
-  def get_account_subnet    
+  def get_account_subnet
     network = []
     get_account.tags.each do |tag|
       tag_info = {}
@@ -114,22 +173,22 @@ class Tenant < ApplicationRecord
         tag_info["subnet"] = tag.categorization["name"]
         tag_info["description"] = tag.categorization["description"]
         network.push(tag_info)
-      end  
-    end 
-    network    
-  end  
+      end
+    end
+    network
+  end
 
   def get_tenant_users
     tenant_users = []
     tenant_users = users
-    tenant_users.map do |tenant_user|  
+    tenant_users.map do |tenant_user|
       group = MiqGroup.find_by_id(tenant_user.current_group_id)
       user = tenant_user.as_json
       user["tags"] = tenant_user.tags
       user["group"] = group.get_title
       user
-    end  
-  end 
+    end
+  end
 
   def self.scope_by_tenant?
     true
@@ -158,6 +217,14 @@ class Tenant < ApplicationRecord
 
   def all_subprojects
     self.class.descendants_of(self).where(:divisible => false)
+  end
+
+  def regional_tenants
+    self.class.regional_tenants(self)
+  end
+
+  def self.regional_tenants(tenant)
+    where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:name)]).eq(tenant.name.downcase)))
   end
 
   def accessible_tenant_ids(strategy = nil)
@@ -315,9 +382,12 @@ class Tenant < ApplicationRecord
   end
 
   def create_users_group
-    group = miq_groups.build(description: "g_#{external_id}", long_description: 'Default')
-    group.miq_user_role = MiqUserRole.find_by_name("ICDC-user")
-    group.save!
+    roles = %w(admin billing members)
+    roles.each do |role|
+      group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
+      group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{roles}")
+      group.save!
+    end
   end
 
   private

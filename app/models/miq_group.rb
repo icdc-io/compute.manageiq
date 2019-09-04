@@ -15,9 +15,9 @@ class MiqGroup < ApplicationRecord
   has_many   :miq_widget_contents, :dependent => :destroy
   has_many   :miq_widget_sets, :as => :owner, :dependent => :destroy
 
+  virtual_column :combined_quotas, :type => :string
   virtual_column :miq_user_role_name, :type => :string,  :uses => :miq_user_role
   virtual_column :read_only,          :type => :boolean
-  virtual_has_one  :quota
   virtual_has_one   :services_in_regions
 
   delegate :self_service?, :limited_self_service?, :disallowed_roles, :to => :miq_user_role, :allow_nil => true
@@ -41,7 +41,6 @@ class MiqGroup < ApplicationRecord
   include TimezoneMixin
   include TenancyMixin
   include CustomActionsMixin
-  include MiqGroupQuotaMixin
   include AccountChargebackMixin
 
   include ServiceChargebackMixin
@@ -231,10 +230,6 @@ class MiqGroup < ApplicationRecord
     end
   end
 
-  def quota
-    self.build_quota_tree(true)
-  end
-
   def get_title
     long_description.present? ? long_description : name
   end
@@ -280,6 +275,10 @@ class MiqGroup < ApplicationRecord
     get_services_in_regions do |group_in_region|
       group_in_region.services
     end
+  end
+
+  def combined_quotas
+    current_tenant.combined_quotas
   end
 
   private

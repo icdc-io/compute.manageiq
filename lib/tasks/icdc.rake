@@ -94,6 +94,108 @@ task :restart => :environment do
   Rake::Task['icdc:dev:restart'].invoke
 end
 
+desc "Create onering account"
+task :relocate_users => :environment do
+  Tenant.in_my_region.all.each do |x|
+    begin
+      childrens = []
+      users = []
+      managers = []
+      find_all_children(childrens, x)
+      #Find all tenant users
+      #Manager have 2 group in tenant (member and manager (admin or billing))
+      childrens.reject { |c| c.empty? }.flatten.each do |tenant|
+        managers.push(tenant.managers)
+        users.push(tenant.users)
+        new_tenant = find_parent_tenant(tenant)
+        user_transfer(users.reject{|u| u.empty?}.flatten, managers.reject{|m| m.empty?}.flatten, new_tenant)
+      end 
+    rescue => e
+      p "ERROR! #{x.description} :: #{e.message}"
+      next
+    end
+  end
+  p "Setting tenant quotas"
+  set_tenant_quotas
+  p "Exchange quota values from Gb ti Bytes"
+  exchange_quota_values
+  p "Setting tenant networks"
+  set_tenant_networks
+  p "Patching services"
+  patch_services_and_vms
+end
+
+public 
+
+def find_all_children(childrens, tenant)
+  childrens.push(tenant.children)
+    tenant.children.each{|x| x.find_all_children(childrens, x)}
+end
+
+def find_parent_tenant(tenant)
+  Tenant.in_my_region.find((tenant.ancestry.split("/") - %w(2000000000001 2000000000054 1000000000001 1000000000054 99000000000001 99000000000054)).first)
+end
+
+def user_transfer(users, managers, tenant)
+  members_group = find_new_group(tenant.description, "members")
+  manager_group = find_new_group(tenant.description, "billing")
+  users.each do |user|
+    next if user.userid == "admin"
+    user.miq_groups = [ members_group ]
+    user.current_group = members_group
+    user.save!
+  end
+
+  
+  managers.each do |manager|
+    manager.miq_groups = []
+    manager.miq_groups = [members_group, manager_group]
+    manager.current_group = members_group
+    manager.save!
+  end
+
+end
+
+def find_new_group(description, role)
+  Tenant.in_my_region.where(:description => description).where("name NOT LIKE?", "t_%").first.miq_groups.select{ |g| g.description.include?(role) }.first
+end
+
+def set_tenant_quotas
+  accounts = Tenant.in_my_region.all.select{|t| t.account?}
+  accounts.each do |account|
+    Tenant.in_my_region.where(:description => account.description).where("name NOT LIKE?", "t_%").first.tenant_quotas.push(account.tenant_quotas)
+  end
+end
+
+def exchange_quota_values
+  Tenant.where("name NOT LIKE?", "t_%").each do |tenant|
+    tenant.tenant_quotas.map do |quota|
+      next if quota.name == "cpu_allocated"
+      quota.value = quota.value * (1024 ** 3)
+      quota.save!
+    end
+  end 
+end
+
+def set_tenant_networks
+  Tenant.in_my_region.where("name LIKE?", "t_%").each do |tenant|
+    tenant.tags.each do |tag|
+      Tenant.in_my_region.where(:description => tenant.description).where("name NOT LIKE?", "t_%").first.tags.push(tag) if /\/managed\/networks\// =~ tag.name
+    end
+  end
+end
+
+def patch_services_and_vms
+  User.all.each do |user|
+    Service.where(:evm_owner => user).each do |service|
+      service.update!(:miq_group => user.current_group)
+      service.vms.each do |vm|
+        vm.update!(:miq_group => user.current_group)
+      end
+    end
+  end
+end
+
 namespace :dev do
   desc "Delete all miq_schedules after deployment of DEV environment"
   task :remove_schedules => :environment do
