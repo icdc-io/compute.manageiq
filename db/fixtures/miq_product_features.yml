@@ -5915,7 +5915,7 @@
       - :name: Download remote viewer connection file
         :description: Download VV console file (Ovirt, RHV)
         :feature_type: control
-        :identifier: vm_console_file 
+        :identifier: vm_console_file
       - :name: Console using WebMKS
         :description: Open a web-based console for VMs
         :feature_type: control
@@ -6789,7 +6789,7 @@
       - :name: Download remote viewer connection file
         :description: Download remote viewer connection file (Ovirt, RHV)
         :feature_type: control
-        :identifier: sui_vm_console_file 
+        :identifier: sui_vm_console_file
       - :name: Open Web Console
         :description: Open Web Console
         :feature_type: control
@@ -6896,7 +6896,37 @@
         :description: Order cart
         :feature_type: control
         :identifier: sui_cart_order
-
+  - :name: Reports
+    :description: Reports features
+    :feature_type: node
+    :identifier: sui_reports
+    :children:
+    - :name: View
+      :description: View reports
+      :feature_type: node
+      :identifier: sui_reports_view
+      :children:
+      - :name: Show resources
+        :description: Show reports
+        :feature_type: view
+        :identifier: sui_reports_resources_show
+      - :name: Show services
+        :description: Show reports
+        :feature_type: view
+        :identifier: sui_reports_services_show
+      - :name: Show chargeback
+        :description: Show chargeback in service report
+        :feature_type: view
+        :identifier: sui_reports_chargeback_show
+    - :name: Operate
+      :description: Reports Operations
+      :feature_type: node
+      :identifier: sui_reports_operations
+      :children:
+      - :name: Request Quotas
+        :description: Request Quotas
+        :feature_type: control
+        :identifier: sui_reports_request_quotas
 # Announcements (notification)
 - :name: Announcements
   :description: Everything under Announcements
@@ -6943,4 +6973,16 @@
     :description: lotus api requests
     :feature_type: control
     :identifier: lotus_api_request
-
+  - :name: Service Report
+    :description: Service report for feature UI Reports
+    :feature_type: node
+    :identifier: service_report_view
+    :children:
+    - :name: View Service Report
+      :description: View Service Report
+      :feature_type: view
+      :identifier: service_report
+    - :name: View Chargeback
+      :description: View Chargeback in Service Report
+      :feature_type: view
+      :identifier: service_report_chargeback
