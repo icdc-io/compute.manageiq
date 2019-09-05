@@ -154,7 +154,7 @@ class ChargebackAccount < Chargeback
   end
 
   def self.get_service(guid)
-    return nil 
+    return nil unless guid
     if Vm.find_by(:guid => guid).service
       return Vm.find_by(:guid => guid).service
     else

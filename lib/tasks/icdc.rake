@@ -119,10 +119,10 @@ task :relocate_users => :environment do
   set_tenant_quotas
   p "Exchange quota values from Gb ti Bytes"
   exchange_quota_values
-  p "Setting tenant networks"
-  set_tenant_networks
   p "Patching services"
   patch_services_and_vms
+  p "Setting tenant networks"
+  set_tenant_networks
 end
 
 public 
@@ -160,6 +160,13 @@ def find_new_group(description, role)
   Tenant.in_my_region.where(:description => description).where("name NOT LIKE?", "t_%").first.miq_groups.select{ |g| g.description.include?(role) }.first
 end
 
+def change_miq_user_roles
+    MiqGroup.in_my_region.where("description NOT LIKE?","g_%").each do |group|
+      next if group.description.start_with?("Evm")
+      group.miq_user_role = MiqUserRole.in_my_region.find_by_name("ICDC-#{group.description.split(".").last}")
+    end 
+end
+
 def set_tenant_quotas
   accounts = Tenant.in_my_region.all.select{|t| t.account?}
   accounts.each do |account|
@@ -168,7 +175,7 @@ def set_tenant_quotas
 end
 
 def exchange_quota_values
-  Tenant.where("name NOT LIKE?", "t_%").each do |tenant|
+  Tenant.in_my_region.where("name NOT LIKE?", "t_%").each do |tenant|
     tenant.tenant_quotas.map do |quota|
       next if quota.name == "cpu_allocated"
       quota.value = quota.value * (1024 ** 3)
@@ -186,8 +193,8 @@ def set_tenant_networks
 end
 
 def patch_services_and_vms
-  User.all.each do |user|
-    Service.where(:evm_owner => user).each do |service|
+  User.in_my_region.all.each do |user|
+    Service.in_my_region.where(:evm_owner => user).each do |service|
       service.update!(:miq_group => user.current_group)
       service.vms.each do |vm|
         vm.update!(:miq_group => user.current_group)
