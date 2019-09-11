@@ -1364,6 +1364,8 @@
   - triggers_delete
   - triggers_disable
   - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
   - rbac_tenant_manage_quotas
   - miq_request
   - icdc_features
@@ -1412,6 +1414,8 @@
   - triggers_delete
   - triggers_disable
   - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
   - rbac_tenant_manage_quotas
   - miq_request
   - icdc_features
@@ -1461,6 +1465,8 @@
   - triggers_delete
   - triggers_disable
   - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
   - rbac_tenant_manage_quotas
   - miq_request
   - icdc_features
