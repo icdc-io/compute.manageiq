@@ -198,7 +198,10 @@ class Chargeback < ActsAsArModel
      # res += "#{Classification.find_by_tag_id(tags.first.id).description} : #{disk.size / 1.gigabyte}GB; "
    end 
    _log.info("TESTTEST")
-   res = "Fast1 : #{fast_disk_size}; Medium1 : #{medium_disk_size}; Slow1 : #{slow_disk_size}"
+   res = ""
+   res += "Fast : #{fast_disk_size}; " unless fast_disk_size ==0 
+   res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
+   res += "Slow : #{slow_disk_size}" unless slow_disk_size == 0
    end
     res
   end
