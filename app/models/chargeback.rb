@@ -177,9 +177,7 @@ class Chargeback < ActsAsArModel
     res = ""
     return res unless disks
 
-    slow_disk_size = 0
-    fast_disk_size = 0
-    medium_disk_size = 0
+    slow_disk_size = fast_disk_size = medium_disk_size = 0
 
     disks.each do |disk|
        #FIX ICDC-G
