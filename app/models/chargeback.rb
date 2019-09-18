@@ -194,7 +194,6 @@ class Chargeback < ActsAsArModel
         slow_disk_size += size
       end
    end
-   res = ""
    res += "Fast : #{fast_disk_size}; " unless fast_disk_size == 0
    res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
    res += "Slow : #{slow_disk_size}" unless slow_disk_size == 0
