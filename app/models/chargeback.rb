@@ -201,7 +201,7 @@ class Chargeback < ActsAsArModel
     res
   end
 
-def get_disk_type_proxy(consumption)
+  def get_disk_type_proxy(consumption)
     disks = consumption.resource.disks
     res_f = res_s = res_m = res_b = 0
     backup = false
