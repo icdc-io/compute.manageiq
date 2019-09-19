@@ -180,8 +180,8 @@ class Chargeback < ActsAsArModel
     slow_disk_size = fast_disk_size = medium_disk_size = 0
 
     disks.each do |disk|
-       #FIX ICDC-G
-    if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
+      #FIX ICDC-G
+      if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
       tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type%')
       return res if tags.empty?
       size = disk.size / 1.gigabyte
@@ -193,12 +193,12 @@ class Chargeback < ActsAsArModel
       when "Slow"
         slow_disk_size += size
       end
+     end
    end
    res += "Fast : #{fast_disk_size}; " unless fast_disk_size == 0
    res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
    res += "Slow : #{slow_disk_size}" unless slow_disk_size == 0
-   end
-    res
+   res
   end
 
   def get_disk_type_proxy(consumption)
