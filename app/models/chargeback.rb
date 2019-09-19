@@ -176,13 +176,27 @@ class Chargeback < ActsAsArModel
     disks = consumption.resource.disks
     res = ""
     return res unless disks
+
+    slow_disk_size = fast_disk_size = medium_disk_size = 0
+
     disks.each do |disk|
        #FIX ICDC-G
     if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
       tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type%')
       return res if tags.empty?
-      res += "#{Classification.find_by_tag_id(tags.first.id).description} : #{disk.size / 1.gigabyte}GB; "
-   end 
+      size = disk.size / 1.gigabyte
+      case Classification.find_by_tag_id(tags.first.id).description
+      when "Fast"
+        fast_disk_size += size
+      when "Medium"
+        medium_disk_size += size
+      when "Slow"
+        slow_disk_size += size
+      end
+   end
+   res += "Fast : #{fast_disk_size}; " unless fast_disk_size == 0
+   res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
+   res += "Slow : #{slow_disk_size}" unless slow_disk_size == 0
    end
     res
   end
