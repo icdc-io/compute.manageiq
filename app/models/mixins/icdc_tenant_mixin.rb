@@ -59,13 +59,9 @@ module IcdcTenantMixin
     users_emails = data["users_emails"].split(",")
     role = data["role"]
     users_emails.each do |ue|
-      begin
-        user = User.find_by(:email => ue)
-        self.set_user_role(user, role)
-      rescue => e
-        _log.error("Error while adding #{ue} as #{role} to #{self.id}")
-        next
-      end
+      user = User.find_by(:email => ue)
+      raise ArgumentError, "Unable to set user #{data["admin_email"]} as admin. Check user email" unless user
+      self.set_user_role(user, role)
     end
   end
 end
