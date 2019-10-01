@@ -3131,21 +3131,41 @@
         :identifier: rbac_tenant_admin
         :hidden: false
         :children:
-        - :name: Add
-          :description: Add a Tenant/Project
+        - :name: Add Tenant
+          :description: Add a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_add
+        - :name: Add Project
+          :description: Add a Tenant
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_add
         - :name: Edit
-          :description: Edit a Tenant/Project
+          :description: Edit a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_edit
+        - :name: Edit (Project)
+          :description: Edit a project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_edit
         - :name: Delete
-          :description: Delete a Tenant/Project
+          :description: Delete a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_delete
+        - :name: Delete (Project)
+          :description: Delete a project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_delete
+        - :name: Invite users
+          :description: Invite users to tenant or project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_invite_users
         - :name: Manage Quotas
           :description: Manage Tenant Quotas
           :feature_type: admin
@@ -6927,6 +6947,65 @@
         :description: Request Quotas
         :feature_type: control
         :identifier: sui_reports_request_quotas
+  - :name: Projects
+    :description: projects features
+    :feature_type: node
+    :identifier: sui_projects
+    :children:
+    - :name: View
+      :description: View Projects
+      :feature_type: node
+      :identifier: sui_projects_view
+      :children:
+      - :name: Show Projects
+        :description: Show projects
+        :feature_type: view
+        :identifier: sui_projects_resources_show
+    - :name: Operate
+      :description: Projects Operations
+      :feature_type: node
+      :identifier: sui_projects_operations
+      :children:
+      - :name: Create Projects
+        :description: Create Projects
+        :feature_type: control
+        :identifier: sui_projects_create
+      - :name: Edit Projects
+        :description: Edit Projects
+        :feature_type: control
+        :identifier: sui_projects_edit
+      - :name: Delete Projects
+        :description: Delete Projects
+        :feature_type: control
+        :identifier: sui_projects_delete
+  - :name: Users
+    :description: users features
+    :feature_type: node
+    :identifier: sui_users
+    :children:
+    - :name: View
+      :description: View users
+      :feature_type: node
+      :identifier: sui_users_view
+      :children:
+      - :name: Show Users
+        :description: Show Users
+        :feature_type: view
+        :identifier: sui_users_resources_show
+    - :name: Operate
+      :description: Users Operations
+      :feature_type: node
+      :identifier: sui_users_operations
+      :children:
+      - :name: Add Users
+        :description: Add Users
+        :feature_type: control
+        :identifier: sui_users_create
+      - :name: Delete Users
+        :description: Delete Users
+        :feature_type: control
+        :identifier: sui_users_delete
+
 # Announcements (notification)
 - :name: Announcements
   :description: Everything under Announcements

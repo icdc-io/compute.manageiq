@@ -8,6 +8,7 @@ class Tenant < ApplicationRecord
 
   include ActiveVmAggregationMixin
   include CustomActionsMixin
+  include CustomAttributeMixin
   include AccountChargebackMixin
   include IbaRelationshipMixin
   include ServiceChargebackMixin
@@ -15,7 +16,7 @@ class Tenant < ApplicationRecord
   include TenantTagsMixin
   include TenantQuotasMixin
   include ResourceConsumptionMixin
-  extend InterRegionApiMethodRelay
+  include IcdcTenantMixin
 
   acts_as_miq_taggable
 
@@ -37,7 +38,7 @@ class Tenant < ApplicationRecord
   has_many :tenant_quotas
   has_many :miq_groups
   has_one  :default_users_group, -> { where("description LIKE ?", "g%") }, class_name: 'MiqGroup', dependent: :destroy
-  has_many :users, :through => :miq_groups
+  has_many :users, -> { distinct }, :through => :miq_groups
   has_many :ae_domains, :dependent => :destroy, :class_name => 'MiqAeDomain'
   has_many :miq_requests, :dependent => :destroy
   has_many :miq_request_tasks, :dependent => :destroy
@@ -50,6 +51,7 @@ class Tenant < ApplicationRecord
   virtual_has_one  :account
   virtual_has_one  :children
   virtual_has_one  :managers
+  virtual_has_many :custom_attributes
 
 
   belongs_to :default_miq_group, :class_name => "MiqGroup", :dependent => :destroy
@@ -385,8 +387,8 @@ class Tenant < ApplicationRecord
     roles = %w(admin billing members)
     roles.each do |role|
       group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
-      group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{roles}")
       group.save!
+      group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
   end
 
