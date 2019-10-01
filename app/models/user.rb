@@ -12,6 +12,7 @@ class User < ApplicationRecord
   include TagsEmailsMixin
   include ResourceConsumptionMixin
   include ZabbixAlertMixin
+  extend InterRegionApiMethodRelay  
 
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
@@ -23,6 +24,7 @@ class User < ApplicationRecord
   has_many   :miq_widget_sets, :as => :owner, :dependent => :destroy
   has_many   :miq_reports, :dependent => :nullify
   has_many   :service_orders, :dependent => :nullify
+  has_many   :tenants, -> { distinct }, :through => :miq_groups
   has_many   :owned_shares, :class_name => "Share"
   has_many   :notification_recipients, :dependent => :delete_all
   has_many   :notifications, :through => :notification_recipients
@@ -42,7 +44,9 @@ class User < ApplicationRecord
   virtual_has_one  :last_chargeback
   virtual_has_one  :current_chargeback
   virtual_has_one  :managed_tenants
+  
   virtual_column :get_user_subnets, :type => :string
+  virtual_attribute :projects, :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
   delegate   :super_admin_user?, :admin_user?, :tenant_admin_user?, :self_service?, :limited_self_service?, :disallowed_roles,
@@ -57,6 +61,9 @@ class User < ApplicationRecord
   # use authenticate_bcrypt rather than .authenticate to avoid confusion
   # with the class method of the same name (User.authenticate)
   alias_method :authenticate_bcrypt, :authenticate
+  api_relay_method :set_current_group do |options|
+    options
+  end
 
   serialize     :settings, Hash   # Implement settings column as a hash
   default_value_for(:settings) { Hash.new }
@@ -166,6 +173,10 @@ class User < ApplicationRecord
     current_group.try(:description)
   end
   alias_method :miq_group_description, :ldap_group
+
+  def set_current_group(data)
+    self.update_attribute(:current_group, MiqGroup.find(data["current_group"]["id"]))
+  end
 
   def role_allows?(options = {})
     Rbac.role_allows?(options.merge(:user => self))
@@ -451,4 +462,7 @@ class User < ApplicationRecord
     email.gsub(/[^A-Za-z0-9]/, '_').downcase
   end
 
+  def projects
+    self.tenants.select(&:project?)
+  end
 end
