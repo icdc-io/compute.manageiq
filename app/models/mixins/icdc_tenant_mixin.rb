@@ -19,6 +19,10 @@ module IcdcTenantMixin
     api_relay_method :invite_users do |options|
       options
     end
+
+    api_relay_method :exclude_user do |options|
+      options
+    end
   end
 
   def create_project(data)
@@ -67,5 +71,12 @@ module IcdcTenantMixin
         next
       end
     end
+  end
+
+  def exclude_user(data)
+    user = User.find_by(:email => data["email"])
+    raise ArgumentError, "Something went wrong" unless user
+    user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
+    user.save!
   end
 end
