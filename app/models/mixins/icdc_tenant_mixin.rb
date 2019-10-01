@@ -64,7 +64,7 @@ module IcdcTenantMixin
     role = data["role"]
     users_emails.each do |ue|
       user = User.find_by(:email => ue)
-      raise ArgumentError, "Unable to set user #{data["admin_email"]} as admin. Check user email" unless user
+      raise ArgumentError, "Unable to invite #{ue} as #{role}. Check user email" unless user
       self.set_user_role(user, role)
     end
   end
