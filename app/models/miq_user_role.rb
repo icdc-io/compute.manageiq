@@ -1,6 +1,7 @@
 class MiqUserRole < ApplicationRecord
   SUPER_ADMIN_ROLE_NAME    = "EvmRole-super_administrator".freeze
   ADMIN_ROLE_NAME          = "EvmRole-administrator".freeze
+  ICDC_ADMIN_ROLES          = %(ICDC-admin ICDC-billing)
   DEFAULT_TENANT_ROLE_NAME = "EvmRole-tenant_administrator".freeze
 
   has_many                :entitlements, :dependent => :restrict_with_exception
@@ -113,7 +114,7 @@ class MiqUserRole < ApplicationRecord
   end
 
   def tenant_admin_user?
-    name == SUPER_ADMIN_ROLE_NAME || name == ADMIN_ROLE_NAME || name == DEFAULT_TENANT_ROLE_NAME
+    name == SUPER_ADMIN_ROLE_NAME || name == ADMIN_ROLE_NAME || name == DEFAULT_TENANT_ROLE_NAME || ICDC_ADMIN_ROLES.include?(name)
   end
 
   def self.default_tenant_role
