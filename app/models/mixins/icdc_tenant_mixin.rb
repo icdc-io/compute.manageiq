@@ -39,7 +39,7 @@ module IcdcTenantMixin
   end
 
   def set_user_role(user, role)
-    user.miq_groups.push(self.miq_groups.select{|x| x.description.include?(role)}.first)
+    user.miq_groups.push(self.miq_groups.select{|x| x.description.include?(role)}.first) unless user.miq_groups.include?(self.miq_groups.select{|x| x.description.include?(role)}.first)
     user.save!
   end
 
