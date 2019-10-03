@@ -82,7 +82,7 @@ module IcdcTenantMixin
   end
 
   def invite_users(data)
-    users_emails = data["users_emails"].split(",")
+    users_emails = data["emails"].split(",")
     invited_ids = []
     role = data["role"]
     users_emails.each do |ue|
@@ -95,7 +95,7 @@ module IcdcTenantMixin
   end
 
   def exclude_user(data)
-    users_emails = data["users_emails"].split(",")
+    users_emails = data["emails"].split(",")
     excluded_ids = []
     users_emails.each do |user|
       user = User.find_by(:email => data["email"])
