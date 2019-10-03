@@ -399,7 +399,7 @@ class Tenant < ApplicationRecord
     project_users = []
     uniq_users = self.users
     uniq_users.each do |user|
-      project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}})
+      project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}.flatten})
     end
     project_users
   end
