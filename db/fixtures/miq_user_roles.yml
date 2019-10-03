@@ -1424,6 +1424,7 @@
   - rbac_project_edit
   - rbac_project_delete
   - rbac_invite_users
+  - rbac_exclude_users
   - sui_language
   - sui_notifications
   - sui_reports
@@ -1479,6 +1480,7 @@
   - rbac_project_edit
   - rbac_project_delete
   - rbac_invite_users
+  - rbac_exclude_users
   - sui_language
   - sui_notifications
   - sui_reports

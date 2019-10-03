@@ -3166,6 +3166,11 @@
           :feature_type: admin
           :hidden: false
           :identifier: rbac_invite_users
+        - :name: Exclude users
+          :description: Exclude users from tenant or project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_exclude_users
         - :name: Manage Quotas
           :description: Manage Tenant Quotas
           :feature_type: admin

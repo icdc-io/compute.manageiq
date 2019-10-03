@@ -23,7 +23,7 @@ module IcdcTenantMixin
       options
     end
 
-    api_relay_method :exclude_user do |options|
+    api_relay_method :exclude_users do |options|
       options
     end
 
@@ -94,7 +94,7 @@ module IcdcTenantMixin
     invited_ids
   end
 
-  def exclude_user(data)
+  def exclude_users(data)
     users_emails = data["emails"].split(",")
     excluded_ids = []
     users_emails.each do |user|
