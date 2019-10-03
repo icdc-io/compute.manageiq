@@ -3,6 +3,9 @@ module IcdcTenantMixin
   ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date admin_email classifiers)
 
   included do
+    virtual_attribute :project_users, :string
+    virtual_attribute :available_users, :string
+    virtual_attribute :available_roles, :string
     extend InterRegionApiMethodRelay
     api_relay_method :create_project do |options|
       options
@@ -23,6 +26,23 @@ module IcdcTenantMixin
     api_relay_method :exclude_user do |options|
       options
     end
+
+    def project_users
+      project_users = []
+      uniq_users = self.users
+      uniq_users.each do |user|
+        project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}.flatten})
+      end
+      project_users
+    end
+
+    def available_users
+      [User.all.collect{|x| [ :id => x.id, :email => x.email, :name => x.name]}.uniq].flatten
+    end
+
+    def available_roles
+      [{ :id => "admin", :name => "Admin"}, {:id => "billing",:name  => "Billing"}, {:id => "member", :name => "Member"}]
+    end
   end
 
   def create_project(data)
@@ -35,12 +55,13 @@ module IcdcTenantMixin
     rescue => e
       _log.error("Unable to set custom attributes for tenant #{self}: #{e}")
     end
-    project
+    project.id
   end
 
   def set_user_role(user, role)
     user.miq_groups.push(self.miq_groups.select{|x| x.description.include?(role)}.first) unless user.miq_groups.include?(self.miq_groups.select{|x| x.description.include?(role)}.first)
     user.save!
+    user.id
   end
 
   def edit_project(data)
@@ -50,29 +71,39 @@ module IcdcTenantMixin
     rescue => e
       _log.error("unable to set custom attributes #{e}")
     end
-    self
+    self.id
   end
 
   def delete_project
     raise "Unable to delete: not tenant" if self.tenant?
     self.miq_groups.each{|group| group.destroy if group.group_type != 'tenant'}
     self.destroy
+    self.id
   end
 
   def invite_users(data)
     users_emails = data["users_emails"].split(",")
+    invited_ids = []
     role = data["role"]
     users_emails.each do |ue|
       user = User.find_by(:email => ue)
       raise ArgumentError, "Unable to invite #{ue} as #{role}. Check user email" unless user
       self.set_user_role(user, role)
+      invited_ids.push(user.id)
     end
+    invited_ids
   end
 
   def exclude_user(data)
-    user = User.find_by(:email => data["email"])
-    raise ArgumentError, "Something went wrong" unless user
-    user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
-    user.save!
+    users_emails = data["users_emails"].split(",")
+    excluded_ids = []
+    users_emails.each do |user|
+      user = User.find_by(:email => data["email"])
+      raise ArgumentError, "Something went wrong" unless user
+      user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
+      user.save!
+      excluded_ids.push(user.id)
+    end
+    excluded_ids
   end
 end

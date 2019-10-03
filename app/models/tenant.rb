@@ -395,23 +395,6 @@ class Tenant < ApplicationRecord
     end
   end
 
-  def project_users
-    project_users = []
-    uniq_users = self.users
-    uniq_users.each do |user|
-      project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}.flatten})
-    end
-    project_users
-  end
-
-  def available_users
-    [User.all.collect{|x| [ :id => x.id, :email => x.email, :name => x.name]}.uniq].flatten
-  end
-
-  def available_roles
-    [{ :id => "admin", :name => "Admin"}, {:id => "billing",:name  => "Billing"}, {:id => "member", :name => "Member"}]
-  end
-
   private
 
   # when a root tenant has an attribute with a nil value,
