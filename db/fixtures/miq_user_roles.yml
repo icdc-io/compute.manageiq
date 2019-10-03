@@ -1331,7 +1331,7 @@
   - sui_svc_catalog
   - sui_cart
 
-- :name: ICDC-members
+- :name: ICDC-member
   :read_only: false
   :settings:
     :restrictions:

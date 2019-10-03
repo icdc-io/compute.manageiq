@@ -89,6 +89,15 @@ task :service_for_new_vm, [:service_name, :user_id, :vm_id] => :environment do |
   end
 end
 
+desc "Rename ICDC-members -> ICDC-member"
+task :rename_member_groups => :environment do
+  MiqGroup.all.each do |mg|
+    next if mg.tenant_group?
+    mg.update(:description => mg.description[0..-2]) if mg.description.include?("members")
+  end
+  MiqUserRole.find_by_name("ICDC-members").update(:name => "ICDC-member")
+end
+
 desc "Restart DEV app shortcut"
 task :restart => :environment do
   Rake::Task['icdc:dev:restart'].invoke

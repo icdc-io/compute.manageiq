@@ -77,7 +77,10 @@ class Tenant < ApplicationRecord
   virtual_column :get_account_subnet, :type => :string
   virtual_column :get_tenant_users, :type => :string
   virtual_column :combined_quotas, :type => :string
-
+  virtual_attribute :project_users, :string
+  virtual_attribute :available_users, :string
+  virtual_attribute :available_roles, :string
+ 
   before_save :nil_blanks
   after_create :create_tenant_group, :create_users_group
   before_destroy :ensure_can_be_destroyed
@@ -384,12 +387,29 @@ class Tenant < ApplicationRecord
   end
 
   def create_users_group
-    roles = %w(admin billing members)
+    roles = %w(admin billing member)
     roles.each do |role|
       group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
       group.save!
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
+  end
+
+  def project_users
+    project_users = []
+    uniq_users = self.users
+    uniq_users.each do |user|
+      project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}})
+    end
+    project_users
+  end
+
+  def available_users
+    [User.all.collect{|x| [ :id => x.id, :email => x.email, :name => x.name]}.uniq].flatten
+  end
+
+  def available_roles
+    [{ :id => "admin", :name => "Admin"}, {:id => "billing",:name  => "Billing"}, {:id => "member", :name => "Member"}]
   end
 
   private
