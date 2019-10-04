@@ -85,7 +85,9 @@ class Tenant < ApplicationRecord
   after_create :create_tenant_group, :create_users_group
   before_destroy :ensure_can_be_destroyed
   
-  api_relay_method :set_quotas
+  api_relay_method :set_quotas do |options|
+    options
+  end
 
   def get_account_users
     account_users = []
