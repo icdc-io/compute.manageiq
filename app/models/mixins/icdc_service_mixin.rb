@@ -7,6 +7,7 @@ module IcdcServiceMixin
     virtual_column :domains,           :type => :string
     virtual_column :shared_users,      :type => :string
     virtual_column :miq_request_state, :type => :string
+    virtual_column :networks,          :type => :string
 
     api_relay_method :share do |options|
       options
@@ -40,7 +41,7 @@ module IcdcServiceMixin
 
   def unshare(data)
     userid = data['userid']
-    user = User.find_by_userid(userid)
+    user = User.find_by(:userid => userid)
     project_tag = find_project_tag
     Classification.unclassify(user, 'project', project_tag)
   end
@@ -52,7 +53,9 @@ module IcdcServiceMixin
   end
 
   def domains
-    Classification.where(parent_id: Classification.find_by_name('domain', region_number)&.id).map(&:description)
+    # rubocop:disable Rails/DynamicFindBy, it's static method in Classification class
+    Classification.where(:parent_id => Classification.find_by_name('domain', region_number)&.id).map(&:description)
+    # rubocop:enable Rails/DynamicFindBy
   end
 
   def invoke_custom_button(data)
@@ -61,11 +64,33 @@ module IcdcServiceMixin
     if custom_button.resource_action.dialog_id
       return invoke_custom_action_with_dialog(type, self, action, data, custom_button)
     end
+
     custom_button.invoke(self)
   end
 
   def miq_request_state
     miq_request.nil? ? 'finished' : miq_request.request_state
+  end
+
+  def networks
+    networks = Icdc::Network.authorized_networks(self)
+    # FIX: currently we allow only one authorized subnet (IPv4 or IPv6) on L2 logical network
+    auth_net_lookup = networks.group_by(&:name)
+    # Merge information about guest networks into authorized networks
+    Icdc::Network.guest_networks(self).each do |gnet|
+      auth_net = auth_net_lookup[gnet.name]&.first
+      if auth_net
+        auth_alloc_lookup = auth_net.allocations.group_by(&:ip)
+        gnet.allocations.each do |galloc|
+          unless auth_alloc_lookup[galloc.ip]
+            auth_net.allocations << galloc
+          end
+        end
+      else # push whole network
+        networks << gnet
+      end
+    end
+    networks
   end
 
   private
@@ -79,6 +104,7 @@ module IcdcServiceMixin
     data.each { |key, value| wf.set_value(key, value) } if data.present?
     wf_result = wf.submit_request
     raise StandardError, Array(wf_result[:errors]).join(", ") if wf_result[:errors].present?
+
     wf_result
   end
 
@@ -92,6 +118,6 @@ module IcdcServiceMixin
 
   def create_porject_tag
     tag = (0...3).map { ('a'..'z').to_a[rand(26)] }.join.downcase + evm_owner_id.to_s
-    Classification.find_by_name('project').add_entry(:name => tag, :description => tag).name
+    Classification.find_by_name('project').add_entry(:name => tag, :description => tag).name # rubocop:disable Rails/DynamicFindBy, it's static method in Classification class
   end
 end
