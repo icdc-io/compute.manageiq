@@ -65,6 +65,7 @@ module IcdcTenantMixin
   end
 
   def edit_project(data)
+    raise "Unable to edit: not tenant" if self.tenant?
     self.update_attributes(:name => data["name"], :description => data["description"])
     begin
       ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| self.miq_custom_set(attr, data[attr])}
