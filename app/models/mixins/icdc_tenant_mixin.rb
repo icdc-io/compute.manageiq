@@ -55,6 +55,7 @@ module IcdcTenantMixin
     rescue => e
       _log.error("Unable to set custom attributes for tenant #{self}: #{e}")
     end
+    project.set_quotas(HashWithIndifferentAccess.new(data))
     project.id
   end
 

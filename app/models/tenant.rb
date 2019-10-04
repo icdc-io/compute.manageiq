@@ -115,7 +115,7 @@ class Tenant < ApplicationRecord
 
     self.class.transaction do
       quotas.each do |name, values|
-        next if (values[:value].nil? && values["value"].nil?)
+        next if values[:value].nil?
 
         name = name.to_s
         q = tenant_quotas.detect { |tq| tq.name == name } || tenant_quotas.build(:name => name)
