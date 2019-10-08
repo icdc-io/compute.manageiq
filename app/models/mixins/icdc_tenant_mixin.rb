@@ -6,6 +6,7 @@ module IcdcTenantMixin
     virtual_attribute :project_users, :string
     virtual_attribute :available_users, :string
     virtual_attribute :available_roles, :string
+    virtual_attribute :project_details, :string
     extend InterRegionApiMethodRelay
     api_relay_method :create_project do |options|
       options
@@ -42,6 +43,24 @@ module IcdcTenantMixin
 
     def available_roles
       [{ :id => "admin", :name => "Admin"}, {:id => "billing",:name  => "Billing"}, {:id => "member", :name => "Member"}]
+    end
+
+    def project_details
+      raise "Unable to show details, #{self.name} isn't a project" unless self.project?
+      {
+        :available_roles => self.available_roles,
+        :project_users   => self.project_users,
+        :available_users => self.available_users,
+        :details         => project_info(self)
+      }
+    end
+
+    def project_info(project)
+      info = {}
+      project.regional_tenants.first.custom_attributes.each do |ca|
+        info[ca.name] = ca.value
+      end
+      info
     end
   end
 
