@@ -80,11 +80,11 @@ class Tenant < ApplicationRecord
   virtual_attribute :project_users, :string
   virtual_attribute :available_users, :string
   virtual_attribute :available_roles, :string
- 
+
   before_save :nil_blanks
   after_create :create_tenant_group, :create_users_group
   before_destroy :ensure_can_be_destroyed
-  
+
   api_relay_method :set_quotas do |options|
     options
   end
@@ -155,7 +155,7 @@ class Tenant < ApplicationRecord
       q = tenant_quotas.send(scope_name).take || tenant_quotas.build(:name => scope_name, :value => 0)
       h[q.name.to_sym] = q.quota_hash
       h[q.name.to_sym][:allocated]   = q.allocated
-      h[q.name.to_sym][:available]   = q.available unless q.new_record?
+      h[q.name.to_sym][:available]   = q.new_record? ? 0 : q.available
       h[q.name.to_sym][:used]        = q.used
     end.reverse_merge(TenantQuota.quota_definitions)
   end
