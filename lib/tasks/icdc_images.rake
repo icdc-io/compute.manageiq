@@ -3,82 +3,79 @@ require 'open-uri'
 
 namespace :icdc do
   namespace :images do
+    task :sync_desc => :environment do
+      base_url = "https://catalog.icdc.io/en/Service_Catalog/"
+      page_urls = []
+      dir_urls = Queue.new
+      dir_urls << base_url
+      until dir_urls.empty? # Recursive dir walk-through
+        dir_url = dir_urls.pop
+        doc = Nokogiri::HTML(URI.parse(dir_url).open)
+        doc.xpath("//a").map do |link|
+          next if link['href'].starts_with?("/")
+          next if link['href'].starts_with?("..")
 
-    @data = {
-        linux: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Linux_OS/",
-            search_str: "//help.icdc.io/en/Service_Catalog/Linux_OS/"
-        },
-        windows: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Windows_OS",
-            search_str: "//help.icdc.io/en/Service_Catalog/Windows_OS/"
-        },
-        turnkey: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Turnkey/Turnkey_Services_Access",
-            search_str: "//help.icdc.io/en/Service_Catalog/Turnkey/"
-        },
-        esxi: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Nested-Virtualization",
-            search_str: "//help.icdc.io/en/Service_Catalog/Nested-Virtualization/"
-        },
-        apps: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Apps",
-            search_str: "//help.icdc.io/en/Service_Catalog/Apps/"
-        },
-        special: {
-            search_on: "https://help.icdc.io/en/Service_Catalog/Special",
-            search_str: "//help.icdc.io/en/Service_Catalog/Special/"
-        }
-    }
-
-    desc "update images description, source: 'https://help.icdc.io/'"
-    task :update_description => :environment do
-
-      @grouped_images = Hash.new
-
-      @data.each do |category, info|
-        doc = Nokogiri::HTML(open(info[:search_on]))
-        @grouped_images[category] = doc.xpath("//a[starts-with(@href, '#{info[:search_str]}')]").map do |image_tag|
-            {
-              href: image_tag['href'],
-              name: image_tag.text
-            }
-          end
+          page_urls << dir_url + Pathname.new(link['href']).cleanpath.to_s if link['href'].ends_with?(".html")
+          dir_urls << dir_url + Pathname.new(link['href']).cleanpath.to_s + "/" if link['href'].ends_with?("/")
+        end
       end
+      images = {}
+      ServiceTemplate.in_my_region.where(display: true).each do |st|
+        images[st.name] = {}
+        name, version, _location = st.name.split(":", 3)
+        version = "" if version == "default"
+        next unless st.service_template_catalog
 
-      @grouped_images.each do |category, images|
-        puts
-        puts(category.to_s)
-        puts
-
-        images.each do |image_data|
-          image = ServiceTemplate.find_by(name: image_data[:name])
-          next if image.nil?
-
-          desc_en_page = "https:#{image_data[:href]}"
-          desc_ru_page = desc_en_page.gsub('/en/', '/ru/')
-          begin
-            image_en_doc = Nokogiri::HTML(open(desc_en_page))
-            en_description = image_en_doc.at("h3[@id='page_Description'] ~ *").text
-            en_description << "\n<a href='#{desc_en_page}' target='_blank'>Learn More</a>"
-
-            image_ru_doc = Nokogiri::HTML(open(desc_ru_page))
-            ru_description = image_ru_doc.at("h3:contains('Описание') ~ *").text
-            ru_description << "\n<a href='#{desc_ru_page}' target='_blank'>Узнать больше</a>"
-
-            long_description = {
-                eng: en_description,
-                ru: ru_description
-            }
-
-            puts("#{image.name} description updated")
-            image.update_attribute(:long_description, long_description.to_json)
-          rescue => e
-            puts("can't update #{image.name}, #{desc_en_page}, #{desc_ru_page}")
+        catalog = st.service_template_catalog.name
+        image_help_url = {}
+        # Go through pages
+        page_urls.each do |url|
+          full_match = true
+          "#{catalog} #{name} #{version}".downcase.split(/[\s\-]/).each do |word| # Windows:8.1 Pro:NB5
+            full_match = false unless url.downcase.include?(word)
           end
+          next unless full_match
+          next if image_help_url[:en] && image_help_url[:en].length < url.length # shorter candidate wins
+
+          image_help_url[:en] = url
+        end
+        unless image_help_url[:en]
+          p "Error: could not find help page for image [#{st.id}]: #{st.name}"
+          next
+        end
+        # Make links multi-language
+        image_help_url[:ru] = image_help_url[:en].gsub('/en/', '/ru/')
+        # Update image description
+        data = {}
+        desc = {}
+        table_keys = {
+          :licence      => { :en => "License", :ru => "Лицензия" },
+          :os           => { :en => "Operating System", :ru => "Операционная система" },
+          :supported_by => { :en => "Supported By", :ru => "Поддерживается" }
+        }
+        image_help_url.each do |lang, url|
+          data[lang] = {}
+          begin
+            doc = Nokogiri::HTML(URI.parse(url).open)
+            desc[lang] = doc.at("h3[@id='page_section_1'] ~ *")&.text
+            table_keys.each do |key, i10n_keys|
+              data[lang][key] = doc.at("td[text()='#{i10n_keys[lang]}'] ~ *")&.text
+            end
+            data[lang][:doc] = url
+          rescue StandardError => e
+            p "Error: Can not parse page [#{url}] #{e.message}"
+          end
+        end
+        desc.each { |lang, value| desc[lang] = value || desc[:en] || "" } # if i10n desc is not defined use english description
+        # FIX: was not implemented in new catalog
+        desc = desc[:en]
+        st.long_description = desc # .to_json
+        # Additional attributes saved in custom_attributes
+        data[:en][:supported_by] = "ICDC" unless data[:en][:supported_by]
+        data[:en].keys.each do |key|
+          st.miq_custom_set(key.to_s, data[:en][key]) if data[:en][key]
         end
       end
     end
-
   end
 end
