@@ -1374,7 +1374,8 @@
   - sui_language
   - sui_notifications
   - sui_services
-  - sui_reports
+  - sui_reports_view
+  - sui_reports_services_show
   - sui_vm
   - sui_svc_catalog
   - sui_cart
@@ -1427,7 +1428,9 @@
   - rbac_exclude_users
   - sui_language
   - sui_notifications
-  - sui_reports
+  - sui_reports_view
+  - sui_reports_services_show
+  - sui_reports_operations
   - sui_services
   - sui_vm
   - sui_svc_catalog
@@ -1435,10 +1438,12 @@
   - sui_projects
   - sui_users
   - service_report_view
-  - service_report_chargeback
 
-- :name: ICDC-billing
+- :name: ICDC-billing  
   :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user
   :miq_product_feature_identifiers:
   - vm_explorer
   - vm_infra_explorer
@@ -1488,7 +1493,7 @@
   - sui_vm
   - sui_svc_catalog
   - sui_cart
-  - sui_projects
-  - sui_users
+  - sui_projects_view
+  - sui_users_view
   - service_report_view
   - service_report_chargeback
