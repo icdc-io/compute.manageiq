@@ -101,7 +101,7 @@ module IcdcTenantMixin
   end
 
   def invite_users(data)
-    users_emails = data["emails"].split(",")
+    users_emails = data["emails"]
     invited_ids = []
     role = data["role"]
     users_emails.each do |ue|
