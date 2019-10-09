@@ -114,10 +114,10 @@ module IcdcTenantMixin
   end
 
   def exclude_users(data)
-    users_emails = data["emails"].split(",")
+    users_emails = data["emails"]
     excluded_ids = []
-    users_emails.each do |user|
-      user = User.find_by(:email => data["email"])
+    users_emails.each do |ue|
+      user = User.find_by(:email => ue)
       raise ArgumentError, "Something went wrong" unless user
       user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
       user.save!
