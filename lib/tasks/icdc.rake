@@ -91,7 +91,7 @@ end
 
 desc "Rename ICDC-members -> ICDC-member"
 task :rename_member_groups => :environment do
-  MiqGroup.all.each do |mg|
+  MiqGroup.in_my_region.each do |mg|
     next if mg.tenant_group?
     mg.update(:description => mg.description[0..-2]) if mg.description.include?("members")
   end
