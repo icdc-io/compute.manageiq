@@ -65,7 +65,7 @@ module IcdcTenantMixin
   end
 
   def create_project(data)
-    user = User.find_by(:email => data["admin_email"])
+    user = User.in_my_region.find_by(:email => data["admin_email"])
     raise ArgumentError, "Unable to set user #{data["admin_email"]} as admin. Check user email" unless user
     project = Tenant.create!(:name => data["name"], :description => data["description"], :parent => self, :divisible => false)
     project.set_user_role(user, 'admin')
@@ -105,7 +105,7 @@ module IcdcTenantMixin
     invited_ids = []
     role = data["role"]
     users_emails.each do |ue|
-      user = User.find_by(:email => ue)
+      user = User.in_my_region.find_by(:email => ue)
       raise ArgumentError, "Unable to invite #{ue} as #{role}. Check user email" unless user
       self.set_user_role(user, role)
       invited_ids.push(user.id)
@@ -117,7 +117,7 @@ module IcdcTenantMixin
     users_emails = data["emails"]
     excluded_ids = []
     users_emails.each do |ue|
-      user = User.find_by(:email => ue)
+      user = User.in_my_region.find_by(:email => ue)
       raise ArgumentError, "Something went wrong" unless user
       user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
       user.save!

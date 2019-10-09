@@ -95,7 +95,7 @@ task :rename_member_groups => :environment do
     next if mg.tenant_group?
     mg.update(:description => mg.description[0..-2]) if mg.description.include?("members")
   end
-  MiqUserRole.find_by_name("ICDC-members").update(:name => "ICDC-member")
+  MiqUserRole.in_my_region.find_by_name("ICDC-members").update(:name => "ICDC-member")
 end
 
 desc "Restart DEV app shortcut"
