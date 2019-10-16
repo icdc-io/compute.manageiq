@@ -180,6 +180,7 @@ class Chargeback < ActsAsArModel
     slow_disk_size = fast_disk_size = medium_disk_size = 0
 
     disks.each do |disk|
+      next unless  disk.device_type.eql? "disk"
       #FIX ICDC-G
       if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
       tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type%')
@@ -207,6 +208,7 @@ class Chargeback < ActsAsArModel
     backup = false
     return [res_f, res_s, res_m, res_b] unless disks
     disks.each do |disk|
+      next unless  disk.device_type.eql? "disk"
       if !Storage.find_by_id(disk.storage_id).nil?
         if tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/%') || tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/vm_disk_type/%')
           return [res_f, res_s, res_m, res_b] if tags.empty?
