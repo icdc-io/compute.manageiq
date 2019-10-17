@@ -65,10 +65,12 @@ module IcdcTenantMixin
   end
 
   def create_project(data)
-    user = User.in_my_region.find_by(:email => data["admin_email"])
-    raise ArgumentError, "Unable to set user #{data["admin_email"]} as admin. Check user email" unless user
     project = Tenant.create!(:name => data["name"], :description => data["description"], :parent => self, :divisible => false)
-    project.set_user_role(user, 'admin')
+    data["admins"].each do |admin|
+      user = User.in_my_region.find_by(:email => admin)
+      raise ArgumentError, "Unable to set user #{admin} as admin. Check user email" unless user
+      project.set_user_role(user, 'admin')
+    end
     begin
       ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| project.miq_custom_set(attr, data[attr])}
     rescue => e
