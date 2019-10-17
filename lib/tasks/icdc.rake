@@ -398,6 +398,18 @@ namespace :dev do
     Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
   end
 
+  desc "Fix storing of metrics on glusterFS"
+  task :fix_glufs_metrics => :environment do
+    Vmdb::Settings.save!(MiqServer.in_my_region.first, 
+      {
+        :session => {
+         :log_threshold => "10000.kilobytes", 
+         :element_threshold => "1000.kilobytes"
+        }
+      }
+    )
+  end
+
   desc "Adjust pglogical host and port for different openshift environments"
   task :pglogical_openshift, [:env] => :environment do |_, args|
     region_map = { "region_1" => :idc, "region_2" => :nb5, "region_99" => :main }
