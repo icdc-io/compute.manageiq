@@ -76,7 +76,7 @@ class User < ApplicationRecord
     @admin ||= self.in_my_region.find_by(userid: 'admin')
   end
 
-  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants}.freeze
+  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants, :iba_sibling_ids => :iba_siblings, :icdc_sibling_ids => :icdc_siblings}.freeze
 
   def self.tenant_id_clause(user_or_group)
     strategy = Rbac.accessible_tenant_ids_strategy(self)
