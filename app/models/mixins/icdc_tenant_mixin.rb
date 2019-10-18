@@ -66,17 +66,17 @@ module IcdcTenantMixin
 
   def create_project(data)
     project = Tenant.create!(:name => data["name"], :description => data["description"], :parent => self, :divisible => false)
+    non_included = []
     data["admins"].each do |admin|
       user = User.in_my_region.find_by(:email => admin)
-      raise ArgumentError, "Unable to set user #{admin} as admin. Check user email" unless user
-      project.set_user_role(user, 'admin')
+      user ? project.set_user_role(user, 'admin') : non_included.push(user)
     end
     begin
       ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| project.miq_custom_set(attr, data[attr])}
     rescue => e
       _log.error("Unable to set custom attributes for tenant #{self}: #{e}")
     end
-    project.id
+    non_included
   end
 
   def set_user_role(user, role)
