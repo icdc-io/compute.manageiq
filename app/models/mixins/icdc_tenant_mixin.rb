@@ -28,6 +28,10 @@ module IcdcTenantMixin
       options
     end
 
+    api_relay_method :change_tenant do |options|
+      options
+    end
+
     def project_users
       project_users = []
       uniq_users = self.users
@@ -126,5 +130,24 @@ module IcdcTenantMixin
       excluded_ids.push(user.id)
     end
     excluded_ids
+  end
+
+  def change_tenant(data)
+    group = Tenant.find(data["tenant"]).miq_groups.select{|mg| mg.description.include?("member")}.first
+    not_transfered = []
+    data["services"].each do |service_id|
+      service = Service.in_my_region.find(service_id)
+      if service
+        service.update!(:miq_group => group)
+        service.update!(:tenant => group.tenant)
+        service.vms.each do |vm|
+          vm.update!(:miq_group => group)
+          vm.update!(:tenant => group.tenant)
+        end
+      else
+        not_transfered.push(service)
+      end
+    end
+    self.id
   end
 end
