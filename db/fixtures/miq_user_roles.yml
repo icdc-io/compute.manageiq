@@ -1381,6 +1381,7 @@
   - sui_cart
   - service_report
   - service_report_view
+  - sui_services_change_tenant
 
 - :name: ICDC-admin
   :read_only: false
@@ -1438,6 +1439,7 @@
   - sui_projects
   - sui_users
   - service_report_view
+  - sui_services_change_tenant
 
 - :name: ICDC-billing  
   :read_only: false
@@ -1497,6 +1499,7 @@
   - sui_users_view
   - service_report_view
   - service_report_chargeback
+  - sui_services_change_tenant
 
 - :name: ICDC-project-admin
   :read_only: false
@@ -1550,3 +1553,4 @@
   - sui_cart
   - sui_users
   - service_report_view
+  - sui_services_change_tenant
