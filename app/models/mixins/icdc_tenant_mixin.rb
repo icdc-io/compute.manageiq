@@ -1,6 +1,6 @@
 module IcdcTenantMixin
   extend ActiveSupport::Concern
-  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date admin_email classifiers)
+  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date admins classifiers)
 
   included do
     virtual_attribute :project_users, :string
