@@ -463,6 +463,7 @@ class User < ApplicationRecord
   end
 
   def projects
+    return Tenant.in_my_region.all_projects if self.super_admin_user?
     self.tenants.select(&:project?)
   end
 end
