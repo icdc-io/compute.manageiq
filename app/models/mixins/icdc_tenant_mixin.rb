@@ -97,12 +97,17 @@ module IcdcTenantMixin
   def edit_project(data)
     raise "Unable to edit: not tenant" if self.tenant?
     self.update_attributes(:name => data["name"], :description => data["description"])
+    non_included = []
+    data["admins"].each do |admin|
+      user = User.in_my_region.find_by(:email => admin)
+      user ? self.set_user_role(user, 'admin') : non_included.push(user)
+    end
     begin
       ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| self.miq_custom_set(attr, data[attr])}
     rescue => e
       _log.error("unable to set custom attributes #{e}")
     end
-    self.id
+    non_included
   end
 
   def delete_project
