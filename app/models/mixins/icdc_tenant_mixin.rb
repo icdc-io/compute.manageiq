@@ -1,12 +1,13 @@
 module IcdcTenantMixin
   extend ActiveSupport::Concern
-  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date admins classifiers)
+  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date classifiers)
 
   included do
     virtual_attribute :project_users, :string
     virtual_attribute :available_users, :string
     virtual_attribute :available_roles, :string
     virtual_attribute :project_details, :string
+    virtual_attribute :admins, :string
     extend InterRegionApiMethodRelay
     api_relay_method :create_project do |options|
       options
@@ -55,16 +56,21 @@ module IcdcTenantMixin
         :available_roles => self.available_roles,
         :project_users   => self.project_users,
         :available_users => self.available_users,
-        :details         => project_info(self)
+        :admins          => self.admins,
+        :details         => self.project_info
       }
     end
 
-    def project_info(project)
+    def project_info
       info = {}
-      project.regional_tenants.first.custom_attributes.each do |ca|
+      self.regional_tenants.first.custom_attributes.each do |ca|
         info[ca.name] = ca.value
       end
       info
+    end
+
+    def admins
+      self.users.select{|x| x.miq_groups.include?(self.miq_groups.select{|x| x.description.include?("admin")}.first)}.collect(&:email)
     end
   end
 
