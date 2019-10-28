@@ -218,6 +218,13 @@ namespace :dev do
     MiqSchedule.where('description NOT LIKE ?', 'rss_%').where('description NOT LIKE ?', 'report_%').where('description NOT LIKE ?', 'chart_%').where('description NOT LIKE ?', 'tenant_%').delete_all
   end
 
+  desc "Disabling C&U collection for EmsClusters in NB5"
+  task :disable_perf_capture => :environment do
+    puts "Disable C&U collection"
+    location = MiqRegion.my_region.description.downcase.to_s
+    Tag.where(:name => "/performance/capture_enabled").first.destroy! if location == "nb5"
+  end 
+
   desc "Fix replication ticket#8082"
   task :replica_fix => :environment do
     puts "Fixing replication..."
