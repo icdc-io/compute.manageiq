@@ -6751,10 +6751,6 @@
         :description: Edit Service tags
         :feature_type: control
         :identifier: sui_services_tags
-      - :name: Change Tenant
-        :description: Move Service to Account/Project
-        :feature_type: control
-        :identifier: sui_services_change_tenant
       - :name: Set Retirement Date
         :description: Set services retire date
         :feature_type: control
@@ -6987,6 +6983,10 @@
         :description: Delete Projects
         :feature_type: control
         :identifier: sui_projects_delete
+      - :name: Change Tenant
+        :description: Move Service to Account/Project
+        :feature_type: control
+        :identifier: sui_services_change_tenant
   - :name: Users
     :description: users features
     :feature_type: node
