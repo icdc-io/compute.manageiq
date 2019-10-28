@@ -1354,7 +1354,6 @@
   - svc_catalog_accord
   - rbac_user_view
   - tasks
-  - rbac_role_view
   - service_ownership
   - miq_report_saved_reports_view
   - miq_report_view
@@ -1366,7 +1365,6 @@
   - triggers_enable
   - generic_object_view
   - generic_object_definition_view
-  - rbac_tenant_manage_quotas
   - miq_request
   - icdc_features
   - rbac_group_view
@@ -1381,7 +1379,6 @@
   - sui_cart
   - service_report
   - service_report_view
-  - sui_services_change_tenant
 
 - :name: ICDC-admin
   :read_only: false
@@ -1429,16 +1426,15 @@
   - rbac_exclude_users
   - sui_language
   - sui_notifications
-  - sui_reports_view
+  - sui_reports_resources_show
   - sui_reports_services_show
-  - sui_reports_operations
   - sui_services
   - sui_vm
   - sui_svc_catalog
   - sui_cart
   - sui_projects
   - sui_users
-  - service_report_view
+  - service_report
   - sui_services_change_tenant
 
 - :name: ICDC-billing  
@@ -1463,8 +1459,6 @@
   - all_vm_rules
   - svc_catalog_accord
   - rbac_user_view
-  - rbac_tenant_add
-  - rbac_project_edit
   - tasks
   - rbac_role_view
   - service_ownership
@@ -1483,11 +1477,6 @@
   - icdc_features
   - rbac_group_view
   - rbac_tenant_view
-  - rbac_project_add
-  - rbac_project_edit
-  - rbac_project_delete
-  - rbac_invite_users
-  - rbac_exclude_users
   - sui_language
   - sui_notifications
   - sui_reports
@@ -1520,8 +1509,6 @@
   - all_vm_rules
   - svc_catalog_accord
   - rbac_user_view
-  - rbac_tenant_add
-  - rbac_project_edit
   - tasks
   - rbac_role_view
   - service_ownership
@@ -1534,8 +1521,7 @@
   - triggers_disable
   - triggers_enable
   - generic_object_view
-  - generic_object_definition_view
-  - rbac_tenant_manage_quotas
+  - generic_object_definition_view 
   - miq_request
   - icdc_features
   - rbac_group_view
@@ -1545,8 +1531,7 @@
   - sui_language
   - sui_notifications
   - sui_reports_view
-  - sui_reports_services_show
-  - sui_reports_operations
+  - sui_reports_services_show 
   - sui_services
   - sui_vm
   - sui_svc_catalog
