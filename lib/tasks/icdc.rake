@@ -222,7 +222,10 @@ namespace :dev do
   task :disable_perf_capture => :environment do
     puts "Disable C&U collection"
     location = MiqRegion.my_region.description.downcase.to_s
-    Tag.where(:name => "/performance/capture_enabled").first.destroy! if location == "nb5"
+    raise "It need only for NB5 location" unless location == "nb5"
+    EmsCluster.each do |cluster|
+      cluster.tag_remove("capture_enabled", :ns => "/performance") if cluster.perf_capture_enabled?
+    end
   end 
 
   desc "Fix replication ticket#8082"
