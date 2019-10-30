@@ -60,10 +60,10 @@ module IbaRelationshipMixin
       master_ids = iba_descendant_ids(*args)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     when "ICDC-project-admin"
-      master_ids = User.current_user.current_group.tenant.id
+      master_ids.push(User.current_user.current_group.tenant.id)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     else
-      master_ids = User.current_user.current_group.tenant.id
+      master_ids.push(User.current_user.current_group.tenant.id)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     end
   end
