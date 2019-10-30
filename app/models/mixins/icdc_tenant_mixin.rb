@@ -29,7 +29,7 @@ module IcdcTenantMixin
       options
     end
 
-    api_relay_method :change_tenant do |options|
+    api_relay_method :services_change_tenant do |options|
       options
     end
 
@@ -143,7 +143,7 @@ module IcdcTenantMixin
     excluded_ids
   end
 
-  def change_tenant(data)
+  def services_change_tenant(data)
     group = Tenant.find(data["tenant"]).miq_groups.select{|mg| mg.description.include?("member")}.first
     not_transfered = []
     data["services"].each do |service_id|
