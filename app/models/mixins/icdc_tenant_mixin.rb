@@ -164,6 +164,6 @@ module IcdcTenantMixin
 
   def check_permissions(service)
     return false unless service
-    service.tenant.project? ? service.tenant.ancestor_ids.include?(User.current_user.current_tenant.id) : service.tenant.id.include?(User.current_user.current_tenant.id)
+    service.tenant.project? ? service.tenant.ancestor_ids.include?(User.current_user.current_tenant.id) : service.tenant.id == User.current_user.current_tenant.id
   end
 end
