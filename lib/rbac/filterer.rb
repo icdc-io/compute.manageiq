@@ -116,7 +116,7 @@ module Rbac
       'MiqRequestTask'         => nil, # tenant only
       'MiqTemplate'            => :ancestor_ids,
       'Provider'               => :ancestor_ids,
-      'Service'                => :iba_sibling_ids,
+      'Service'                => :icdc_sibling_ids,
       'ServiceTemplate'        => :iba_ancestor_ids,
       'ServiceTemplateCatalog' => :iba_ancestor_ids,
       'Tenant'                 => :icdc_sibling_ids,
