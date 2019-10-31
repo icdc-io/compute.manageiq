@@ -393,7 +393,7 @@ class Tenant < ApplicationRecord
     roles.each do |role|
       group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
       group.save!
-      role = "project-admin" if self.project? && role == "admin"
+      role = "project-#{role}" if self.project?
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
   end
