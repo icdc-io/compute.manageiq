@@ -148,7 +148,7 @@ module IcdcTenantMixin
     not_transfered = []
     data["services"].each do |service_id|
       service = Service.in_my_region.find(service_id)
-      if service
+      if service && check_permissions(service)
         service.update!(:miq_group => group)
         service.update!(:tenant => group.tenant)
         service.vms.each do |vm|
@@ -160,5 +160,10 @@ module IcdcTenantMixin
       end
     end
     self.id
+  end
+
+  def check_permissions(service)
+    return false unless service
+    service.tenant.project? ? service.tenant.ancestor_ids.include?(User.current_user.current_tenant.id) : service.tenant.id.include?(User.current_user.current_tenant.id)
   end
 end
