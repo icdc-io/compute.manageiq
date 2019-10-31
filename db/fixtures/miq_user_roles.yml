@@ -1441,7 +1441,7 @@
   :read_only: false
   :settings:
     :restrictions:
-      :vms: :user
+      :vms: :user_or_group
   :miq_product_feature_identifiers:
   - vm_explorer
   - vm_infra_explorer
