@@ -326,6 +326,14 @@ class User < ApplicationRecord
     userid == "admin"
   end
 
+  def icdc_manager?
+    self.class.icdc_manager?(userid)
+  end
+
+  def self.icdc_manager?(userid)
+    ["ICDC-admin", "ICDC-billing"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
+  end
+
   def self.with_current_user_groups(user = nil)
     user ||= current_user
     user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
@@ -463,7 +471,9 @@ class User < ApplicationRecord
   end
 
   def projects
-    return Tenant.in_my_region.all_projects if self.miq_user_role.name.include?("admin") || self.miq_user_role.name.include?("billing")
-    self.tenants.select(&:project?)
+    managed_projects = []
+    self.current_tenant.project? ? managed_projects << self.current_tenant.parent : managed_projects << self.current_tenant
+    self.icdc_manager? ? managed_projects << self.current_tenant.all_subprojects : managed_projects << self.tenants.select(&:project?)
+    managed_projects.flatten
   end
 end

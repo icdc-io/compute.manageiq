@@ -147,7 +147,9 @@ module IcdcTenantMixin
     group = Tenant.find(data["tenant"]).miq_groups.select{|mg| mg.description.include?("member")}.first
     not_transfered = []
     data["services"].each do |service_id|
-      service = Service.in_my_region.find(service_id)
+      next unless MiqRegion.id_in_current_region?(service_id)
+      service = Service.find(service_id)
+      next unless service
       if service && check_permissions(service)
         service.update!(:miq_group => group)
         service.update!(:tenant => group.tenant)
@@ -163,7 +165,7 @@ module IcdcTenantMixin
   end
 
   def check_permissions(service)
-    return false unless service
+    return true if service.tenant.id == User.current_user.current_tenant.id
     service.tenant.project? ? service.tenant.ancestor_ids.include?(User.current_user.current_tenant.id) : service.tenant.id == User.current_user.current_tenant.id
   end
 end
