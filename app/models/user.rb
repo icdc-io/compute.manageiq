@@ -463,7 +463,7 @@ class User < ApplicationRecord
   end
 
   def projects
-    return Tenant.in_my_region.all_projects if self.super_admin_user?
+    return Tenant.in_my_region.all_projects if self.miq_user_role.name.include?("admin") || self.miq_user_role.name.include?("billing")
     self.tenants.select(&:project?)
   end
 end
