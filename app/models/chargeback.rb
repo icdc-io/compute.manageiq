@@ -175,8 +175,6 @@ class Chargeback < ActsAsArModel
   def get_disk_type(consumption)
     disks = consumption.resource.disks
     res = ""
-    return res unless disks
-
     slow_disk_size = fast_disk_size = medium_disk_size = 0
 
     disks.each do |disk|
