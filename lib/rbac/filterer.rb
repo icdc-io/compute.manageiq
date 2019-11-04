@@ -200,7 +200,7 @@ module Rbac
       include_for_find  = options[:include_for_find]
       search_filter     = options[:filter]
 
-      include_shared    = options[:include_shared] ? ActiveRecord::Type::Boolean.new.cast(options[:include_shared]) : false
+      include_shared    = options[:include_shared] ? ActiveRecord::Type::Boolean.new.cast(options[:include_shared]) : true
 
       limit             = options[:limit]  || targets.try(:limit_value)
       offset            = options[:offset] || targets.try(:offset_value)
@@ -407,7 +407,7 @@ module Rbac
       miq_group.present? && miq_group.self_service? && is_ownership_class && klass.respond_to?(:user_or_group_owned)
     end
 
-    def self_service_ownership_scope(user, miq_group, klass, include_shared = false)
+    def self_service_ownership_scope(user, miq_group, klass, include_shared = true)
       return nil unless self_service_ownership_scope?(miq_group, klass)
 
       # for limited_self_service, use user's resources, not user.current_group's resources
@@ -418,7 +418,7 @@ module Rbac
       klass.user_or_group_owned(user, miq_group, include_shared).except(:order)
     end
 
-    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter, include_shared = false)
+    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter, include_shared = true)
       klass = scope.respond_to?(:klass) ? scope.klass : scope
       expression = miq_group.try(:entitlement).try(:filter_expression)
       expression.set_tagged_target(klass) if expression
@@ -535,7 +535,7 @@ module Rbac
     ##
     # Main scoping method
     #
-    def scope_targets(klass, scope, rbac_filters, user, miq_group, include_shared = false)
+    def scope_targets(klass, scope, rbac_filters, user, miq_group, include_shared = true)
       # Results are scoped by tenant if the TenancyMixin is included in the class,
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
