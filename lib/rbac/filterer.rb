@@ -706,6 +706,9 @@ module Rbac
     end
 
     def scope_to_shared(klass, scope, user, miq_group)
+      tenant = miq_group.try(:current_tenant)
+      return nil if !tenant.nil? && tenant.project?
+
       shared = klass.send(:user_shared, user)
       shader_ids = pluck_ids(shared) unless shared.empty?
       if shader_ids
