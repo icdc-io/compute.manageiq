@@ -200,6 +200,8 @@ module Rbac
       include_for_find  = options[:include_for_find]
       search_filter     = options[:filter]
 
+      include_shared    = options[:include_shared] ? ActiveRecord::Type::Boolean.new.cast(options[:include_shared]) : false
+
       limit             = options[:limit]  || targets.try(:limit_value)
       offset            = options[:offset] || targets.try(:offset_value)
       order             = options[:order]  || targets.try(:order_values)
@@ -252,7 +254,7 @@ module Rbac
       # for belongs_to filters, scope_targets uses scope to make queries. want to remove limits for those.
       # if you note, the limits are put back into scope a few lines down from here
       scope = scope.except(:offset, :limit, :order)
-      scope = scope_targets(klass, scope, user_filters, user, miq_group)
+      scope = scope_targets(klass, scope, user_filters, user, miq_group, include_shared)
               .where(conditions).where(sub_filter).where(where_clause).where(exp_sql).where(ids_clause)
               .includes(include_for_find).includes(exp_includes)
               .order(order)
@@ -405,7 +407,7 @@ module Rbac
       miq_group.present? && miq_group.self_service? && is_ownership_class && klass.respond_to?(:user_or_group_owned)
     end
 
-    def self_service_ownership_scope(user, miq_group, klass)
+    def self_service_ownership_scope(user, miq_group, klass, include_shared = false)
       return nil unless self_service_ownership_scope?(miq_group, klass)
 
       # for limited_self_service, use user's resources, not user.current_group's resources
@@ -413,14 +415,14 @@ module Rbac
       miq_group = nil if user && miq_group.limited_self_service?
 
       # Get the list of objects that are owned by the user or their LDAP group
-      klass.user_or_group_owned(user, miq_group).except(:order)
+      klass.user_or_group_owned(user, miq_group, include_shared).except(:order)
     end
 
-    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter)
+    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter, include_shared = false)
       klass = scope.respond_to?(:klass) ? scope.klass : scope
       expression = miq_group.try(:entitlement).try(:filter_expression)
       expression.set_tagged_target(klass) if expression
-      u_filtered_ids = pluck_ids(self_service_ownership_scope(user, miq_group, klass))
+      u_filtered_ids = pluck_ids(self_service_ownership_scope(user, miq_group, klass, include_shared))
       b_filtered_ids = get_belongsto_filter_object_ids(klass, user_filters['belongsto'])
       m_filtered_ids = pluck_ids(get_managed_filter_object_ids(scope, expression || user_filters['managed']))
       d_filtered_ids = pluck_ids(matches_via_descendants(rbac_class(klass), user_filters['match_via_descendants'],
@@ -533,12 +535,13 @@ module Rbac
     ##
     # Main scoping method
     #
-    def scope_targets(klass, scope, rbac_filters, user, miq_group)
+    def scope_targets(klass, scope, rbac_filters, user, miq_group, include_shared = false)
       # Results are scoped by tenant if the TenancyMixin is included in the class,
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
-        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass)
+        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
+         _log.error("OBEKASOV shared #{include_shared}")
         scope =
           if shared
             shared
@@ -551,7 +554,7 @@ module Rbac
       end
 
       if apply_rbac_directly?(klass)
-        filtered_ids = calc_filtered_ids(scope, rbac_filters, user, miq_group, nil)
+        filtered_ids = calc_filtered_ids(scope, rbac_filters, user, miq_group, nil, include_shared)
         scope_by_ids(scope, filtered_ids)
       elsif apply_rbac_through_association?(klass)
         # if subclasses of MetricRollup or Metric, use the associated
@@ -562,7 +565,7 @@ module Rbac
           scope_tenant_filter = scope_to_tenant(associated_class, user, miq_group)
         end
 
-        filtered_ids = calc_filtered_ids(associated_class, rbac_filters, user, miq_group, scope_tenant_filter)
+        filtered_ids = calc_filtered_ids(associated_class, rbac_filters, user, miq_group, scope_tenant_filter, include_shared)
         scope_by_parent_ids(associated_class, scope, filtered_ids)
       elsif [MiqUserRole, MiqGroup, User].include?(klass)
         scope_for_user_role_group(klass, scope, miq_group, user, rbac_filters['managed'])

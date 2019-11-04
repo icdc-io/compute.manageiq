@@ -75,7 +75,7 @@ module OwnershipMixin
       errors.empty? ? true : errors
     end
 
-    def user_or_group_owned(user, miq_group)
+    def user_or_group_owned(user, miq_group, include_shared = false)
       list =
         if user && miq_group
           user_owned(user).or(group_owned(miq_group))
@@ -87,7 +87,7 @@ module OwnershipMixin
           none
         end
 
-      list = list.or(user_shared(user)) if [Service, Vm, VmOrTemplate].include?(self)
+      list = list.or(user_shared(user)) if [Service, Vm, VmOrTemplate].include?(self) && include_shared
 
       list
     end
