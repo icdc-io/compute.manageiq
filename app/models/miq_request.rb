@@ -110,7 +110,7 @@ class MiqRequest < ApplicationRecord
     model_symbol.to_s.constantize
   end
 
-  def self.user_or_group_owned(user, miq_group)
+  def self.user_or_group_owned(user, miq_group, include_shared = true)
     if user && miq_group
       user_owned(user).or(group_owned(miq_group))
     elsif user
