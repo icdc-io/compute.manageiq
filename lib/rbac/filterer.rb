@@ -541,7 +541,6 @@ module Rbac
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
         shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
-         _log.error("OBEKASOV shared #{include_shared}")
         scope =
           if shared
             shared
