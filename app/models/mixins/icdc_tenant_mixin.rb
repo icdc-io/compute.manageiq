@@ -1,6 +1,6 @@
 module IcdcTenantMixin
   extend ActiveSupport::Concern
-  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date classifiers)
+  ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date)
 
   included do
     virtual_attribute :project_users, :string
@@ -98,9 +98,11 @@ module IcdcTenantMixin
     raise "Unable to edit: not tenant" if self.tenant?
     self.update_attributes(:name => data["name"], :description => data["description"])
     non_included = []
-    data["admins"].each do |admin|
-      user = User.in_my_region.find_by(:email => admin)
-      user ? self.set_user_role(user, 'admin') : non_included.push(user)
+    unless data["admins"].nil?
+      data["admins"].each do |admin|
+        user = User.in_my_region.find_by(:email => admin)
+        user ? self.set_user_role(user, 'admin') : non_included.push(user)
+      end
     end
     begin
       ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| self.miq_custom_set(attr, data[attr])}
