@@ -10,11 +10,13 @@ module Icdc
       @table.as_json(
         options.merge(
           :only => [
+            :id,
             :hostname,
             :ip,
             :mac,
             :type, # virtual or nic
             :vm_id, # allocation assigned to VM
+            :vm_name,
             :service_id # allocation assigned to VM
           ]
         )
@@ -72,11 +74,13 @@ module Icdc
           alloc.nic = nic
           alloc.type = :nic
           alloc.vm_id = nic.hardware.vm.id
+          alloc.vm_name = nic.hardware.vm.name
         else
           vip = vips.where(:subnet => alloc.subnet, :mac => alloc.mac).first
           if vip
             alloc.type = :virtual
             alloc.service_id = vip.service_id
+            alloc.id = vip.id
           end
         end
         alloc
@@ -127,7 +131,8 @@ module Icdc
               :mac      => nic&.address,
               :type     => :guest,
               :subnet   => net_name,
-              :vm_id    => vm.id
+              :vm_id    => vm.id,
+              :vm_name  => vm.name
             )
             get_or_create(networks, net_name).allocations << alloc
           end
