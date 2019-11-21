@@ -221,10 +221,14 @@ namespace :dev do
   desc "Disabling C&U collection for EmsClusters in NB5"
   task :disable_perf_capture => :environment do
     puts "Disable C&U collection"
-    location = MiqRegion.my_region.description.downcase.to_s
-    raise "It need only for NB5 location" unless location == "nb5"
-    EmsCluster.each do |cluster|
-      cluster.tag_remove("capture_enabled", :ns => "/performance") if cluster.perf_capture_enabled?
+    perf_tag_id = Tag.where(:name => "/performance/capture_enabled").first.id
+    EmsCluster.find_tagged_with(:all => "capture_enabled", :ns => "/performance").each do |cluster|
+      perf_tagging = cluster.taggings.where(tag_id: perf_tag_id)&.first
+      perf_tagging.destroy! if perf_tagging
+    end
+    Storage.find_tagged_with(:all => "capture_enabled", :ns => "/performance").each do |datastore|
+      perf_tagging = datastore.taggings.where(tag_id: perf_tag_id)&.first
+      perf_tagging.destroy! if perf_tagging
     end
   end 
 
