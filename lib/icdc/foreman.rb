@@ -21,6 +21,7 @@ module Icdc::Foreman
       @cert = OpenSSL::X509::Certificate.new(File.read(config[:cert]))
       @key = OpenSSL::PKey::RSA.new(File.read(config[:key]), "passphrase, if any")
       @base_url = "#{url}/dhcp"
+      @verify_ssl = config[:skip_verify_smartproxy] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       @timeout = config[:timeout] || DEFAULT_TIMEOUT
     end
 
@@ -48,7 +49,7 @@ module Icdc::Foreman
         :url             => @base_url + path,
         :ssl_client_cert => @cert,
         :ssl_client_key  => @key,
-        :verify_ssl      => OpenSSL::SSL::VERIFY_NONE, # TODO: fix this
+        :verify_ssl      => @verify_ssl,
         :timeout         => @timeout,
       )
       JSON.parse(res)
@@ -119,10 +120,11 @@ module Icdc::Foreman
 
     def get(path)
       res = RestClient::Request.execute(
-        :method   => :get,
-        :url      => @config[:foreman_url] + path,
-        :user     => @config[:user],
-        :password => @config[:password]
+        :method     => :get,
+        :url        => @config[:foreman_url] + path,
+        :user       => @config[:user],
+        :password   => @config[:password],
+        :verify_ssl => @config[:skip_verify] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER,
       )
       JSON.parse(res)
     rescue RestClient::NotFound
