@@ -1,11 +1,1 @@
-1:
-  :foreman_url: 'https://foreman.icdc.io'
-  :user: 'admin'
-  :password: 'B1gb0sss'
-  :cert: 'certs/foreman-proxy/miq1.icdc.io.pem'
-  :key: 'certs/foreman-proxy/key.miq1.icdc.io.pem'
-
-2:
-  :foreman_url: 'https://foreman2d.iba'
-  :user: 'admin'
-  :password: 'B1gb0sss'
+foreman.yml

@@ -1,1 +1,15 @@
-foreman_config.yml
+1:
+  :foreman_url: 'https://foreman-idc.icdc.io'
+  :user: 'admin'
+  :password: 'foremadmin121'
+  :cert: 'certs/foreman-idc.icdc.io/tls.crt'
+  :key: 'certs/foreman-idc.icdc.io/tls.key'
+  :skip_verify_smartproxy: true
+
+2:
+  :foreman_url: 'https://foreman-nb5.icdc.io'
+  :user: 'admin'
+  :password: 'foremadmin121'
+  :cert: 'certs/foreman-nb5.icdc.io/tls.crt'
+  :key: 'certs/foreman-nb5.icdc.io/tls.key'
+  :skip_verify_smartproxy: true
