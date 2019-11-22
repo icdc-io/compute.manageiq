@@ -413,6 +413,18 @@ namespace :dev do
     Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
   end
 
+  desc "Deactivate MiqServer role"
+  task :deactivate_role, [:role] => :environment do |_,args|
+    if args.nil? or args[:role].nil?
+      abort("Provide list of valid MiqServer role names. For example: rake #{_}[cockpit_ws]")
+    end
+    server = MiqServer.in_my_region.first
+    roles = server.settings_for_resource.server.role.split(",") - [ args[:role] ]
+    setting = {server: {role: roles.sort.join(",")}}
+    Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
+    MiqServer.my_server.deactivate_roles(args[:role])
+  end
+
   desc "Fix storing of metrics on glusterFS"
   task :fix_glufs_metrics => :environment do
     Vmdb::Settings.save!(MiqServer.in_my_region.first, 
