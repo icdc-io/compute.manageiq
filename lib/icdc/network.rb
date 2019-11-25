@@ -36,6 +36,8 @@ module Icdc
     end
 
     def as_json(options = {})
+      parameters_hash = {}
+      parameters.each { |p| parameters_hash[p["name"].to_sym] = p["value"] }
       # We need attribute whitelist here, because there is sensitive data:
       # DHCP addresses, DHCP ip range, Smartproxy IDs
       @table.as_json({
@@ -46,6 +48,7 @@ module Icdc
         ]
       }.merge(options))
             .merge(:allocations => allocations.as_json)
+            .merge(:parameters => parameters_hash.as_json)
     end
 
     def self.authorized_networks(service)
