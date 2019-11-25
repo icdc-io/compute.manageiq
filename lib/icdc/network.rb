@@ -37,14 +37,13 @@ module Icdc
 
     def as_json(options = {})
       parameters_hash = {}
-      parameters.each { |p| parameters_hash[p["name"].to_sym] = p["value"] }
+      parameters.each { |p| parameters_hash[p["name"].to_sym] = p["value"] } if parameters
       # We need attribute whitelist here, because there is sensitive data:
       # DHCP addresses, DHCP ip range, Smartproxy IDs
       @table.as_json({
         :only => [
           :name, :network_address, :network, :cidr, :network_type,
           :mask, :gateway, :dns_primary, :dns_secondary,
-          :parameters, "name", "value",
         ]
       }.merge(options))
             .merge(:allocations => allocations.as_json)
