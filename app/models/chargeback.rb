@@ -196,7 +196,7 @@ class Chargeback < ActsAsArModel
    end
    res += "Fast : #{fast_disk_size}; " unless fast_disk_size == 0
    res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
-   res += "Slow : #{slow_disk_size}" unless slow_disk_size == 0
+   res += "Slow : #{slow_disk_size};" unless slow_disk_size == 0
    res
   end
 
@@ -228,7 +228,17 @@ class Chargeback < ActsAsArModel
     res_s = 0 if backup  
     return [res_f, res_m, res_s, res_b]
   end
-  
+ 
+  def get_backups_size(service)
+    return 0 unless service.is_a?(Service)
+    begin
+      service.backups.select{ |b| !b.error && !b.terminated }.collect{ |x| x.template.first.allocated_disk_storage.to_i / 1.gigabyte }.sum
+    rescue => e
+      _log.info("AHR reports can't find backup template for service #{service.id}")
+      0
+    end
+  end
+ 
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end
