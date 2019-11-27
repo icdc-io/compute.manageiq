@@ -144,7 +144,7 @@ class ChargebackAccount < Chargeback
       "medium_disk"              => {:grouping => [:total]},
       "slow_disk"                => {:grouping => [:total]},
       "backup_disk"              => {:grouping => [:total]},
-
+      "backup_disk_cost"         => {:grouping => [:total]}
  }
   end
 
@@ -158,7 +158,7 @@ class ChargebackAccount < Chargeback
     if Vm.find_by(:guid => guid).service
       return Vm.find_by(:guid => guid).service
     else
-      return name = Vm.find_by(:guid => guid)
+      return Vm.find_by(:guid => guid)
     end
   end
 
@@ -218,8 +218,9 @@ class ChargebackAccount < Chargeback
   def init_extra_fields(consumption)
     disk_size = []
     self.vm_id         = consumption.resource_id
-    self.service_id    = self.class.get_service(consumption.resource.try(:guid)).id
-    self.service_name  = self.class.get_service(consumption.resource.try(:guid)).name
+    service            = self.class.get_service(consumption.resource.try(:guid))
+    self.service_id    = service.id
+    self.service_name  = service.name
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
     self.vm_guid       = consumption.resource.try(:guid)
@@ -234,11 +235,11 @@ class ChargebackAccount < Chargeback
     self.cpu_allocated_total     = consumption.resource.cpu_total_cores
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte 
     self.disk_type     = get_disk_type(consumption)
+    self.backup_disk   = get_backups_size(service)
     disk_size = get_disk_type_proxy(consumption)
     self.fast_disk = disk_size[0]
     self.medium_disk = disk_size[1]
     self.slow_disk = disk_size[2] 
-    self.backup_disk = disk_size[3]
   end
 end
 
