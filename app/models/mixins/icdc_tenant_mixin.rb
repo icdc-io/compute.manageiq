@@ -43,7 +43,7 @@ module IcdcTenantMixin
     end
 
     def available_users
-      [User.in_my_region.collect{|x| [ :id => x.id, :email => x.email, :name => x.name]}.uniq].flatten
+      [(User.in_my_region - User.find_tagged_with(:any => 'true', :ns => '/managed/system_user')).collect{|x| [ :id => x.id, :email => x.email, :name => x.name]}.uniq].flatten 
     end
 
     def available_roles
