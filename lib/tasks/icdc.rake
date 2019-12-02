@@ -89,6 +89,25 @@ task :service_for_new_vm, [:service_name, :user_id, :vm_id] => :environment do |
   end
 end
 
+desc "Move Service to new Account"
+task :move_service, [:name, :account] => :environment do |_, args|
+  begin
+    service = Service.find_by_name(args[:name])
+    service ||= VmOrTemplate.find_by_name(args[:name]).service
+    account = Tenant.find_by(:name => args[:account])
+    service.tenant = account
+    service.miq_group = account.miq_groups.select{|mg| mg.name.include?("member")}.first
+    service.save!
+    service.vms.each do |vm|
+      vm.tenant = account
+      vm.miq_group = account.miq_groups.select{|mg| mg.name.include?("member")}.first
+      vm.save!
+    end
+  rescue => e
+    puts "Can't move service, because #{e.message}"
+  end
+end
+
 desc "Rename ICDC-members -> ICDC-member"
 task :rename_member_groups => :environment do
   MiqGroup.in_my_region.each do |mg|
