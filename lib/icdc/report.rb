@@ -61,8 +61,11 @@ module Icdc
         h[:cpu] = cpu
         h[:mem] = memory
         h[:uptime] = uptime.sum
-        h[:storage] = squash_disks(disk_type)
+        storage =  squash_disks(disk_type)
         h[:backups_size] = service.second.first['backup_disk']
+        h[:disk_fast] = storage[:Fast]
+        h[:disk_medium] = storage[:Medium]
+        h[:disk_slow] = storage[:Slow]
         result_set.push(h)
       end
       {:data => result_set, :total => calculate_total_values(result_set)}
@@ -87,14 +90,14 @@ module Icdc
         result_hash[disk.split(":").first.squish.to_sym] += disk.split(":").second.squish.to_i
       end
       result = ""
-      result_hash.each_key { |k| result_hash.delete(k) if result_hash[k] == 0 }.each do |k,v|
-        result += "#{k} : #{v} Gb;"
-      end
-      result
+      result_hash.each_key { |k| result_hash.delete(k) if result_hash[k] == 0 }#.each do |k,v|
+#        result += "#{k} : #{v} Gb;"
+#      end
+      result_hash
     end
 
     def self.calculate_total_values(result_set)
-      total_result = {:total_cpu => 0, :total_mem => 0, :total_storage => 0, :total_backups_size => 0, :total_uptime => 0, :total_cost => 0}
+      total_result = {:total_cpu => 0, :total_mem => 0, :total_backups_size => 0, :total_uptime => 0, :total_cost => 0}
       total_disks = []
       result_set.each do |result|
         total_result[:total_cpu] += result[:cpu]
@@ -102,9 +105,9 @@ module Icdc
         total_result[:total_backups_size] += result[:backups_size].to_i
         total_result[:total_uptime] += result[:uptime]
         total_result[:total_cost] += result[:cost]
-        total_disks << result[:storage]
+        #total_disks << result[:storage]
       end
-      total_result[:total_storage] = squash_disks(total_disks)
+      #total_result[:total_storage] = squash_disks(total_disks)
       total_result
     end
   end # end ServiceReportController
