@@ -2,8 +2,6 @@ module Authenticator
 
   class Ldap < Base
 
-    include AccountsStructureHelper
-
     def self.proper_name
       'LDAP'
     end
