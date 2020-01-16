@@ -90,16 +90,9 @@ class Tenant < ApplicationRecord
   end
 
   def get_account_users
-    account_users = []
-    account_users = get_account.users if get_account.descendants.empty?
-    get_account.descendants.each do |descendant|
-      account_users += descendant.users
-    end
-    account_users.map do |account_user|
-      group = MiqGroup.find_by_id(account_user.current_group_id)
+    self.users.map do |account_user|
       user = account_user.as_json
-      user["tags"] = account_user.tags
-      user["group"] = group.description
+      user["group"] = self.miq_groups.select{|x| x.description.include?(".member")}.first.description
       user
     end
   end
