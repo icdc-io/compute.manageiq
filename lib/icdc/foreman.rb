@@ -90,6 +90,15 @@ module Icdc::Foreman
       allocs
     end
 
+    def free_ips(subnets)
+      ips = []
+      tasks = parallel(subnets) { |subnet| free_ip(subnet) }
+      process(tasks) do |ip|
+        ips << ip if ip
+      end
+      ips
+    end
+
     private
 
     def parallel(items)
@@ -133,6 +142,11 @@ module Icdc::Foreman
     rescue StandardError => e
       _log.error("Foreman request to #{@config[:foreman_url] + path} failed with error: #{e.message}")
       nil
+    end
+
+    def free_ip(subnet)
+      ip = get("/api/subnets/#{subnet}/freeip")["freeip"]
+      { :subnet => subnet, :ip => ip }
     end
   end
 end
