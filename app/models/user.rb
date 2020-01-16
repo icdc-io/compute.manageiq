@@ -12,8 +12,8 @@ class User < ApplicationRecord
   include TagsEmailsMixin
   include ResourceConsumptionMixin
   include ZabbixAlertMixin
-  extend InterRegionApiMethodRelay  
-
+  extend InterRegionApiMethodRelay
+  # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
   has_many   :miq_requests, :foreign_key => :requester_id
@@ -34,7 +34,7 @@ class User < ApplicationRecord
   belongs_to :current_group, :class_name => "MiqGroup"
 
   has_and_belongs_to_many :miq_groups
-  scope      :superadmins, lambda {
+  scope :superadmins, lambda {
     joins(:miq_groups => :miq_user_role).where(:miq_user_roles => {:name => MiqUserRole::SUPER_ADMIN_ROLE_NAME })
   }
 
@@ -44,36 +44,37 @@ class User < ApplicationRecord
   virtual_has_one  :last_chargeback
   virtual_has_one  :current_chargeback
   virtual_has_one  :managed_tenants
-  
+
   virtual_column :get_user_subnets, :type => :string
+  virtual_column :get_user_available_subnets, :type => :string
   virtual_attribute :projects, :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
   delegate   :super_admin_user?, :admin_user?, :tenant_admin_user?, :self_service?, :limited_self_service?, :disallowed_roles,
              :to => :miq_user_role, :allow_nil => true
 
-  validates_presence_of   :name, :userid
+  validates :name, :userid, :presence => true
   validates :userid, :uniqueness => {:conditions => -> { in_my_region } }
   validates :email, :format => {:with => MoreCoreExtensions::StringFormats::RE_EMAIL,
                                 :allow_nil => true, :message => "must be a valid email address"}
-  validates_inclusion_of  :current_group, :in => proc { |u| u.miq_groups }, :allow_nil => true
+  validates :current_group, :inclusion => { :in => proc { |u| u.miq_groups }, :allow_nil => true }
 
   # use authenticate_bcrypt rather than .authenticate to avoid confusion
   # with the class method of the same name (User.authenticate)
-  alias_method :authenticate_bcrypt, :authenticate
+  alias authenticate_bcrypt authenticate
   api_relay_method :set_current_group do |options|
     options
   end
 
-  serialize     :settings, Hash   # Implement settings column as a hash
-  default_value_for(:settings) { Hash.new }
+  serialize :settings, Hash # Implement settings column as a hash
+  default_value_for(:settings) { {} }
 
   def self.scope_by_tenant?
     true
   end
 
   def self.admin
-    @admin ||= self.in_my_region.find_by(userid: 'admin')
+    @admin ||= in_my_region.find_by(:userid => 'admin')
   end
 
   ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants, :iba_sibling_ids => :iba_siblings, :icdc_sibling_ids => :icdc_siblings}.freeze
@@ -88,7 +89,7 @@ class User < ApplicationRecord
     users_ids = accessible_tenants.collect(&:user_ids).flatten + tenant.user_ids
 
     users_userids = User.find(users_ids).map(&:userid)
-    ids = User.where(userid: users_userids).map(&:id)
+    ids = User.where(:userid => users_userids).map(&:id)
 
     return if users_ids.empty?
 
@@ -137,13 +138,9 @@ class User < ApplicationRecord
   end
 
   def destroy_zabbix_host
-    unless self.my_region_number == 99
+    unless my_region_number == 99
       remove_zabbix_host_by_owner(self)
     end
-  end
-  
-  def set_settings(key, value)
-    self.update_attribute(:settings, :"#{key}" => value)
   end
 
   def nil_email_field_if_blank
@@ -165,17 +162,17 @@ class User < ApplicationRecord
     end
     if auth.authenticate(userid, oldpwd)
       self.password = newpwd
-      self.save!
+      save!
     end
   end
 
   def ldap_group
     current_group.try(:description)
   end
-  alias_method :miq_group_description, :ldap_group
+  alias miq_group_description ldap_group
 
   def set_current_group(data)
-    self.update_attribute(:current_group, MiqGroup.find(data["current_group"]["id"]))
+    update_attribute(:current_group, MiqGroup.find(data["current_group"]["id"]))
   end
 
   def role_allows?(options = {})
@@ -191,50 +188,6 @@ class User < ApplicationRecord
   end
 
   def services_chargeback
-     user = User.current_user
-     priority_tenant = self.class.priority_tenant_for(user)
-
-     if priority_tenant.nil?
-       user.current_group.tenant.services_chargeback(user)
-     else
-       priority_tenant.services_chargeback
-     end
-  end
-
-  def self.priority_tenant_for(user)
-    Tenant.in_my_region.find_tagged_with(:any =>
-      ["manager/#{email2tag(user.userid)}"], ns: "/managed").
-      min{|tenant1, tenant2| tenant1.depth <=> tenant2.depth }
-  end
-
-  def email2tag
-    email.gsub(/[^A-Za-z0-9]/, '_').downcase
-  end
-
-  def managed_tenants
-    res = []
-    managed_tenants = Tenant.find_tagged_with(:any =>
-      ["manager/#{email2tag}"], ns: "/managed")
-    for tenant in managed_tenants
-      res.push({"id": tenant.id, "region_name": tenant.region.name})
-    end
-    res
-  end
-
-  def managed_tenant
-    managed_tenants = Tenant.find_tagged_with(:any =>
-      ["manager/#{email2tag}"], ns: "/managed")
-  end
-
-  def current_chargeback
-    services_chargebacks('current').first || {"start_date": Date.today.at_beginning_of_month, "cost": 0}
-  end
-
-  def last_chargeback
-    services_chargebacks('last').first || {"start_date": Date.today.at_beginning_of_month - 1.month  , "cost": 0}
-  end
-
-  def services_chargeback
     user = User.current_user
     priority_tenant = self.class.priority_tenant_for(user)
 
@@ -245,26 +198,67 @@ class User < ApplicationRecord
     end
   end
 
+  def self.priority_tenant_for(user)
+    Tenant.in_my_region.find_tagged_with(:any =>
+      ["manager/#{email2tag(user.userid)}"], :ns => "/managed")
+          .min { |tenant1, tenant2| tenant1.depth <=> tenant2.depth }
+  end
+
+  def email2tag
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
+  end
+
+  def managed_tenants
+    res = []
+    managed_tenants = Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], :ns => "/managed")
+    managed_tenants.each do |tenant|
+      res.push(:id => tenant.id, :region_name => tenant.region.name)
+    end
+    res
+  end
+
+  def managed_tenant
+    Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], :ns => "/managed")
+  end
+
+  def current_chargeback
+    services_chargebacks('current').first || {:start_date => Date.today.at_beginning_of_month, :cost => 0}
+  end
+
+  def last_chargeback
+    services_chargebacks('last').first || {:start_date => Date.today.at_beginning_of_month - 1.month, :cost => 0}
+  end
+
   def get_user_subnets
-    networks = tags(:networks).to_a #fix #3447
+    networks = tags(:networks).to_a # fix #3447
     networks.push(*current_group.tags(:networks))
     networks.push(*current_group.tenant.tags(:networks))
-    for tenant_id in current_group.tenant.ancestry.split('/')
-      networks.push(*Tenant.find_by_id(tenant_id).tags(:networks))
+    current_group.tenant.ancestry.split('/').each do |tenant_id|
+      networks.push(*Tenant.find_by(:id => tenant_id).tags(:networks))
     end
-    networks = networks.uniq()
+    networks = networks.uniq
     nets = []
     networks.each do |tag|
       tag_info = {}
-      if /\/managed\/networks\// =~ tag.name
-        tag_info["subnet"] = tag.categorization["name"]
-        tag_info["description"] = tag.categorization["description"]
-        unless tag_info["description"].include? "All IP consumed"
-          nets.push(tag_info)
-        end
+      next unless /\/managed\/networks\// =~ tag.name
+
+      tag_info["subnet"] = tag.categorization["name"]
+      tag_info["description"] = tag.categorization["description"]
+      unless tag_info["description"].include?("All IP consumed")
+        nets.push(tag_info)
       end
     end
     nets
+  end
+
+  def get_user_available_subnets
+    all_user_networks = get_user_subnets
+    return nil if all_user_networks.empty?
+
+    available_networks = Icdc::Foreman::Client.new(MiqRegion.my_region.region).free_ips(all_user_networks.collect { |x| x["subnet"] }).reject { |entry| entry[:ip].nil? }.map { |entry| entry[:subnet] }
+    all_user_networks.select { |entry| available_networks.include?(entry["subnet"]) }
   end
 
   def self.authenticator(username = nil)
@@ -285,6 +279,7 @@ class User < ApplicationRecord
 
   def self.authorize_user(userid)
     return if userid.blank? || admin?(userid)
+
     authenticator(userid).authorize_user(userid)
   end
 
@@ -296,8 +291,7 @@ class User < ApplicationRecord
 
   def get_expressions(db = nil)
     sql = ["((search_type=? and search_key is null) or (search_type=? and search_key is null) or (search_type=? and search_key=?))",
-           'default', 'global', 'user', userid
-          ]
+           'default', 'global', 'user', userid]
     unless db.nil?
       sql[0] += "and db=?"
       sql << db.to_s
@@ -334,11 +328,6 @@ class User < ApplicationRecord
     ["ICDC-admin", "ICDC-billing"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
   end
 
-  def self.with_current_user_groups(user = nil)
-    user ||= current_user
-    user.admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
-  end
-
   def self.missing_user_features(db_user)
     if !db_user
       "User"
@@ -348,7 +337,6 @@ class User < ApplicationRecord
       "Role"
     end
   end
-
 
   def subscribed_widget_sets
     MiqWidgetSet.subscribed_for_user(self)
@@ -377,7 +365,7 @@ class User < ApplicationRecord
   end
 
   def self.super_admin
-    in_my_region.find_by_userid("admin")
+    in_my_region.find_by(:userid => "admin")
   end
 
   def self.current_tenant
@@ -386,8 +374,9 @@ class User < ApplicationRecord
 
   def self.with_user_group(user, group, &block)
     return yield if user.nil?
+
     user = User.find(user) unless user.kind_of?(User)
-    if group && group.kind_of?(MiqGroup)
+    if group&.kind_of?(MiqGroup)
       user.current_group = group
     elsif group != user.current_group_id
       group = MiqGroup.find_by(:id => group)
@@ -395,7 +384,6 @@ class User < ApplicationRecord
     end
     User.with_user(user, &block)
   end
-
 
   # Save the current user from the session object as a thread variable to allow lookup from other areas of the code
   def self.with_user(user, userid = nil)
@@ -420,7 +408,7 @@ class User < ApplicationRecord
   end
 
   def self.current_user
-    Thread.current[:user] ||= find_by_userid(current_userid)
+    Thread.current[:user] ||= find_by(:userid => current_userid)
   end
 
   def self.with_current_user_groups(user = nil)
@@ -428,25 +416,16 @@ class User < ApplicationRecord
     user.tenant_admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
   end
 
-  def self.missing_user_features(db_user)
-    if !db_user
-      "User"
-    elsif !db_user.current_group
-      "Group"
-    elsif !db_user.current_group.miq_user_role
-      "Role"
-    end
-  end
-
   def self.seed
     seed_data.each do |user_attributes|
       user_id = user_attributes[:userid]
-      next if in_my_region.find_by_userid(user_id)
+      next if in_my_region.find_by(:userid => user_id)
+
       log_attrs = user_attributes.slice(:name, :userid, :group)
       _log.info("Creating user with parameters #{log_attrs.inspect}")
 
       group_description = user_attributes.delete(:group)
-      group = MiqGroup.in_my_region.find_by_description(group_description)
+      group = MiqGroup.in_my_region.find_by(:description => group_description)
 
       _log.info("Creating #{user_id} user...")
       user = create(user_attributes)
@@ -472,8 +451,8 @@ class User < ApplicationRecord
 
   def projects
     managed_projects = []
-    self.current_tenant.project? ? managed_projects << self.current_tenant.parent : managed_projects << self.current_tenant
-    self.icdc_manager? ? managed_projects << self.current_tenant.all_subprojects : managed_projects << self.tenants.select(&:project?)
+    managed_projects << (current_tenant.project? ? current_tenant.parent : current_tenant)
+    managed_projects << (icdc_manager? ? current_tenant.all_subprojects : tenants.select(&:project?))
     managed_projects.flatten
   end
 end
