@@ -97,6 +97,7 @@ module IcdcTenantMixin
   def edit_project(data)
     raise "Unable to edit: not tenant" if self.tenant?
     self.update_attributes(:name => data["name"], :description => data["description"])
+    change_groups_name(data["name"]) if data["name"]
     non_included = []
     unless data["admins"].nil?
       data["admins"].each do |admin|
@@ -165,5 +166,11 @@ module IcdcTenantMixin
 
   def check_permissions(service)
     [service.tenant.ancestor_ids, service.tenant.id].flatten.include?(User.current_user.current_tenant.id)
+  end
+
+  def change_groups_name(new_name)
+    _log.info("new name #{new_name}")
+    _log.info("miq_groups #{miq_groups.inspect}")
+    miq_groups.each{|group| group.update!(:description => [new_name, group.description.split(".").last].join(".")) if group.group_type != 'tenant'}
   end
 end
