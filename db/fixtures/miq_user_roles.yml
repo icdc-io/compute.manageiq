@@ -1330,6 +1330,9 @@
   - sui_orders
   - sui_svc_catalog
   - sui_cart
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-member
   :read_only: false
@@ -1379,6 +1382,9 @@
   - sui_cart
   - service_report
   - service_report_view
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-admin
   :read_only: false
@@ -1436,6 +1442,9 @@
   - sui_users
   - service_report
   - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-billing
   :read_only: false
@@ -1489,6 +1498,9 @@
   - service_report_view
   - service_report_chargeback
   - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-project-admin
   :read_only: false
@@ -1539,6 +1551,9 @@
   - sui_users
   - service_report_view
   - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-project-member
   :read_only: false
@@ -1588,6 +1603,9 @@
   - sui_cart
   - service_report
   - service_report_view
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
 
 - :name: ICDC-project-billing
   :read_only: false
@@ -1641,3 +1659,6 @@
   - service_report_view
   - service_report_chargeback
   - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete

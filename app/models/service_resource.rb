@@ -6,6 +6,7 @@ class ServiceResource < ApplicationRecord
   STATUS_QUEUED    = 'Queued'.freeze
 
   belongs_to :service_template
+  belongs_to :user,     :polymorphic => true
   belongs_to :service
   belongs_to :resource, :polymorphic => true
   belongs_to :source,   :polymorphic => true

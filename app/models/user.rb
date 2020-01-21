@@ -14,7 +14,9 @@ class User < ApplicationRecord
   include ZabbixAlertMixin
   extend InterRegionApiMethodRelay
   include IcdcUserMixin
+
   # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective, Rails/SkipsModelValidations
+  #
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
   has_many   :miq_requests, :foreign_key => :requester_id
@@ -45,7 +47,7 @@ class User < ApplicationRecord
   virtual_has_one  :last_chargeback
   virtual_has_one  :current_chargeback
   virtual_has_one  :managed_tenants
-
+  virtual_has_many :generic_objects
   virtual_attribute :projects, :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
@@ -127,6 +129,10 @@ class User < ApplicationRecord
   before_validation :dummy_password_for_external_auth
   before_destroy :destroy_subscribed_widget_sets
   before_destroy :destroy_zabbix_host
+
+  def generic_objects
+    service_resources.where(:resource_type => 'GenericObject').includes(:resource).collect(&:resource)
+  end
 
   def current_group_by_description=(group_description)
     if group_description
