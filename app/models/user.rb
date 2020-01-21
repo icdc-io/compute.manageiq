@@ -13,8 +13,8 @@ class User < ApplicationRecord
   include ResourceConsumptionMixin
   include ZabbixAlertMixin
   extend InterRegionApiMethodRelay
-  include IcdcUserMixin	
-  # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective
+  include IcdcUserMixin
+  # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective, Rails/SkipsModelValidations
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
   has_many   :miq_requests, :foreign_key => :requester_id

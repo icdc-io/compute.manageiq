@@ -1,6 +1,8 @@
 module IcdcUserMixin
   extend ActiveSupport::Concern
 
+  # rubocop:disable Naming/AccessorMethodName, Lint/MissingCopEnableDirective
+
   included do
     virtual_column :get_user_subnets, :type => :string
     virtual_column :get_user_available_subnets, :type => :string
@@ -35,7 +37,4 @@ module IcdcUserMixin
     available_networks = Icdc::Foreman::Client.new(miq_region.region).free_ips(all_user_networks.collect { |x| x["subnet"] }).reject { |entry| entry[:ip].nil? }.map { |entry| entry[:subnet] }
     all_user_networks.select { |entry| available_networks.include?(entry["subnet"]) }
   end
-
-
-
 end
