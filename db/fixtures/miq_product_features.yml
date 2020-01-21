@@ -7074,3 +7074,24 @@
       :description: View Chargeback in Service Report
       :feature_type: view
       :identifier: service_report_chargeback
+  - :name: User Profile
+    :description: user`s profile features
+    :feature_type: node
+    :identifier: user_profile
+    :children:
+    - :name: View
+      :description: show user`s keys
+      :feature_type: view
+      :identifier: user_profiles
+    - :name: Add Key
+      :description: add key
+      :feature_type: control
+      :identifier: user_profiles_add_key
+    - :name: Delete Key
+      :description: delete key
+      :feature_type: control
+      :identifier: user_profiles_delete
+ # - :name: User Profile
+ #   :description: User Profile
+ #   :feature_type: view
+ #   :identifier: user_profiles
