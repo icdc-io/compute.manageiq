@@ -521,5 +521,11 @@ namespace :dev do
       end
   end
 
+  desc "ICDC temporarily solution: We need to install haikunator latest version (from github)"
+  task :fix_haikunator => :environment do
+   `git clone https://github.com/usmanbashir/haikunator.git /var/www/miq/haikunator; \
+    cd /var/www/miq/haikunator; rake build; gem install pkg/haikunator-1.1.0.gem; rm -rf /var/www/miq/haikunator`
+  end
+
 end
 end
