@@ -83,6 +83,8 @@ task :service_for_new_vm, [:service_name, :user_id, :vm_id] => :environment do |
     service.miq_group = owner.current_group
     service.save!
     VmOrTemplate.find(args[:vm_id]).add_to_service(service)
+    VmOrTemplate.find(args[:vm_id]).update!(:evm_owner => owner)
+    VmOrTemplate.find(args[:vm_id]).update!(:miq_group => owner.current_group)
     puts "New service #{service.name} creation finished completed"
   rescue => e
     puts "New service creatin failed with error => #{e.message}"
