@@ -1,5 +1,5 @@
 class DialogFieldTextBox < DialogField
-  AUTOMATE_VALUE_FIELDS = %w(data_type protected required validator_rule validator_type read_only visible description).freeze
+  AUTOMATE_VALUE_FIELDS = %w(data_type protected required validator_rule validator_type read_only visible description value default_value).freeze
 
   def initialize_value_context
     if @value.blank?
@@ -66,7 +66,7 @@ class DialogFieldTextBox < DialogField
       send("#{key}=", automate_hash[key]) if automate_hash.key?(key)
     end
 
-    automate_hash["value"].to_s.presence || initial_values
+    automate_hash["value"].to_s.presence || automate_hash["default_value"].to_s.presence || initial_values
   end
 
   def refresh_json_value
