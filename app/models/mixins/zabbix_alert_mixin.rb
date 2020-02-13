@@ -45,6 +45,7 @@ module ZabbixAlertMixin
 
   #Main function
   def create_triggers(data)
+    data = data.with_indifferent_access
     #data = data["params"]
     #Need have host to attach triggers
     hosts = connection.query(:method => "host.get",:params => {:output => ["host"],:selectInventory => ["alias"], :searchInventory => {:alias => "#{id}" }})
@@ -84,6 +85,7 @@ module ZabbixAlertMixin
 
   #Create trigger
   def create_trigger(data)
+    data = data.with_indifferent_access
     case data["type"]
       when "ping", "tcp"
         #Create expression to check it
@@ -100,7 +102,6 @@ module ZabbixAlertMixin
       :priority => data["priority"],
       :status     => 0,
       :hostid => data["hostid"],
-      :url => data["attempts"],
       :type => 0 )
   end
 
