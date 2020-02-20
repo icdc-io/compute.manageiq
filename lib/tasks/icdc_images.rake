@@ -26,6 +26,12 @@ namespace :icdc do
         version = "" if version == "default"
         next unless st.service_template_catalog
 
+        set1 = ["VDI Windows 7", "Metrics", "for IBM"].to_set
+        set2 = ["Windows"].to_set
+        st.miq_custom_set("adm_account", "Administrator") if set2.any? { |x| st.name.include?(x)} && !set1.any? { |x| st.name.include?(x)}
+        st.miq_custom_set("adm_account", "root/admin") unless set1.any? { |x| st.name.include?(x)} || set2.any? { |x| st.name.include?(x)}
+        st.miq_custom_set("adm_account", "user") if set1.any? { |x| st.name.include?(x)}
+
         catalog = st.service_template_catalog.name
         image_help_url = {}
         # Go through pages
