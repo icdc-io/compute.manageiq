@@ -44,24 +44,26 @@ namespace :users_sync do
   end
 
   desc "Remove remote region data from local database"
-  task :sync_user, [:id] => :environment do |t, args|
-    user_master = User.find_by_id(args[:id]).as_json
-    user_master['miq_group'] = MiqGroup.find_by_id(user_master['current_group_id']).description
+  task :sync_user, [:ids] => :environment do |t, args|
     regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
-    for region in regions
-      #HOT FIX 7609
-      conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
-      user = User.where(userid: user_master['userid']).first
-      unless user
-        user = User.new
-        user.userid = user_master['userid']
+    args[:ids].each do |u_id|
+      user_master = User.find_by_id(u_id).as_json
+      user_master['miq_group'] = MiqGroup.find_by_id(user_master['current_group_id']).description
+      for region in regions
+        #HOT FIX 7609
+        conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
+        user = User.where(userid: user_master['userid']).first
+        unless user
+          user = User.new
+          user.userid = user_master['userid']
+        end
+        user.email = user_master['email']
+        default_group = MiqGroup.find_by_description(user_master['miq_group'])
+        user.miq_groups = [default_group]
+        user.name = user_master['name']
+        user.save!
+        conn.connection.close
       end
-      user.email = user_master['email']
-      default_group = MiqGroup.find_by_description(user_master['miq_group'])
-      user.miq_groups = [default_group]
-      user.name = user_master['name']
-      user.save!
-      conn.connection.close
     end
   end
 
