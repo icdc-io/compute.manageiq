@@ -191,13 +191,14 @@ class ExtManagementSystem < ApplicationRecord
     ip = ost.ipaddr
     unless with_ipaddress(ip).exists?
       hostname = Socket.getaddrinfo(ip, nil)[0][2]
-
       ems_klass, ems_name = if ost.hypervisor.include?(:scvmm)
                               [ManageIQ::Providers::Microsoft::InfraManager, 'SCVMM']
                             elsif ost.hypervisor.include?(:rhevm)
                               [ManageIQ::Providers::Redhat::InfraManager, 'RHEV-M']
                             elsif ost.hypervisor.include?(:openstack_infra)
                               [ManageIQ::Providers::Openstack::InfraManager, 'OpenStack Director']
+                            elsif ost.hypervisor.include?(:power_systems)
+                              [ManageIQ::Providers::Power::InfraManager, 'PowerSystems']
                             else
                               [ManageIQ::Providers::Vmware::InfraManager, 'Virtual Center']
                             end
@@ -432,7 +433,7 @@ class ExtManagementSystem < ApplicationRecord
   end
 
   def self.ems_infra_discovery_types
-    @ems_infra_discovery_types ||= %w(virtualcenter scvmm rhevm openstack_infra)
+    @ems_infra_discovery_types ||= %w(virtualcenter scvmm rhevm openstack_infra power_systems)
   end
 
   def self.ems_physical_infra_discovery_types

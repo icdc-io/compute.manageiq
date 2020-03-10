@@ -23,7 +23,8 @@ class ServiceTemplate < ApplicationRecord
     "microsoft"                  => _("SCVMM"),
     "openstack"                  => _("OpenStack"),
     "redhat"                     => _("Red Hat Virtualization"),
-    "vmware"                     => _("VMware")
+    "vmware"                     => _("VMware"),
+    "power"                      => _("Power")
   }.freeze
 
   RESOURCE_ACTION_UPDATE_ATTRS = [:dialog,
