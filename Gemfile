@@ -69,6 +69,8 @@ gem "snmp",                           "~>1.2.0",       :require => false
 gem "sqlite3",                                         :require => false
 gem "trollop",                        "~>2.0",         :require => false
 gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "master"
+gem "manageiq-providers-power_systems",                               :git => "https://git.icdc.io/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
+gem "hmc-sdk-ruby",                                                   :git => "https://git.icdc.io/icdc-public/hmc-sdk-ruby.git", :branch => "master"
 
 # Modified gems (forked on Github)
 gem "ruport",                         "=1.7.0",                       :git => "https://github.com/ManageIQ/ruport.git", :tag => "v1.7.0-3"
@@ -268,6 +270,8 @@ if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_g"
   override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-ui-classic.git", branch: "icdc_g"
   override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_g"
+  override_gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+  override_gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
 end
 
 # Load other additional Gemfiles

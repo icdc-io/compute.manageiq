@@ -50,6 +50,8 @@ MIQ_WORKER_TYPES = {
   "ManageIQ::Providers::Redhat::InfraManager::EventCatcher"                     => %i(manageiq_default),
   "ManageIQ::Providers::Redhat::InfraManager::MetricsCollectorWorker"           => %i(manageiq_default),
   "ManageIQ::Providers::Redhat::InfraManager::RefreshWorker"                    => %i(manageiq_default),
+  "ManageIQ::Providers::Power::InfraManager::RefreshWorker"                     => %i(manageiq_default),
+  "ManageIQ::Providers::Power::InfraManager::EventCatcher"                      => %i(manageiq_default),
   "ManageIQ::Providers::Redhat::NetworkManager::EventCatcher"                   => %i(manageiq_default),
   "ManageIQ::Providers::Redhat::NetworkManager::MetricsCollectorWorker"         => %i(manageiq_default),
   "ManageIQ::Providers::Redhat::NetworkManager::RefreshWorker"                  => %i(manageiq_default),
@@ -115,6 +117,8 @@ MIQ_WORKER_TYPES_IN_KILL_ORDER = %w(
   ManageIQ::Providers::Openshift::ContainerManager::RefreshWorker
   ManageIQ::Providers::Microsoft::InfraManager::RefreshWorker
   ManageIQ::Providers::Redhat::InfraManager::RefreshWorker
+  ManageIQ::Providers::Power::InfraManager::RefreshWorker
+  ManageIQ::Providers::Power::InfraManager::EventCatcher
   ManageIQ::Providers::Openstack::CloudManager::RefreshWorker
   ManageIQ::Providers::Openstack::NetworkManager::RefreshWorker
   ManageIQ::Providers::Redhat::NetworkManager::RefreshWorker
