@@ -43,27 +43,28 @@ namespace :users_sync do
     end
   end
 
-  desc "Remove remote region data from local database"
-  task :sync_user, [:ids] => :environment do |t, args|
-    regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
-    args[:ids].each do |u_id|
-      user_master = User.find_by_id(u_id).as_json
-      user_master['miq_group'] = MiqGroup.find_by_id(user_master['current_group_id']).description
-      for region in regions
-        #HOT FIX 7609
-        conn = ActiveRecord::Base.establish_connection("postgres://#{region.user}:#{region.password}@#{region.host}:#{region.port}/#{region.dbname}")
-        user = User.where(userid: user_master['userid']).first
-        unless user
-          user = User.new
-          user.userid = user_master['userid']
-        end
-        user.email = user_master['email']
-        default_group = MiqGroup.find_by_description(user_master['miq_group'])
-        user.miq_groups = [default_group]
-        user.name = user_master['name']
-        user.save!
-        conn.connection.close
+  desc "create user in required region"
+  task :sync_user, [:regions] => :environment do |t, args|
+   available_regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
+    arg_list = args[:regions].split('_')
+    userid = arg_list.pop
+    arg_list.each do |region|
+      next if region == "main"
+      slave = available_regions.select { |reg| reg.provider_region_name == region }.first
+      user_master = User.in_my_region.find_by(:userid => userid).as_json
+      user_master['miq_group'] = MiqGroup.in_my_region.find_by_id(user_master['current_group_id']).description
+      conn = ActiveRecord::Base.establish_connection("postgres://#{slave.user}:#{slave.password}@#{slave.host}:#{slave.port}/#{slave.dbname}")
+      user = User.in_my_region.where(userid: user_master['userid']).first
+      unless user
+        user = User.in_my_region.new
+        user.userid = user_master['userid']
       end
+      user.email = user_master['email']
+      default_group = MiqGroup.in_my_region.find_by_description(user_master['miq_group'])
+      user.miq_groups = [default_group]
+      user.name = user_master['name']
+      user.save!
+      conn.connection.close
     end
   end
 

@@ -122,11 +122,12 @@ module IcdcTenantMixin
 
   def invite_users(data)
     users_emails = data["emails"]
+    users_names = data["users_names"]
     invited_ids = []
     role = data["role"]
     users_emails.each do |ue|
       user = User.in_my_region.find_by(:email => ue)
-      raise ArgumentError, "Unable to invite #{ue} as #{role}. Check user email" unless user
+      User.create(:name => users_names["#{ue}"] , :userid => ue , :email => ue) unless user
       self.set_user_role(user, role)
       invited_ids.push(user.id)
     end
@@ -142,6 +143,7 @@ module IcdcTenantMixin
       user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
       user.save!
       excluded_ids.push(user.id)
+      user.destroy! if user.miq_groups.empty? 
     end
     excluded_ids
   end
