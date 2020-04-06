@@ -43,7 +43,7 @@ module IcdcTenantMixin
     end
 
     def available_users
-      [(User.in_my_region - User.find_tagged_with(:any => 'true', :ns => '/managed/system_user')).collect{|x| [ :id => x.id, :email => x.email, :name => x.name, :group => x.current_group]}.uniq].flatten 
+      [(User.in_my_region - User.find_tagged_with(:any => 'true', :ns => '/managed/system_user')).collect{|x| [ :id => x.id, :email => x.email, :name => x.name, :group => x.current_group]}.uniq].flatten
     end
 
     def available_roles
@@ -127,7 +127,7 @@ module IcdcTenantMixin
     role = data["role"]
     users_emails.each do |ue|
       user = User.in_my_region.find_by(:email => ue)
-      User.create(:name => users_names["#{ue}"] , :userid => ue , :email => ue) unless user
+      user ||= User.create(:name => users_names["#{ue}"] , :userid => ue , :email => ue)
       self.set_user_role(user, role)
       invited_ids.push(user.id)
     end
@@ -141,15 +141,17 @@ module IcdcTenantMixin
       user = User.in_my_region.find_by(:email => ue)
       raise ArgumentError, "Something went wrong" unless user
       user.miq_groups = user.miq_groups.reject{|x| x.tenant == self}
+      services = Service.where(:evm_owner => user).select{|x| x.tenant == self}
+      transfer_services_to_admin(services, User.find_by(:email => self.admins.first)) unless services.empty?
       user.save!
       excluded_ids.push(user.id)
-      user.destroy! if user.miq_groups.empty? 
+      user.destroy! if user.miq_groups.empty?
     end
     excluded_ids
   end
 
   def services_change_tenant(data)
-    group = Tenant.find(data["tenant"]).miq_groups.select{|mg| mg.description.include?("member")}.first 
+    group = Tenant.find(data["tenant"]).miq_groups.select{|mg| mg.description.include?("member")}.first
     data["services"].each do |service_id|
       next unless MiqRegion.id_in_current_region?(service_id)
       service = Service.find(service_id)
@@ -175,4 +177,16 @@ module IcdcTenantMixin
     _log.info("miq_groups #{miq_groups.inspect}")
     miq_groups.each{|group| group.update!(:description => [new_name, group.description.split(".").last].join(".")) if group.group_type != 'tenant'}
   end
+
+  def transfer_services_to_admin(services, admin)
+    services.each do |service|
+      service.evm_owner = admin
+      service.vms.each do |vm|
+        vm.evm_owner = admin
+        vm.save!
+      end
+      service.save!
+    end
+  end
+
 end
