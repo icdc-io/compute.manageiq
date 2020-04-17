@@ -108,7 +108,7 @@ module OwnershipMixin
       tag_ids = []
 
       User.where(userid: user.userid).each do |loc_user|
-        tag_ids << loc_user.tags(:ns => "/managed/project/").pluck(:id)
+        tag_ids << loc_user.tags.where("name LIKE?", "%/project/%").pluck(:id)
       end
 
       with_any_tags(tag_ids.flatten)
