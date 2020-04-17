@@ -54,6 +54,7 @@ class ResourceActionWorkflow < MiqRequestWorkflow
   end
 
   def generate_request(state, values)
+    $log.info("DBG generate request #{values}")
     make_request(nil, values.merge(:cart_state => state))
   end
 
@@ -91,6 +92,31 @@ class ResourceActionWorkflow < MiqRequestWorkflow
       :workflow_settings => @settings,
       :initiator         => @initiator
     }
+  end
+
+  def load_dialog(resource_action, values, options)
+    if resource_action.nil?
+      resource_action = load_resource_action(values)
+      @settings[:resource_action_id] = resource_action.id unless resource_action.nil?
+    end
+
+    dialog = resource_action.dialog unless resource_action.nil?
+    unless dialog.nil?
+      dialog.target_resource = @target
+      if options[:display_view_only]
+        dialog.init_fields_with_values_for_request(values)
+      elsif options[:provision_workflow]
+        dialog.initialize_value_context(values)
+        dialog.load_values_into_fields(values, false)
+      elsif options[:refresh] || options[:submit_workflow]
+        dialog.load_values_into_fields(values)
+      elsif options[:reconfigure]
+        dialog.initialize_with_given_values(values)
+      else
+        dialog.initialize_value_context(values)
+      end
+    end
+    dialog
   end
 
   def init_field_hash

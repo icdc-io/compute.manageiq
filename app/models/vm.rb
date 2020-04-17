@@ -2,6 +2,8 @@ class Vm < VmOrTemplate
   default_scope { where(:template => false) }
   virtual_has_one :supported_consoles, :class_name => "Hash"
 
+  virtual_has_one :supported_consoles, :class_name => "Hash"
+
   extend InterRegionApiMethodRelay
   include CustomActionsMixin
   include CiFeatureMixin

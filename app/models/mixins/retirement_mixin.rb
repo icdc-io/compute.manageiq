@@ -224,6 +224,7 @@ module RetirementMixin
   end
 
   def raise_audit_event(event_name, message, requester = nil)
+    requester ||= User.current_user.try(:userid)
     event_hash = {
       :target_class => retirement_base_model_name,
       :target_id    => id.to_s,

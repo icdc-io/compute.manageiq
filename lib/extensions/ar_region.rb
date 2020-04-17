@@ -15,6 +15,12 @@ module ArRegion
       end
       super
     end
+
+    def find_in_region(where_hash, region_number)
+      id_sequence_start = region_number * rails_sequence_factor
+      id_sequence_end = (region_number + 1) * rails_sequence_factor
+      self.where(where_hash).where(id: id_sequence_start...id_sequence_end).first
+    end
   end
 
   def miq_region
@@ -24,4 +30,9 @@ module ArRegion
   def region_description
     miq_region.description if miq_region
   end
+
+  def in_all_regions
+    self.class.where("id % ? = ?", self.class.rails_sequence_factor,  split_id.second)
+  end
+
 end

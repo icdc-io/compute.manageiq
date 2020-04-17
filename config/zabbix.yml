@@ -1,0 +1,4 @@
+---
+:url: http://zabbix-compute.icdc.io/api_jsonrpc.php
+:login: Admin
+:password: zabbix

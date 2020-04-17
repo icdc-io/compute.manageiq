@@ -1,3 +1,5 @@
 inherit_from:
-- https://raw.githubusercontent.com/ManageIQ/guides/master/.rubocop_base.yml
-- .rubocop_local.yml
+#- https://raw.githubusercontent.com/ManageIQ/guides/master/.rubocop_base.yml
+# put all local rubocop config into .rubocop_local.yml as it will be loaded by .rubocop_cc.yml as well
+#- .rubocop_local.yml
+  - .rubocop_todo.yml

@@ -4,6 +4,7 @@ class MiqGroup < ApplicationRecord
   TENANT_GROUP = "tenant"
 
   belongs_to :tenant
+  has_many   :services
   has_one    :entitlement, :dependent => :destroy, :autosave => true
   has_one    :miq_user_role, :through => :entitlement
   has_and_belongs_to_many :users
@@ -19,6 +20,10 @@ class MiqGroup < ApplicationRecord
   virtual_delegate :miq_user_role_name, :to => :entitlement, :allow_nil => true, :type => :string
   virtual_column :read_only,          :type => :boolean
   virtual_has_one :sui_product_features, :class_name => "Array"
+  virtual_column :combined_quotas, :type => :string
+  virtual_column :miq_user_role_name, :type => :string,  :uses => :miq_user_role
+  virtual_column :read_only,          :type => :boolean
+  virtual_has_one   :services_in_regions
 
   delegate :self_service?, :limited_self_service?, :to => :miq_user_role, :allow_nil => true
 
@@ -42,6 +47,10 @@ class MiqGroup < ApplicationRecord
   include TenancyMixin
   include CustomActionsMixin
   include ExternalUrlMixin
+  include AccountChargebackMixin
+
+  include ServiceChargebackMixin
+  include ProcessTasksMixin
 
   alias_method :current_tenant, :tenant
 
@@ -233,6 +242,10 @@ class MiqGroup < ApplicationRecord
     where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:description)]).eq(group.description.downcase)))
   end
 
+  def get_title
+    long_description.present? ? long_description : name
+  end
+
   def self.create_tenant_group(tenant)
     tenant_full_name = (tenant.ancestors.map(&:name) + [tenant.name] + [tenant.id.to_s]).join("/")
 
@@ -265,6 +278,11 @@ class MiqGroup < ApplicationRecord
     where(:id => miq_group_ids)
   end
 
+  def self.with_current_user_groups(user = nil)
+    current_user = user || User.current_user
+    current_user.tenant_admin_user? ? all : where(:id => current_user.miq_group_ids)
+  end
+
   def single_group_users?
     group_user_ids = user_ids
     return false if group_user_ids.empty?
@@ -280,6 +298,16 @@ class MiqGroup < ApplicationRecord
 
   def self.display_name(number = 1)
     n_('Group', 'Groups', number)
+  end
+  
+  def services_in_regions
+    get_services_in_regions do |group_in_region|
+      group_in_region.services
+    end
+  end
+
+  def combined_quotas
+    current_tenant.combined_quotas
   end
 
   private
@@ -307,5 +335,9 @@ class MiqGroup < ApplicationRecord
   # tell users that this group is goinga away - and the users should fix their current group
   def reset_current_group_for_users
     User.where(:current_group_id => id).each(&:change_current_group)
+  end
+
+  def reset_current_group_for_users
+    User.where(:id => user_ids, :current_group_id => id).each(&:change_current_group)
   end
 end

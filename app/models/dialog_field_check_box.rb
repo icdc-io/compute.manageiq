@@ -6,7 +6,7 @@ class DialogFieldCheckBox < DialogField
   end
 
   def initial_values
-    false
+    'f'
   end
 
   def script_error_values

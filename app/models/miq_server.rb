@@ -65,6 +65,11 @@ class MiqServer < ApplicationRecord
     h if h.to_s.hostname?
   end
 
+  def hostname
+    h = super
+    h if h.to_s.hostname?
+  end
+
   def starting_server_record
     self.started_on = self.last_heartbeat = Time.now.utc
     self.stopped_on = ""

@@ -439,6 +439,26 @@
         :description: Retire Services
         :feature_type: control
         :identifier: service_retire_now
+      - :name: Get Triggers
+        :description: Get Triggers
+        :feature_type: control
+        :identifier: triggers_view
+      - :name: Create Triggers
+        :description: Create Triggers
+        :feature_type: control
+        :identifier: triggers_create
+      - :name: Delete Triggers
+        :description: Delete Triggers
+        :feature_type: control
+        :identifier: triggers_delete
+      - :name: Disable
+        :description: Disable Triggers
+        :feature_type: control
+        :identifier: triggers_disable
+      - :name: Enable
+        :description: Enable Alerts
+        :feature_type: control
+        :identifier: triggers_enable
 
 # EmsCloud
 - :name: Cloud Providers
@@ -1115,6 +1135,12 @@
       :description: Change Password of Infrastructure Providers
       :feature_type: admin
       :identifier: ems_infra_change_password
+
+# Migration
+- :name: Migration
+  :description: Everything under Migration
+  :feature_type: node
+  :identifier: migration
 
 # Datacenters
 - :name: Datacenters
@@ -3115,21 +3141,46 @@
         :identifier: rbac_tenant_admin
         :hidden: false
         :children:
-        - :name: Add
-          :description: Add a Tenant/Project
+        - :name: Add Tenant
+          :description: Add a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_add
+        - :name: Add Project
+          :description: Add a Tenant
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_add
         - :name: Edit
-          :description: Edit a Tenant/Project
+          :description: Edit a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_edit
+        - :name: Edit (Project)
+          :description: Edit a project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_edit
         - :name: Delete
-          :description: Delete a Tenant/Project
+          :description: Delete a Tenant
           :feature_type: admin
           :hidden: false
           :identifier: rbac_tenant_delete
+        - :name: Delete (Project)
+          :description: Delete a project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_project_delete
+        - :name: Invite users
+          :description: Invite users to tenant or project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_invite_users
+        - :name: Exclude users
+          :description: Exclude users from tenant or project
+          :feature_type: admin
+          :hidden: false
+          :identifier: rbac_exclude_users
         - :name: Manage Quotas
           :description: Manage Tenant Quotas
           :feature_type: admin
@@ -3854,6 +3905,10 @@
     :feature_type: control
     :identifier: security_group_control
     :children:
+    - :name: Manage Policies
+      :description: Manage Policies of Middleware Servers
+      :feature_type: control
+      :identifier: middleware_server_protect
     - :name: Edit Tags
       :description: Edit Tags of Security Group
       :feature_type: control
@@ -5366,6 +5421,14 @@
         :description: Perform SmartState Analysis on VMs
         :feature_type: control
         :identifier: vm_scan
+      - :name: Reconfiguration
+        :description: Reconfigure VMs
+        :feature_type: control
+        :identifier: vm_reconfigure
+      - :name: Last metrics
+        :description: Get last metrics
+        :feature_type: control
+        :identifier: vm_last_metrics
       - :name: Check Compliance
         :description: Check Compliance of Last Known Configuration
         :feature_type: control
@@ -5430,6 +5493,10 @@
         :description: Open a web-based console for VMs
         :feature_type: control
         :identifier: vm_html5_console
+      - :name: Download remote viewer connection file
+        :description: Download VV console file (Ovirt, RHV)
+        :feature_type: control
+        :identifier: vm_console_file
       - :name: Console using VMRC
         :description: Open a VMRC console for VMs
         :feature_type: control
@@ -6518,11 +6585,16 @@
       - :name: Open Remote Console
         :description: Open Remote Console
         :feature_type: control
+        :identifier: sui_vm_console
         :identifier: sui_vm_html5_console
       - :name: Open VMware VMRC Console
         :description: Open Remote Console
         :feature_type: control
         :identifier: sui_vm_vmrc_console
+      - :name: Download remote viewer connection file
+        :description: Download remote viewer connection file (Ovirt, RHV)
+        :feature_type: control
+        :identifier: sui_vm_console_file
       - :name: Open Web Console
         :description: Open Web Console
         :feature_type: control
@@ -6629,3 +6701,177 @@
         :description: Order cart
         :feature_type: control
         :identifier: sui_cart_order
+  - :name: Reports
+    :description: Reports features
+    :feature_type: node
+    :identifier: sui_reports
+    :children:
+    - :name: View
+      :description: View reports
+      :feature_type: node
+      :identifier: sui_reports_view
+      :children:
+      - :name: Show resources
+        :description: Show reports
+        :feature_type: view
+        :identifier: sui_reports_resources_show
+      - :name: Show services
+        :description: Show reports
+        :feature_type: view
+        :identifier: sui_reports_services_show
+      - :name: Show chargeback
+        :description: Show chargeback in service report
+        :feature_type: view
+        :identifier: sui_reports_chargeback_show
+    - :name: Operate
+      :description: Reports Operations
+      :feature_type: node
+      :identifier: sui_reports_operations
+      :children:
+      - :name: Request Quotas
+        :description: Request Quotas
+        :feature_type: control
+        :identifier: sui_reports_request_quotas
+  - :name: Projects
+    :description: projects features
+    :feature_type: node
+    :identifier: sui_projects
+    :children:
+    - :name: View
+      :description: View Projects
+      :feature_type: node
+      :identifier: sui_projects_view
+      :children:
+      - :name: Show Projects
+        :description: Show projects
+        :feature_type: view
+        :identifier: sui_projects_resources_show
+    - :name: Operate
+      :description: Projects Operations
+      :feature_type: node
+      :identifier: sui_projects_operations
+      :children:
+      - :name: Create Projects
+        :description: Create Projects
+        :feature_type: control
+        :identifier: sui_projects_create
+      - :name: Edit Projects
+        :description: Edit Projects
+        :feature_type: control
+        :identifier: sui_projects_edit
+      - :name: Delete Projects
+        :description: Delete Projects
+        :feature_type: control
+        :identifier: sui_projects_delete
+      - :name: Change Tenant
+        :description: Move Service to Account/Project
+        :feature_type: control
+        :identifier: sui_services_change_tenant
+  - :name: Users
+    :description: users features
+    :feature_type: node
+    :identifier: sui_users
+    :children:
+    - :name: View
+      :description: View users
+      :feature_type: node
+      :identifier: sui_users_view
+      :children:
+      - :name: Show Users
+        :description: Show Users
+        :feature_type: view
+        :identifier: sui_users_resources_show
+    - :name: Operate
+      :description: Users Operations
+      :feature_type: node
+      :identifier: sui_users_operations
+      :children:
+      - :name: Add Users
+        :description: Add Users
+        :feature_type: control
+        :identifier: sui_users_create
+      - :name: Delete Users
+        :description: Delete Users
+        :feature_type: control
+        :identifier: sui_users_delete
+
+# Announcements (notification)
+- :name: Announcements
+  :description: Everything under Announcements
+  :feature_type: admin
+  :identifier: announcements
+  :children:
+  - :name: Create new Announcement
+    :description: Create a new announcement
+    :feature_type: admin
+    :identifier: announcement_new
+
+# ICDC Features
+- :name: ICDC Features
+  :description: ICDC Features
+  :feature_type: node
+  :identifier: icdc_features
+  :children:
+  - :name: Tickets
+    :description: Tickets
+    :feature_type: node
+    :identifier: tickets
+    :children:
+    - :name: View
+      :description: View Tickets
+      :feature_type: view
+      :identifier: tickets_view
+    - :name: Create
+      :description: Create Tickets
+      :feature_type: control
+      :identifier: tickets_create
+    - :name: Modify
+      :description: Modify Tickets
+      :feature_type: control
+      :identifier: tickets_modify
+    - :name: Close
+      :description: Close Tickets
+      :feature_type: control
+      :identifier: tickets_close
+  - :name: FAQ List
+    :description: FAQ List
+    :feature_type: view
+    :identifier: faq_list
+  - :name: Lotus
+    :description: lotus api requests
+    :feature_type: control
+    :identifier: lotus_api_request
+  - :name: Service Report
+    :description: Service report for feature UI Reports
+    :feature_type: node
+    :identifier: service_report_view
+    :children:
+    - :name: View Service Report
+      :description: View Service Report
+      :feature_type: view
+      :identifier: service_report
+    - :name: View Chargeback
+      :description: View Chargeback in Service Report
+      :feature_type: view
+      :identifier: service_report_chargeback
+  - :name: User Profile
+    :description: user`s profile features
+    :feature_type: node
+    :identifier: user_profile
+    :children:
+    - :name: View
+      :description: show user`s keys
+      :feature_type: view
+      :identifier: user_profiles
+    - :name: Add Key
+      :description: add key
+      :feature_type: control
+      :identifier: user_profiles_add_key
+    - :name: Delete Key
+      :description: delete key
+      :feature_type: control
+      :identifier: user_profiles_delete
+ # - :name: User Profile
+ #   :description: User Profile
+ #   :feature_type: view
+ #   :identifier: user_profiles

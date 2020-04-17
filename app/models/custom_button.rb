@@ -25,32 +25,18 @@ class CustomButton < ApplicationRecord
   PLAYBOOK_METHOD = "Order_Ansible_Playbook".freeze
 
   BUTTON_CLASSES = [
-    AvailabilityZone,
-    CloudNetwork,
-    CloudObjectStoreContainer,
-    CloudSubnet,
     CloudTenant,
     CloudVolume,
-    ContainerGroup,
-    ContainerImage,
     ContainerNode,
     ContainerProject,
-    ContainerTemplate,
-    ContainerVolume,
     EmsCluster,
     ExtManagementSystem,
     GenericObject,
     Host,
     MiqGroup,
     MiqTemplate,
-    NetworkRouter,
-    OrchestrationStack,
-    SecurityGroup,
     Service,
     Storage,
-    Switch,
-    Tenant,
-    User,
     Vm,
   ].freeze
 
@@ -94,10 +80,13 @@ class CustomButton < ApplicationRecord
   end
 
   def invoke(target, source = nil)
-    args = resource_action.automate_queue_hash(target, {"result_format" => 'ignore'}, User.current_user)
+    user = User.current_user
+    if user.nil? && target.class == Service
+      user = User.find(target.evm_owner_id)
+    end
+    args = resource_action.automate_queue_hash(target, {"result_format" => 'ignore'}, user)
 
     publish_event(source, target, args)
-    MiqQueue.put(queue_opts(target, args))
   end
 
   def publish_event(source, target, args = nil)

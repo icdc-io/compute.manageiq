@@ -68,6 +68,12 @@ class ServiceOrder < ApplicationRecord
     miq_requests.each do |request|
       request.update(:process => true)
       request.call_automate_event_queue("request_created")
+      # if User.find_by_userid('admin') && request.region_number != 99
+      #   request.approve('admin', 'Auto approved')
+      # else
+      #   request.update_attributes(:process => true)
+      #   request.call_automate_event_queue("request_created")
+      # end
     end
   end
 

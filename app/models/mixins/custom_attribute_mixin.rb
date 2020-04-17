@@ -45,6 +45,17 @@ module CustomAttributeMixin
       "Invalid custom attribute: '#{attribute}'.  #{CUSTOM_ATTRIBUTE_INVALID_NAME_WARNING}"
     end
 
+    def self.select_custom_attributes_for(cols)
+      custom_attributes = CustomAttributeMixin.select_virtual_custom_attributes(cols)
+      custom_attributes.map do |custom_attribute|
+        without_prefix         = custom_attribute.sub(CUSTOM_ATTRIBUTES_PREFIX, "")
+        name_val, section      = without_prefix.split(SECTION_SEPARATOR)
+        sanatized_column_alias = custom_attribute.tr('.', 'DOT').tr('/', 'BS').tr(':', 'CLN')
+
+        custom_attribute_arel(name_val, section, sanatized_column_alias)
+      end
+    end
+
     def self.add_custom_attribute(custom_attribute)
       return if respond_to?(custom_attribute)
       ActiveSupport::Deprecation.warn(invalid_custom_attribute_message(custom_attribute)) unless custom_attribute.to_s =~ CUSTOM_ATTRIBUTE_VALID_NAME_REGEXP

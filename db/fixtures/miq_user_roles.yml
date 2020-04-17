@@ -178,6 +178,8 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_vm_tags
   - sui_orders_view
   - sui_notifications
@@ -261,6 +263,9 @@
   - vm_check_compliance
   - vm_compare
   - vm_drift
+  - vm_console
+  - vm_drift
+  - vm_webmks_console
   - vm_cloud_explorer
   - vm_explorer
   - vm_infra_explorer
@@ -278,6 +283,8 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_vm_tags
   - sui_notifications
 
@@ -335,6 +342,7 @@
   - vm_show
   - vm_show_list
   - vm_guest_shutdown
+  - vm_reconfigure
   - vm_start
   - vm_stop
   - vm_suspend
@@ -345,6 +353,8 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_vm_start
   - sui_vm_stop
   - sui_vm_suspend
@@ -397,6 +407,8 @@
   - physical_server_view
   - physical_storage_view
   - physical_infra_topology_view
+  - host_new
+  - host_analyze
   - host_compare
   - host_drift
   - host_edit
@@ -473,6 +485,8 @@
   - sui_vm_stop
   - sui_vm_suspend
   - sui_vm_tags
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_notifications
 
 - :name: EvmRole-security
@@ -645,6 +659,8 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_vm_tags
   - sui_notifications
 
@@ -731,6 +747,8 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
   - sui_vm_tags
   - sui_orders_view
   - sui_orders_operations
@@ -991,11 +1009,13 @@
   - sui_vm_details_view
   - sui_vm_html5_console
   - sui_vm_vmrc_console
+  - sui_vm_console
+  - sui_vm_web_console
+  - sui_vm_tags
   - sui_vm_retire
   - sui_vm_start
   - sui_vm_stop
   - sui_vm_suspend
-  - sui_vm_tags
   - sui_orders_view
   - sui_orders_operations
   - sui_notifications
@@ -1204,6 +1224,7 @@
   - instance_view
   - vm_view
   - ems_container_ad_hoc_metrics
+  - monitor
   - monitor_alerts
   - alert_status
   - alert_action
@@ -1257,6 +1278,7 @@
   - ems_container_view
   - ems_infra_view
   - ems_physical_infra_view
+  - ems_middleware_view
   - ems_network_view
   - ems_object_storage_view
   - event_streams_view
@@ -1290,6 +1312,7 @@
   - physical_switch_view
   - physical_server_view
   - physical_storage_view
+  - planning
   - policy_log
   - provider_foreman_view
   - pxe_image_type_view
@@ -1316,7 +1339,380 @@
   - sui_orders_view
   - sui_notifications
 
-- :name: EvmRole-physical_infrastructure
-  :read_only: true
+- :name: ICDC-user
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user
   :miq_product_feature_identifiers:
-  - everything
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - storage_view
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - generic_object_view
+  - generic_object_definition_view
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - rbac_tenant_manage_quotas
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui_language
+  - sui_notifications
+  - sui_dashboard
+  - sui_services
+  - sui_vm
+  - sui_orders
+  - sui_svc_catalog
+  - sui_cart
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-member
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui_language
+  - sui_notifications
+  - sui_services
+  - sui_reports_view
+  - sui_reports_services_show
+  - sui_vm
+  - sui_svc_catalog
+  - sui_cart
+  - service_report
+  - service_report_view
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-admin
+  :read_only: false
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - rbac_tenant_add
+  - rbac_project_edit
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - rbac_tenant_manage_quotas
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - rbac_project_add
+  - rbac_project_edit
+  - rbac_project_delete
+  - rbac_invite_users
+  - rbac_exclude_users
+  - sui_language
+  - sui_notifications
+  - sui_reports_resources_show
+  - sui_reports_services_show
+  - sui_services
+  - sui_vm
+  - sui_cart
+  - sui_projects
+  - sui_users
+  - service_report
+  - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-billing
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user_or_group
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - rbac_tenant_manage_quotas
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui_language
+  - sui_notifications
+  - sui_reports
+  - sui_services
+  - sui_vm
+  - sui_cart
+  - sui_projects_view
+  - sui_users_view
+  - service_report_view
+  - service_report_chargeback
+  - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-project-admin
+  :read_only: false
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - rbac_invite_users
+  - rbac_exclude_users
+  - sui_language
+  - sui_notifications
+  - sui_reports_view
+  - sui_reports_services_show
+  - sui_services
+  - sui_vm
+  - sui_cart
+  - sui_users
+  - service_report_view
+  - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-project-member
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user_or_group
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui_language
+  - sui_notifications
+  - sui_services
+  - sui_reports_view
+  - sui_reports_services_show
+  - sui_vm
+  - sui_svc_catalog
+  - sui_cart
+  - service_report
+  - service_report_view
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete
+
+- :name: ICDC-project-billing
+  :read_only: false
+  :settings:
+    :restrictions:
+      :vms: :user_or_group
+  :miq_product_feature_identifiers:
+  - vm_explorer
+  - vm_infra_explorer
+  - vm_cloud_explorer
+  - st_catalog_view
+  - service_view
+  - service_edit
+  - service_reconfigure
+  - service_retire
+  - service_create
+  - service_retire_now
+  - my_settings_visuals
+  - my_settings_default_views
+  - provider_foreman_explorer
+  - all_vm_rules
+  - svc_catalog_accord
+  - rbac_user_view
+  - tasks
+  - rbac_role_view
+  - service_ownership
+  - miq_report_saved_reports_view
+  - miq_report_view
+  - miq_report_control
+  - triggers_view
+  - triggers_create
+  - triggers_delete
+  - triggers_disable
+  - triggers_enable
+  - generic_object_view
+  - generic_object_definition_view
+  - rbac_tenant_manage_quotas
+  - miq_request
+  - icdc_features
+  - rbac_group_view
+  - rbac_tenant_view
+  - sui_language
+  - sui_notifications
+  - sui_reports
+  - sui_services
+  - sui_vm
+  - sui_cart
+  - sui_projects_view
+  - sui_users_view
+  - service_report_view
+  - service_report_chargeback
+  - sui_services_change_tenant
+  - user_profiles
+  - user_profiles_add_key
+  - user_profiles_delete

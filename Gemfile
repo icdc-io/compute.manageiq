@@ -64,8 +64,9 @@ gem "optimist",                       "~>3.0",         :require => false
 gem "pg",                                              :require => false
 gem "pg-dsn_parser",                  "~>0.1.0",       :require => false
 gem "query_relation",                 "~>0.1.0",       :require => false
-gem "rails",                          "~>5.1.7"
+gem "rails",                          "=5.1.7"
 gem "rails-i18n",                     "~>5.x"
+gem "haikunator",                                      :require => false, :git => "https://github.com/usmanbashir/haikunator.git", :branch => "master"
 gem "rake",                           ">=12.3.3",      :require => false
 gem "rest-client",                    "~>2.0.0",       :require => false
 gem "ripper_ruby_parser",             "~>1.5.1",       :require => false
@@ -77,6 +78,13 @@ gem "sqlite3",                        "~>1.3.0",       :require => false
 gem "sync",                           "~>0.5",         :require => false
 gem "sys-filesystem",                 "~>1.3.1"
 gem "terminal",                                        :require => false
+#ICDC Gems
+gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "icdc_j"
+#gem "manageiq-providers-power_systems",                               :git => "https://git.icdc.io/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
+#gem "hmc-sdk-ruby",                                                   :git => "https://git.icdc.io/icdc-public/hmc-sdk-ruby.git", :branch => "master"
+gem 'manageiq-providers-power_systems', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+gem 'hmc-sdk-ruby', git: "https://git.icdc.io/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
+gem 'activeresource'
 
 # Modified gems (forked on Github)
 gem "rugged",                         "=0.28.2.2", :source => "http://rubygems.manageiq.org", :require => false
@@ -239,6 +247,7 @@ end
 #
 unless ENV["APPLIANCE"]
   group :development do
+    gem 'awesome_print'
     gem "foreman"
     gem "PoParser"
     gem "rubocop-performance", "~>1.3",    :require => false
@@ -262,7 +271,44 @@ unless ENV["APPLIANCE"]
   end
 
   group :development, :test do
+    gem "rubocop",             "~>0.69.0", :require => false
+    gem "rubocop-performance", "~>1.3", :require => false
     gem "parallel_tests"
     gem "rspec-rails", "~>3.9.0"
   end
 end
+
+#
+# Custom Gemfile modifications
+#
+# To develop a gem locally and override its source to a checked out repo
+#   you can use this helper method in Gemfile.dev.rb e.g.
+#
+# override_gem 'manageiq-ui-classic', :path => File.expand_path("../manageiq-ui-classic", __dir__)
+#
+def override_gem(name, *args)
+  if dependencies.any?
+    raise "Trying to override unknown gem #{name}" unless (dependency = dependencies.find { |d| d.name == name })
+    dependencies.delete(dependency)
+
+    calling_file = caller_locations.detect { |loc| !loc.path.include?("lib/bundler") }.path
+    gem(name, *args).tap do
+      warn "** override_gem: #{name}, #{args.inspect}, caller: #{calling_file}" unless ENV["RAILS_ENV"] == "production"
+    end
+  end
+end
+
+if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
+  #GIT_CRED - Openshift secret variable
+	override_gem 'manageiq-schema', git: "https://git.icdc.io/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
+	override_gem 'manageiq-api', git: "https://git.icdc.io/icdc/compute/miq/manageiq-api.git", branch: "icdc_g"
+	override_gem 'manageiq-automation_engine', git: "https://git.icdc.io/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_j"
+	override_gem 'manageiq-ui-classic', git: "https://git.icdc.io/icdc/compute/miq/manageiq-ui-classic.git", branch: "icdc_j"
+	override_gem 'manageiq-providers-ovirt', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_j"
+	override_gem 'manageiq-providers-power_systems', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+	override_gem 'hmc-sdk-ruby', git: "https://git.icdc.io/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
+end
+
+# Load other additional Gemfiles
+#   Developers can create a file ending in .rb under bundler.d/ to specify additional development dependencies
+Dir.glob(File.join(__dir__, 'bundler.d/*.rb')).each { |f| eval_gemfile(File.expand_path(f, __dir__)) }

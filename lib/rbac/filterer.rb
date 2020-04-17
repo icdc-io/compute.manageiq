@@ -59,7 +59,6 @@ module Rbac
       ResourcePool
       SecurityGroup
       Service
-      ServiceTemplate
       Storage
       Switch
       VmOrTemplate
@@ -128,18 +127,18 @@ module Rbac
       'CloudVolume'            => :descendant_ids,
       'ExtManagementSystem'    => :ancestor_ids,
       'MiqAeNamespace'         => :ancestor_ids,
-      'MiqGroup'               => :descendant_ids,
+      'MiqGroup'               => :iba_descendant_ids,
       'MiqRequest'             => :descendant_ids,
       'MiqRequestTask'         => nil, # tenant only
       'MiqTemplate'            => :ancestor_ids,
       'OrchestrationStack'     => nil,
       'Provider'               => :ancestor_ids,
-      'Service'                => :descendant_ids,
-      'ServiceTemplate'        => :ancestor_ids,
-      'ServiceTemplateCatalog' => :ancestor_ids,
-      'Tenant'                 => :descendant_ids,
-      'User'                   => :descendant_ids,
-      'Vm'                     => :descendant_ids
+      'Service'                => :icdc_sibling_ids,
+      'ServiceTemplate'        => :iba_ancestor_ids,
+      'ServiceTemplateCatalog' => :iba_ancestor_ids,
+      'Tenant'                 => :icdc_sibling_ids,
+      'User'                   => :iba_descendant_ids,
+      'Vm'                     => :iba_descendant_ids
     }
 
     # Classes inherited from these classes or mixins are allowing ownership feature on the target model,
@@ -169,7 +168,7 @@ module Rbac
       TENANT_ACCESS_STRATEGY[klass.base_model.to_s]
     end
 
-    # @param  options filtering options
+        # @param  options filtering options
     # @option options :targets       [nil|Array<Numeric|Object>|scope] Objects to be filtered
     #   - an nil entry uses the optional where_clause
     #   - Array<Numeric> list if ids. :class is required. results are returned as ids
@@ -448,7 +447,7 @@ module Rbac
       miq_group.present? && miq_group.self_service? && is_ownership_class && klass.respond_to?(:user_or_group_owned)
     end
 
-    def self_service_ownership_scope(user, miq_group, klass)
+    def self_service_ownership_scope(user, miq_group, klass, include_shared = true)
       return nil unless self_service_ownership_scope?(miq_group, klass)
 
       # for limited_self_service, use user's resources, not user.current_group's resources
@@ -456,14 +455,14 @@ module Rbac
       miq_group = nil if user && miq_group.limited_self_service?
 
       # Get the list of objects that are owned by the user or their LDAP group
-      klass.user_or_group_owned(user, miq_group).except(:order)
+      klass.user_or_group_owned(user, miq_group, include_shared).except(:order)
     end
 
-    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter)
+    def calc_filtered_ids(scope, user_filters, user, miq_group, scope_tenant_filter, include_shared = true)
       klass = scope.respond_to?(:klass) ? scope.klass : scope
       expression = miq_group.try(:entitlement).try(:filter_expression)
       expression.set_tagged_target(klass) if expression
-      u_filtered_ids = pluck_ids(self_service_ownership_scope(user, miq_group, klass))
+      u_filtered_ids = pluck_ids(self_service_ownership_scope(user, miq_group, klass, include_shared))
       b_filtered_ids = get_belongsto_filter_object_ids(klass, user_filters['belongsto'])
       m_filtered_ids = pluck_ids(get_managed_filter_object_ids(scope, expression || user_filters['managed']))
       d_filtered_ids = pluck_ids(matches_via_descendants(rbac_class(klass), user_filters['match_via_descendants'],
@@ -568,7 +567,11 @@ module Rbac
       user_or_group = miq_group || user
 
       if user_or_group.try!(:self_service?) && MiqUserRole != klass
-        scope.where(:id => klass == User ? user.id : miq_group.id)
+        if klass == User
+          scope.where(:userid => user.userid )
+        else
+          scope.where(:id => miq_group.id)
+        end
       else
         role = user_or_group.miq_user_role
         # hide creating admin group / roles from non-super administrators
@@ -593,7 +596,7 @@ module Rbac
     ##
     # Main scoping method
     #
-    def scope_targets(klass, scope, rbac_filters, user, miq_group)
+    def scope_targets(klass, scope, rbac_filters, user, miq_group, include_shared = true)
       # Results are scoped by tenant if the TenancyMixin is included in the class,
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
@@ -617,7 +620,7 @@ module Rbac
       end
 
       if apply_rbac_directly?(klass)
-        filtered_ids = calc_filtered_ids(scope, rbac_filters, user, miq_group, nil)
+        filtered_ids = calc_filtered_ids(scope, rbac_filters, user, miq_group, nil, include_shared)
         scope_by_ids(scope, filtered_ids)
       elsif apply_rbac_through_association?(klass)
         # if subclasses of MetricRollup or Metric, use the associated
@@ -628,7 +631,7 @@ module Rbac
           scope_tenant_filter = scope_to_tenant(associated_class, user, miq_group)
         end
 
-        filtered_ids = calc_filtered_ids(associated_class, rbac_filters, user, miq_group, scope_tenant_filter)
+        filtered_ids = calc_filtered_ids(associated_class, rbac_filters, user, miq_group, scope_tenant_filter, include_shared)
         scope_by_parent_ids(associated_class, scope, filtered_ids)
       elsif [MiqUserRole, MiqGroup, User].include?(klass)
         scope_for_user_role_group(klass, scope, miq_group, user, rbac_filters['managed'])
@@ -805,6 +808,21 @@ module Rbac
 
     def matches_search_filters?(obj, filter, tz)
       filter.nil? || filter.lenient_evaluate(obj, tz)
+    end
+
+    def scope_to_shared(klass, scope, user, miq_group)
+      tenant = miq_group.try(:current_tenant)
+      return nil if !tenant.nil? && tenant.project?
+
+      shared = klass.send(:user_shared, user)
+      shader_ids = pluck_ids(shared) unless shared.empty?
+      if shader_ids
+        tenant_ids = pluck_ids(scope_to_tenant(scope, user, miq_group))
+        filtered_ids = shader_ids + tenant_ids
+        scope.where(:id => filtered_ids.uniq)
+      else
+        nil
+      end
     end
   end
 end

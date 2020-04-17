@@ -1489,3 +1489,158 @@
   :example_text: Warning number of VMs allowed by Quota
   :default: true
   :single_value: "1"
+- :description: Migration Group
+  :entries:
+  - :description: Group 1
+    :read_only: "0"
+    :syntax: string
+    :name: group1
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Group 2
+    :read_only: "0"
+    :syntax: string
+    :name: group2
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Group 3
+    :read_only: "0"
+    :syntax: string
+    :name: group3
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: migration_group
+  :example_text: Group of VMs prepared for migration.
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
+- :description: Network Mapping
+  :entries:
+  - :description: oVirt Management Network
+    :read_only: "0"
+    :syntax: string
+    :name: ovirtmgmt
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: network_mapping
+  :example_text: Mapping between source network(s) and a destination network for migration.
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
+- :description: Storage Mapping
+  :entries:
+  - :description: Storage 1
+    :read_only: "0"
+    :syntax: string
+    :name: storage1
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Storage 2
+    :read_only: "0"
+    :syntax: string
+    :name: storage2
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: Storage 3
+    :read_only: "0"
+    :syntax: string
+    :name: storage3
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: storage_mapping
+  :example_text: Mapping between source storage(s) and a destination storage for migration.
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
+- :description: V2V - Transformation Host
+  :entries:
+  - :description: True
+    :read_only: "0"
+    :syntax: string
+    :name: "true"
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: False
+    :read_only: "0"
+    :syntax: string
+    :name: "false"
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: v2v_transformation_host
+  :example_text: Transformation Host role enabled for V2V.
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
+- :description: V2V - Transformation Method
+  :entries:
+  - :description: VDDK
+    :read_only: "0"
+    :syntax: string
+    :name: vddk
+    :example_text:
+    :default: true
+    :single_value: "1"
+  - :description: SSH
+    :read_only: "0"
+    :syntax: string
+    :name: ssh
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: v2v_transformation_method
+  :example_text: Transformation methods supported for V2V.
+  :parent_id: 0
+  :default: true
+  :single_value: "0"
+- :description: Transformation Status
+  :entries:
+  - :description: Migrated
+    :read_only: "0"
+    :syntax: string
+    :name: migrated
+    :example_text:
+    :default: true
+    :single_value: "1"
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: transformation_status
+  :example_text: VM has been migrated.
+  :parent_id: 0
+  :default: true
+  :single_value: "1"
+- :description: Project
+  :entries: []
+
+  :read_only: "0"
+  :syntax: string
+  :show: true
+  :name: project
+  :example_text: project
+  :parent_id: 0
+  :default: true
+  :single_value: "0"

@@ -20,6 +20,7 @@ class Host < ApplicationRecord
     "kubevirt"        => "KubeVirt",
     "vmware"          => "VMware",
     "openstack_infra" => "OpenStack Infrastructure",
+    "power_systems"   => "PowerSystems",
     "unknown"         => "Unknown",
     nil               => "Unknown",
   }.freeze
@@ -981,7 +982,7 @@ class Host < ApplicationRecord
       else
         _log.info("Discovered: #{ost_inspect(ost)}")
 
-        if %i(virtualcenter scvmm rhevm openstack_infra).any? { |ems_type| ost.hypervisor.include?(ems_type) }
+        if %i(virtualcenter scvmm rhevm openstack_infra power_systems).any? { |ems_type| ost.hypervisor.include?(ems_type) }
           ExtManagementSystem.create_discovered_ems(ost)
           return # only create ems instance, no host.
         end

@@ -1,5 +1,7 @@
 module Authenticator
+
   class Ldap < Base
+
     def self.proper_name
       'LDAP'
     end
@@ -24,6 +26,11 @@ module Authenticator
       create_user_from_ldap(username) { [default_group] }
     end
 
+    def lookup_by_identity(username, _request = nil)
+      super ||
+        find_or_create_by_ldap(username)
+    end
+
     def user_authorizable_without_authentication?
       true
     end
@@ -34,7 +41,7 @@ module Authenticator
       @ldap ||= ldap_bind(config[:bind_dn], config[:bind_pwd])
     end
 
-    # Unbound LDAP handle
+
     def miq_ldap
       @miq_ldap ||= MiqLdap.new(:auth => config)
     end
@@ -42,6 +49,13 @@ module Authenticator
     def ldap_bind(username, password)
       ldap = MiqLdap.new(:auth => config)
       ldap if ldap.bind(username, password)
+    end
+
+    def find_or_create_by_ldap(username)
+      username = miq_ldap.fqusername(username)
+      user = User.find_by_userid(username)
+      return user unless user.nil?
+      user = create_default_user(username)
     end
 
     def create_user_from_ldap(username)
@@ -74,11 +88,16 @@ module Authenticator
     def find_external_identity(username, _user_attrs, _membership_list)
       # Ldap will be used for authentication and role assignment
       _log.info("Bind DN: [#{config[:bind_dn]}]")
-      _log.info(" User FQDN: [#{username}]")
+      _log.info(" ldap obj: [#{ldap}]")
       lobj = ldap.get_user_object(username)
       _log.debug("User obj from LDAP: #{lobj.inspect}")
 
       lobj
+    end
+
+    def userprincipal_for(username)
+      lobj = find_external_identity(username)
+      User.find_by_userid(userid_for(lobj, username))
     end
 
     def userid_for(lobj, username)

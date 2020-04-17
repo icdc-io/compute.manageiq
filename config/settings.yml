@@ -93,6 +93,17 @@
   :history:
     :keep_drift_states: 6.months
     :purge_window_size: 10000
+:embedded_ansible:
+  :job_data_retention_days: 120
+  :docker:
+    :task_image_name: ansible/awx_task
+    :task_image_tag: latest
+    :web_image_name: ansible/awx_web
+    :web_image_tag: latest
+    :rabbitmq_image_name: rabbitmq
+    :rabbitmq_image_tag: 3
+    :memcached_image_name: memcached
+    :memcached_image_tag: alpine
 :ems:
 # provider specific settings are nested here, but they are in the provider repos
 # e.g.:
@@ -1014,6 +1025,8 @@
 :snapshots:
   :create_free_percent: 100
   :remove_free_percent: 100
+  :max_disk_size_gigabytes: 1000
+  :max_count: 3
 :ssl:
   :ssl_ca_file:
   :ssl_ca_path:

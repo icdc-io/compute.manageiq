@@ -33,18 +33,19 @@ class VmOrTemplate < ApplicationRecord
 
   VENDOR_TYPES = {
     # DB            Displayed
-    "azure"       => "Azure",
-    "azure_stack" => "AzureStack",
-    "vmware"      => "VMware",
-    "microsoft"   => "Microsoft",
-    "xen"         => "XenSource",
-    "parallels"   => "Parallels",
-    "amazon"      => "Amazon",
-    "redhat"      => "RedHat",
-    "openstack"   => "OpenStack",
-    "google"      => "Google",
-    "kubevirt"    => "KubeVirt",
-    "unknown"     => "Unknown"
+    "azure"         => "Azure",
+    "azure_stack"   => "AzureStack",
+    "vmware"        => "VMware",
+    "microsoft"     => "Microsoft",
+    "xen"           => "XenSource",
+    "parallels"     => "Parallels",
+    "amazon"        => "Amazon",
+    "redhat"        => "RedHat",
+    "openstack"     => "OpenStack",
+    "google"        => "Google",
+    "kubevirt"      => "KubeVirt",
+    "power_systems" => "PowerSystems",
+    "unknown"       => "Unknown"
   }
 
   POWER_OPS = %w(start stop suspend reset shutdown_guest standby_guest reboot_guest)
@@ -163,6 +164,7 @@ class VmOrTemplate < ApplicationRecord
   virtual_has_many   :lans,                                                  :uses => {:hardware => {:nics => :lan}}
   virtual_has_many   :child_resources,        :class_name => "VmOrTemplate"
 
+  has_one            :miq_provision_template, :through => "miq_provision", :source => "source", :source_type => "VmOrTemplate"
   virtual_belongs_to :parent_resource_pool,   :class_name => "ResourcePool", :uses => :all_relationships
 
   virtual_has_one   :direct_service,       :class_name => 'Service'
@@ -1557,6 +1559,18 @@ class VmOrTemplate < ApplicationRecord
 
   def ram_size_in_bytes_by_state
     ram_size_by_state * 1.megabyte
+  end
+
+  def num_cpu
+    hardware.try(:cpu_sockets) || 0
+  end
+
+  def num_disks
+    hardware.nil? ? 0 : hardware.disks.size
+  end
+
+  def num_hard_disks
+    hardware.nil? ? 0 : hardware.hard_disks.size
   end
 
   def has_rdm_disk

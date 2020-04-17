@@ -8,7 +8,15 @@ class Tenant < ApplicationRecord
 
   include ActiveVmAggregationMixin
   include CustomActionsMixin
+  include CustomAttributeMixin
+  include AccountChargebackMixin
+  include IbaRelationshipMixin
+  include ServiceChargebackMixin
+  include ProcessTasksMixin
+  include TenantTagsMixin
   include TenantQuotasMixin
+  include ResourceConsumptionMixin
+  include IcdcTenantMixin
   include ExternalUrlMixin
 
   acts_as_miq_taggable
@@ -30,7 +38,8 @@ class Tenant < ApplicationRecord
 
   has_many :tenant_quotas
   has_many :miq_groups
-  has_many :users, :through => :miq_groups
+  has_one  :default_users_group, -> { where("description LIKE ?", "g%") }, class_name: 'MiqGroup', dependent: :destroy
+  has_many :users, -> { distinct }, :through => :miq_groups
   has_many :ae_domains, :dependent => :destroy, :class_name => 'MiqAeDomain'
   has_many :miq_requests, :dependent => :destroy
   has_many :miq_request_tasks, :dependent => :destroy
@@ -40,6 +49,15 @@ class Tenant < ApplicationRecord
   has_many :miq_product_features, :dependent => :destroy
   has_many :service_template_tenants, :dependent => :destroy
   has_many :service_templates, :through => :service_template_tenants, :dependent => :destroy
+
+  virtual_has_one  :services_in_regions
+  virtual_has_one  :current_chargeback
+  virtual_has_one  :last_chargeback
+  virtual_has_one  :account
+  virtual_has_one  :children
+  virtual_has_one  :managers
+  virtual_has_many :custom_attributes
+
 
   belongs_to :default_miq_group, :class_name => "MiqGroup", :dependent => :destroy
   belongs_to :source, :polymorphic => true
@@ -59,18 +77,21 @@ class Tenant < ApplicationRecord
 
   virtual_column :parent_name,  :type => :string
   virtual_column :display_type, :type => :string
+  virtual_column :get_account_users, :type => :string
+  virtual_column :get_account, :type => :string
+  virtual_column :get_account_subnet, :type => :string
+  virtual_column :get_tenant_users, :type => :string
+  virtual_column :combined_quotas, :type => :string
+  virtual_attribute :project_users, :string
+  virtual_attribute :available_users, :string
+  virtual_attribute :available_roles, :string
 
   before_save :nil_blanks
-  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes
+  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group
   before_destroy :ensure_can_be_destroyed
 
-  def self.scope_by_tenant?
-    true
-  end
-
-  def self.with_current_tenant
-    current_tenant = User.current_user.current_tenant
-    where(:id => current_tenant.id)
+  api_relay_method :set_quotas do |options|
+    options
   end
 
   def self.tenant_id_clause(user_or_group)
@@ -133,6 +154,14 @@ class Tenant < ApplicationRecord
     tenant_attribute(:login_text, :custom_login_text)
   end
 
+  def get_account_users
+    self.users.map do |account_user|
+      user = account_user.as_json
+      user["group"] = self.miq_groups.select{|x| x.description.include?(".member")}.first.description
+      user
+    end
+  end
+
   def get_quotas
     tenant_quotas.each_with_object({}) do |q, h|
       h[q.name.to_sym] = q.quota_hash
@@ -166,14 +195,12 @@ class Tenant < ApplicationRecord
     end.reverse_merge(TenantQuota.quota_definitions)
   end
 
-  # Amount of quotas allocated to the immediate child tenants
   def allocated_quotas
     tenant_quotas.each_with_object({}) do |q, h|
       h[q.name.to_sym] = q.quota_hash.merge(:value => q.allocated)
     end.reverse_merge(TenantQuota.quota_definitions)
   end
 
-  # Amount of quotas available to be allocated to child tenants
   def available_quotas
     tenant_quotas.each_with_object({}) do |q, h|
       h[q.name.to_sym] = q.quota_hash.merge(:value => q.available)
@@ -186,9 +213,109 @@ class Tenant < ApplicationRecord
       q = tenant_quotas.send(scope_name).take || tenant_quotas.build(:name => scope_name, :value => 0)
       h[q.name.to_sym] = q.quota_hash
       h[q.name.to_sym][:allocated]   = q.allocated
-      h[q.name.to_sym][:available]   = q.available unless q.new_record?
+      h[q.name.to_sym][:available]   = q.new_record? ? 0 : q.available
       h[q.name.to_sym][:used]        = q.used
     end.reverse_merge(TenantQuota.quota_definitions)
+  end
+
+  def get_account
+    ancestors.each do |ancestor|
+      return ancestor if check_account(ancestor.tags) == 0
+    end
+    self
+  end
+  alias_method :account, :get_account
+
+  def check_account(tags)
+    return 0 if tags.find_index { |tag| /\/managed\/account\// =~ tag.name }
+  end
+
+  def get_account_subnet
+    network = []
+    get_account.tags.each do |tag|
+      tag_info = {}
+      if /\/managed\/networks\// =~ tag.name
+        tag_info["subnet"] = tag.categorization["name"]
+        tag_info["description"] = tag.categorization["description"]
+        network.push(tag_info)
+      end
+    end
+    network
+  end
+
+  def get_tenant_users
+    tenant_users = []
+    tenant_users = users
+    tenant_users.map do |tenant_user|
+      group = MiqGroup.find_by_id(tenant_user.current_group_id)
+      user = tenant_user.as_json
+      user["tags"] = tenant_user.tags
+      user["group"] = group.get_title
+      user
+    end
+  end
+
+  def self.scope_by_tenant?
+    true
+  end
+
+  def self.with_current_tenant
+    current_tenant = User.current_user.current_tenant
+    where(:id => current_tenant.id)
+  end
+
+  def self.tenant_id_clause(user_or_group)
+    strategy = Rbac.accessible_tenant_ids_strategy(self)
+    tenant = user_or_group.try(:current_tenant)
+    return [] if tenant.root?
+
+    tenant_ids = tenant.accessible_tenant_ids(strategy)
+
+    return if tenant_ids.empty?
+
+    {table_name => {:id => tenant_ids}}
+  end
+
+  def all_subtenants
+    self.class.descendants_of(self).where(:divisible => true)
+  end
+
+  def all_subprojects
+    self.class.descendants_of(self).where(:divisible => false)
+  end
+
+  def regional_tenants
+    self.class.regional_tenants(self)
+  end
+
+  def self.regional_tenants(tenant)
+    where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:name)]).eq(tenant.name.downcase)))
+  end
+
+  def accessible_tenant_ids(strategy = nil)
+    (strategy ? send(strategy) : []).append(id)
+  end
+
+  def name
+    tenant_attribute(:name, :company)
+  end
+
+  def parent_name
+    parent.try(:name)
+  end
+
+  def display_type
+    project? ? "Project" : "Tenant"
+  end
+
+  def login_text
+    tenant_attribute(:login_text, :custom_login_text)
+  end
+
+  def services_in_regions
+    get_services_in_regions do |tenant_in_region|
+      tenant_in_region.subtree.inject([]) { |services, desc| services + desc.services }
+    end
   end
 
   # @return [Boolean] Is this a default tenant?
@@ -273,6 +400,11 @@ class Tenant < ApplicationRecord
   #     [["tenant", 1], ["tenant/tenant2", 2]], ["tenant/tenant3", 3]]
   #     [["tenant/tenant2/project4", 4]]
   #   ]
+
+  def region
+    MiqRegion.find_by_region(split_id.first)
+  end
+
   def self.tenant_and_project_names
     all_tenants_and_projects = Tenant.in_my_region.select(:id, :ancestry, :divisible, :use_config_for_attributes, :name)
     tenants_by_id = all_tenants_and_projects.index_by(&:id)
@@ -316,6 +448,16 @@ class Tenant < ApplicationRecord
 
   def create_miq_product_features_for_tenant_nodes
     MiqProductFeature.seed_single_tenant_miq_product_features(self)
+  end
+  
+  def create_users_group
+    roles = %w(admin billing member)
+    roles.each do |role|
+      group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
+      group.save!
+      role = "project-#{role}" if self.project?
+      group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
+    end
   end
 
   private

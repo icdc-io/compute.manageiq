@@ -1,5 +1,6 @@
 require 'ancestry'
 require 'ancestry_patch'
+require 'zabbixapi'
 
 class Service < ApplicationRecord
   DEFAULT_PROCESS_DELAY_BETWEEN_GROUPS = 120
@@ -25,11 +26,14 @@ class Service < ApplicationRecord
 
   belongs_to :service_template # Template this service was cloned from
   belongs_to :tenant
+  belongs_to :miq_group
+  belongs_to :service_template               # Template this service was cloned from
 
   has_many :dialogs, -> { distinct }, :through => :service_template
   has_many :metric_rollups, :as => :resource
   has_many :metrics, :as => :resource
   has_many :vim_performance_states, :as => :resource
+  has_many :virtual_ips
 
   has_one :miq_request_task, :dependent => :nullify, :as => :destination
   has_one :miq_request, :through => :miq_request_task
@@ -44,6 +48,8 @@ class Service < ApplicationRecord
   virtual_has_many   :power_states, :uses => :all_vms
   virtual_has_many   :vms
   virtual_has_many   :direct_vms
+  virtual_total      :v_total_vms, :vms
+  virtual_has_many   :custom_attributes
 
   virtual_has_one    :chargeback_report
   virtual_has_one    :configuration_script
@@ -54,6 +60,14 @@ class Service < ApplicationRecord
   virtual_has_one    :user
 
   before_create :update_attributes_from_dialog
+  virtual_has_one    :chargeback_report
+  virtual_has_one    :configuration_script
+  virtual_has_one    :total_costs_bydate
+  virtual_has_one    :backup_scheduler
+  virtual_has_one    :reconfigure_dialog
+
+  before_validation :set_tenant_from_group
+  before_create     :apply_dialog_settings
 
   delegate :provision_dialog, :to => :miq_request, :allow_nil => true
   delegate :user, :to => :miq_request, :allow_nil => true
@@ -62,6 +76,8 @@ class Service < ApplicationRecord
 
   include CiFeatureMixin
   include CustomActionsMixin
+  include ServiceMixin
+  include OwnershipMixin
   include CustomAttributeMixin
   include DeprecationMixin
   include ExternalUrlMixin
@@ -72,9 +88,16 @@ class Service < ApplicationRecord
   include ProcessTasksMixin
   include ServiceMixin
   include TenancyMixin
+  include SupportsFeatureMixin
+  include Metric::CiMixin
+  include IcdcServiceScheduleMixin
+  include ZabbixAlertMixin
+  include IcdcServiceMixin
 
   extend InterRegionApiMethodRelay
 
+  include_concern 'Operations'
+  include_concern 'RetirementManagement'
   include_concern 'Aggregation'
   include_concern 'Operations'
   include_concern 'ResourceLinking'
@@ -82,9 +105,15 @@ class Service < ApplicationRecord
 
   virtual_total :v_total_vms, :vms, :arel => aggregate_hardware_arel("v_total_vms", vms_tbl[:id].count, :skip_hardware => true)
 
-  virtual_column :has_parent,   :type => :boolean
-  virtual_column :power_state,  :type => :string
-  virtual_column :power_status, :type => :string
+  virtual_column :has_parent,                               :type => :boolean
+  virtual_column :power_state,                              :type => :string
+  virtual_column :power_status,                             :type => :string
+  virtual_column :location,                                 :type => :string
+  virtual_column :license_type,                             :type => :string
+  virtual_column :license_cost,                             :type => :integer
+  virtual_column :get_user_subnets,                         :type => :string
+
+  validates :name, :presence => true
 
   validates :name, :presence => true
 
@@ -133,10 +162,27 @@ class Service < ApplicationRecord
       return 'on' if power_states_match?(:start)
       'off' if power_states_match?(:stop)
     end
+    ps = 'partial_on' if ps == 'on' && power_states.include?('off')
+    ps = 'partial_on' if ps == 'off' && power_states.include?('on')
+    ps
   end
 
   def power_status
     options[:power_status]
+  end
+
+  def license_type
+    request = service_resources.where(:resource_type => 'MiqRequest').first
+    MiqRequest.find_by_id(request.resource_id).options[:license_type] if request
+  end
+
+  def license_cost
+    request = service_resources.where(:resource_type => 'MiqRequest').first
+    MiqRequest.find_by_id(request.resource_id).options[:license_cost] if request
+  end
+
+  def get_user_subnets
+    evm_owner.get_user_subnets
   end
 
   def service_id
@@ -190,6 +236,10 @@ class Service < ApplicationRecord
     MiqPreloader.preload_and_map(subtree, :direct_vms)
   end
 
+  def backup_scheduler
+    BackupScheduler.where("resource_id = ?", self.id)
+  end
+
   def vms
     all_vms
   end
@@ -214,6 +264,7 @@ class Service < ApplicationRecord
   end
 
   def shutdown_guest
+    raise_request_stop_event
     queue_group_action(:shutdown_guest, last_index, -1, delay_for_action(last_index, :stop))
   end
 
@@ -388,8 +439,67 @@ class Service < ApplicationRecord
     user
   end
 
+  def actual_chargeback_reports(period)
+    case period
+    when 'current'
+     month = DateTime.now.month
+    when 'last'
+     month = 1.month.ago.month
+    when 'two_months'
+     return actual_chargeback_reports_monthly([DateTime.now.month, 1.month.ago.month])
+    else
+    end
+    results = chargeback_report[:results]
+    results.select! do |res|
+     res["start_date"].month == month
+    end
+    results.sort_by{ |res| res["start_date"] }.reverse!
+  end
+
+  def actual_chargeback_reports_monthly(chargeback_for)
+    results = chargeback_report[:results]
+    results.select! do |res|
+      chargeback_for.include? res["start_date"].month
+    end
+    results.sort_by{ |res| res["start_date"] }.reverse!
+  end
+
+  def total_costs_bydate(period = 'current')
+    grouped_results = actual_chargeback_reports(period).group_by { |r| r["start_date"] }
+    rolled_results = grouped_results.map do |start_date, one_date_results|
+      sum = 0
+      one_date_results.each do |res|
+        res.each do |key, value|
+          unless value.nil?
+            sum += value if key.end_with?('allocated_cost')
+          end
+        end
+      end
+      sum += license_cost.to_i if license_cost
+      { start_date: start_date, cost: sum}
+    end
+    rolled_results
+  end
+
+  def total_costs_monthly(period)
+    grouped_results = actual_chargeback_reports_monthly(period).group_by { |r| r["start_date"] }
+    rolled_results = grouped_results.map do |start_date, one_date_results|
+      sum = 0
+      one_date_results.each do |res|
+        res.each do |key, value|
+          unless value.nil?
+            sum += value if key.end_with?('allocated_cost')
+          end
+        end
+      end
+      sum += license_cost.to_i if license_cost
+      { start_date: start_date, cost: sum}
+    end
+    rolled_results
+  end
+
   def chargeback_report
-    report_result = MiqReportResult.find_by(:name => chargeback_report_name)
+    report_result = MiqReportResult.where(name: chargeback_report_name).where.not(last_run_on: nil).order("last_run_on DESC").first
     if report_result.nil?
       {:results => []}
     else
@@ -502,5 +612,50 @@ class Service < ApplicationRecord
 
   def automate_timeout_key(action)
     action.nil? ? :automate_timeout : "#{action.downcase}_automate_timeout".to_sym
+  end
+
+  def region
+    MiqRegion.find_by_region(region_id)
+  end
+
+  def location
+    reg = region.as_json
+    reg["full_name"]  = region.full_name
+    reg
+  end
+
+  def backups
+    backups_with_states
+  end
+
+  def backups_with_states
+    backups = []
+    regexp = /^bkp_([0-9_])+/
+    backups.push(self.generic_objects.select{ |b| regexp =~ b.name })
+    self.all_service_children.each do |bkp|
+      backups.push(bkp.generic_objects.select{ |b| regexp =~ b.name })
+    end
+    backups.flatten
+  end
+
+  def configuration_script
+  end
+
+  private
+
+  def apply_dialog_settings
+    dialog_options = options[:dialog] || {}
+
+    %w(dialog_service_name dialog_service_description).each do |field_name|
+      send(field_name, dialog_options[field_name]) if dialog_options.key?(field_name)
+    end
+  end
+
+  def dialog_service_name(value)
+    self.name = value if value.present?
+  end
+
+  def dialog_service_description(value)
+    self.description = value if value.present?
   end
 end

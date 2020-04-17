@@ -11,6 +11,10 @@ class DialogFieldRadioButton < DialogFieldSortedItem
     false
   end
 
+  def force_multi_value
+    false
+  end
+
   private
 
   def raw_values

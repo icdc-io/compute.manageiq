@@ -6,6 +6,13 @@ class MiqSchedule < ApplicationRecord
 
   validates :name, :uniqueness => {:scope => [:userid, :resource_type]}
   validates :name, :description, :resource_type, :run_at, :presence => true
+=begin ICDC-G ???
+  include ReservedMixin
+  reserve_attribute :resource_id, :big_integer
+
+  validates :name, :uniqueness => {:scope => [:userid, :towhat, :zone_id]}
+  validates :name, :description, :towhat, :run_at, :presence => true
+=end
   validate  :validate_run_at, :validate_file_depot
 
   before_save :set_start_time_and_prod_default
@@ -18,6 +25,7 @@ class MiqSchedule < ApplicationRecord
   belongs_to :miq_search
   belongs_to :resource, :polymorphic => true
   belongs_to :zone
+  belongs_to :schedulable, polymorphic: true
 
   scope :in_zone, lambda { |zone_name|
     includes(:zone).where("zones.name" => zone_name)
@@ -39,12 +47,18 @@ class MiqSchedule < ApplicationRecord
 
   SYSTEM_SCHEDULE_CLASSES = %w(MiqReport MiqAlert MiqWidget).freeze
   VALID_INTERVAL_UNITS = %w(minutely hourly daily weekly monthly once).freeze
-  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request).freeze
   IMPORT_CLASS_NAMES = %w[MiqSchedule].freeze
+  ALLOWED_CLASS_METHOD_ACTIONS = %w(db_backup db_gc automation_request delete_backups).freeze
 
   default_value_for :userid,  "system"
   default_value_for :enabled, true
   default_value_for(:zone_id) { MiqServer.my_server.zone_id }
+
+  def resource
+    # HACK: this should be a real relation, but for now it's using a reserve_attribute for backport reasons
+    return unless resource_id
+    towhat.safe_constantize.find_by(:id => resource_id)
+  end
 
   def set_start_time_and_prod_default
     run_at # Internally this will correct :start_time to UTC
@@ -114,7 +128,7 @@ class MiqSchedule < ApplicationRecord
         send(action, obj, at)
       rescue => err
         _log.error("[#{name}] Attempting to run action [#{action}] on target [#{obj.name}], #{err}")
-        # _log.log_backtrace(err)
+        _log.log_backtrace(err)
       end
     end
     update_attribute(:last_run_on, Time.now.utc)
@@ -137,8 +151,9 @@ class MiqSchedule < ApplicationRecord
       _log.warn("[#{name}] Filter is empty")
       return []
     end
-
-    Rbac.filtered(resource_type, :filter => my_filter)
+    params = {:filter => my_filter}
+    params[:userid] = userid if userid.present? && userid != "system"
+    Rbac.filtered(towhat, params)
   end
 
   def get_filter
@@ -200,6 +215,16 @@ class MiqSchedule < ApplicationRecord
     _log.info("Action [#{name}] has been run for target: [#{obj.name}]")
   end
 
+  def action_run_asu(klass, _at)
+    klass.run_asu
+    _log.info("Action [#{name}] has been run for target type: [#{klass}]")
+  end
+
+  def action_delete_backups(klass, _at)
+    klass.delete_outdated_backups
+    _log.info("Action [#{name}] has been run for target type: [#{klass}]")
+  end
+
   def action_scan(obj, _at)
     sched_action[:options] ||= {}
     obj.scan(userid)
@@ -219,6 +244,23 @@ class MiqSchedule < ApplicationRecord
   def action_generate_widget(obj, _at)
     obj.queue_generate_content
     _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.title}]")
+  end
+
+  def action_service_power_op(obj, at)
+    op = sched_action[:options]["power"]
+    if op == 'off'
+      obj.shutdown_guest
+    else
+      obj.start
+    end
+    _log.info("Action [#{name}] has been run for target type: [#{obj.class}] with name: [#{obj.name}]")
+  end
+
+  def action_service_backup(_obj, at)
+     uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "create" }
+     options = {"service_id" =>"#{schedulable_id}","backup_name"=>"Scheduled backup"}
+     user = User.find_by(userid: userid)
+     AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
   end
 
   def action_check_compliance(obj, _at)

@@ -45,6 +45,14 @@ class Chargeback
       [Time.current, @end_time].min
     end
 
+    def consumption_start
+      [@start_time, born_at].compact.max
+    end
+
+    def consumption_end
+      [Time.current, @end_time, resource.try(:retires_on)].compact.min
+    end
+
     private
 
     def hours_in_interval

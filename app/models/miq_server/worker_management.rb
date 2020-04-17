@@ -12,6 +12,7 @@ module MiqServer::WorkerManagement
   module ClassMethods
     def kill_all_workers
       svr = my_server(true)
+      _log.info("DBG AHR workers #{svr}")
       svr.kill_all_workers unless svr.nil?
     end
   end

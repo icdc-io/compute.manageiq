@@ -1,6 +1,6 @@
 class MiqRegion < ApplicationRecord
+  DEFAULT = 99
   belongs_to :maintenance_zone, :class_name => 'Zone', :inverse_of => false
-
   has_many :metrics,        :as => :resource # Destroy will be handled by purger
   has_many :metric_rollups, :as => :resource # Destroy will be handled by purger
   has_many :vim_performance_states, :as => :resource # Destroy will be handled by purger
@@ -309,9 +309,31 @@ class MiqRegion < ApplicationRecord
     n_('Region', 'Regions', number)
   end
 
+  def default?
+    region == DEFAULT
+  end
+
+  def self.default? region
+    region == DEFAULT
+  end
+
+  def full_name
+    tag = Tag.where("name ~* ?", ".*/#{name}$").first
+    (tag.nil?) ? name : Classification.find_by(tag_id: tag.id).description
+  end
+
+  def self.slaves_only
+    self.all.reject(&:default?)
+  end
+
   private
 
   def clear_my_region_cache
     MiqRegion.my_region_clear_cache
   end
+
+  def self.slave_regions
+    @@slave_regions ||= self.where.not(region: DEFAULT)
+  end
+
 end

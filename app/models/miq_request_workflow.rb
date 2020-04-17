@@ -1078,6 +1078,9 @@ class MiqRequestWorkflow
 
     storages = hosts.each_with_object({}) do |host, hash|
       host.writable_accessible_storages.each { |s| hash[s.id] = s }
+    #ICDC fix, skip nil value writable storages
+    #  host.writable_storages.select{|s| !s.nil?}.each { |s| hash[s.id] = s }
+    #end fix
     end.values
     selected_storage_profile_id = get_value(@values[:placement_storage_profile])
     if selected_storage_profile_id

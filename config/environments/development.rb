@@ -34,7 +34,8 @@ Vmdb::Application.configure do
   config.assets.compress = false
 
   # Expands the lines which load the assets
-  config.assets.debug = true
+  ## [ICDC] compile assets to speed up DEV environments
+  ## config.assets.debug = true
 
   config.assets.quiet = true
 

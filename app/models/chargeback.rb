@@ -139,6 +139,9 @@ class Chargeback < ActsAsArModel
   def new_chargeback_calculate_costs(consumption, rates)
     self.fixed_compute_metric = consumption.chargeback_fields_present if consumption.chargeback_fields_present
 
+    _log.info("DBG chargeback caluclate cost consumption #{consumption}")
+    _log.info("DBG chargeback caluclate cost consumption #{rates}")
+
     rates.each do |rate|
       plan = ManageIQ::Showback::PricePlan.find_or_create_by(:description => rate.description,
                                                              :name        => rate.description,
@@ -214,6 +217,81 @@ class Chargeback < ActsAsArModel
     end
   end
 
+  def calculate_uptime(consumption)
+    uptime = 0
+    for rollup in JSON.parse(consumption.to_json)["rollup_array"]
+      uptime += 1 if rollup[3] #cpu_usage_rate_average metric, always > 0 if vm was powered on during any hour
+    end
+    uptime
+  end
+
+  def get_disk_type(consumption)
+    disks = consumption.resource.disks
+    res = ""
+    slow_disk_size = fast_disk_size = medium_disk_size = 0
+
+    disks.each do |disk|
+      next unless  disk.device_type.eql? "disk"
+      #FIX ICDC-G
+      if !Storage.find_by_id(disk.storage_id).nil? #We have LUN disks, wich does not store in table storages, need to find permanen solution for this disk type
+      tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type%')
+      return res if tags.empty?
+      size = disk.size / 1.gigabyte
+      case Classification.find_by_tag_id(tags.first.id).description
+      when "Fast"
+        fast_disk_size += size
+      when "Medium"
+        medium_disk_size += size
+      when "Slow"
+        slow_disk_size += size
+      end
+     end
+   end
+   res += "Fast : #{fast_disk_size}; " unless fast_disk_size == 0
+   res += "Medium : #{medium_disk_size}; " unless medium_disk_size == 0
+   res += "Slow : #{slow_disk_size};" unless slow_disk_size == 0
+   res
+  end
+
+  def get_disk_type_proxy(consumption)
+    disks = consumption.resource.disks
+    res_f = res_s = res_m = res_b = 0
+    backup = false
+    return [res_f, res_s, res_m, res_b] unless disks
+    disks.each do |disk|
+      next unless  disk.device_type.eql? "disk"
+      if !Storage.find_by_id(disk.storage_id).nil?
+        if tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/storage_type/%') || tags = Storage.find_by_id(disk.storage_id).tags.where("name LIKE ?", '/managed/vm_disk_type/%')
+          return [res_f, res_s, res_m, res_b] if tags.empty?
+          for x in Storage.find_by_id(disk.storage_id).tags
+          if x.name == '/managed/storage_type/15k'
+            res_f += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/10k'
+            res_m += disk.size / 1.gigabyte
+          elsif x.name == '/managed/storage_type/7k'
+            res_s += disk.size / 1.gigabyte
+          elsif x.name == '/managed/vm_disk_type/backup_disk'
+            backup = true
+            res_b += disk.size / 1.gigabyte
+          end
+        end
+      end
+    end
+  end
+    res_s = 0 if backup
+    return [res_f, res_m, res_s, res_b]
+  end
+
+  def get_backups_size(service)
+    return 0 unless service.is_a?(Service)
+    begin
+      service.backups.select{ |b| !b.error && !b.terminated }.collect{ |x| x.template.first.allocated_disk_storage.to_i / 1.gigabyte }.sum
+    rescue => e
+      _log.info("AHR reports can't find backup template for service #{service.id}")
+      0
+    end
+  end
+
   def self.report_cb_model(model)
     model.gsub(/^(Chargeback|Metering)/, "")
   end
@@ -235,7 +313,7 @@ class Chargeback < ActsAsArModel
 
     static_cols       = report_static_cols
     static_cols      -= ["image_name"] if group_by == "project"
-    static_cols      -= ["vm_name"] if group_by == "date-only"
+    static_cols      -= ["vm_name", "service_name", "service_id"] if group_by == "date-only"
     static_cols       = group_by == "tag" ? [report_tag_field] : static_cols
     static_cols       = group_by == "label" ? [report_label_field] : static_cols
     static_cols       = group_by == "tenant" ? ['tenant_name'] : static_cols
@@ -267,6 +345,8 @@ class Chargeback < ActsAsArModel
   end
 
   def self.load_custom_attributes_for(cols)
+    _log.info("DBG chargeback class #{self.to_s}")
+    return if self.to_s == 'ChargebackAccount'
     chargeback_klass = report_cb_model(self.to_s).safe_constantize
     chargeback_klass.load_custom_attributes_for(cols)
     cols.each do |x|

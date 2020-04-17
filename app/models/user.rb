@@ -1,5 +1,6 @@
 class User < ApplicationRecord
   include RelationshipMixin
+  include IbaRelationshipMixin
   acts_as_miq_taggable
   has_secure_password
   include CustomAttributeMixin
@@ -10,6 +11,17 @@ class User < ApplicationRecord
 
   before_destroy :check_reference, :prepend => true
 
+  include UserAccountChargebackMixin
+  include AccountChargebackMixin
+  include ProcessTasksMixin
+  include TagsEmailsMixin
+  include ResourceConsumptionMixin
+  include ZabbixAlertMixin
+  extend InterRegionApiMethodRelay
+  include IcdcUserMixin
+
+  # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective, Rails/SkipsModelValidations
+  #
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
   has_many   :miq_requests, :foreign_key => :requester_id
@@ -20,6 +32,7 @@ class User < ApplicationRecord
   has_many   :miq_widget_sets, :as => :owner, :dependent => :destroy
   has_many   :miq_reports, :dependent => :nullify
   has_many   :service_orders, :dependent => :nullify
+  has_many   :tenants, -> { distinct }, :through => :miq_groups
   has_many   :owned_shares, :class_name => "Share"
   has_many   :notification_recipients, :dependent => :delete_all
   has_many   :notifications, :through => :notification_recipients
@@ -27,6 +40,7 @@ class User < ApplicationRecord
   has_many   :unseen_notifications, :through => :unseen_notification_recipients, :source => :notification
   has_many   :authentications, :foreign_key => :evm_owner_id, :dependent => :nullify, :inverse_of => :evm_owner
   belongs_to :current_group, :class_name => "MiqGroup"
+
   has_and_belongs_to_many :miq_groups
   scope      :superadmins, lambda {
     joins(:miq_groups => {:miq_user_role => :miq_product_features})
@@ -34,17 +48,23 @@ class User < ApplicationRecord
   }
 
   virtual_has_many :active_vms, :class_name => "VmOrTemplate"
-
+  virtual_has_one  :services_chargeback
+  virtual_has_one  :tenant_quota
+  virtual_has_one  :last_chargeback
+  virtual_has_one  :current_chargeback
+  virtual_has_one  :managed_tenants
+  virtual_has_many :generic_objects
+  virtual_attribute :projects, :string
   delegate   :miq_user_role, :current_tenant, :get_filters, :has_filters?, :get_managed_filters, :get_belongsto_filters,
              :to => :current_group, :allow_nil => true
-  delegate   :super_admin_user?, :request_admin_user?, :self_service?, :limited_self_service?, :report_admin_user?, :only_my_user_tasks?,
+  delegate   :super_admin_user?, :admin_user?, :tenant_admin_user?, :request_admin_user?, :self_service?, :limited_self_service?, :report_admin_user?, :only_my_user_tasks?,
              :to => :miq_user_role, :allow_nil => true
 
-  validates_presence_of   :name, :userid
-  validates :userid, :unique_within_region => {:match_case => false}
+  validates :name, :userid, :presence => true
+  validates :userid, :uniqueness => {:conditions => -> { in_my_region } }
   validates :email, :format => {:with => MoreCoreExtensions::StringFormats::RE_EMAIL,
                                 :allow_nil => true, :message => "must be a valid email address"}
-  validates_inclusion_of  :current_group, :in => proc { |u| u.miq_groups }, :allow_nil => true
+  validates :current_group, :inclusion => { :in => proc { |u| u.miq_groups }, :allow_nil => true }
 
   # use authenticate_bcrypt rather than .authenticate to avoid confusion
   # with the class method of the same name (User.authenticate)
@@ -61,11 +81,18 @@ class User < ApplicationRecord
                              .select(:id))
   end
 
+  serialize :settings, Hash # Implement settings column as a hash
+  default_value_for(:settings) { {} }
+
   def self.scope_by_tenant?
     true
   end
 
-  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:descendant_ids => :descendants, :ancestor_ids => :ancestors}.freeze
+  def self.admin
+    @admin ||= in_my_region.find_by(:userid => 'admin')
+  end
+
+  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants, :iba_sibling_ids => :iba_siblings, :icdc_sibling_ids => :icdc_siblings}.freeze
 
   def self.tenant_id_clause(user_or_group)
     strategy = Rbac.accessible_tenant_ids_strategy(self)
@@ -76,9 +103,12 @@ class User < ApplicationRecord
 
     users_ids = accessible_tenants.collect(&:user_ids).flatten + tenant.user_ids
 
+    users_userids = User.find(users_ids).map(&:userid)
+    ids = User.where(:userid => users_userids).map(&:id)
+
     return if users_ids.empty?
 
-    {table_name => {:id => users_ids}}
+    {table_name => {:id => ids}}
   end
 
   def self.lookup_by_userid(userid)
@@ -124,6 +154,11 @@ class User < ApplicationRecord
   before_validation :nil_email_field_if_blank
   before_validation :dummy_password_for_external_auth
   before_destroy :destroy_subscribed_widget_sets
+  before_destroy :destroy_zabbix_host
+
+  def generic_objects
+    service_resources.where(:resource_type => 'GenericObject').includes(:resource).collect(&:resource)
+  end
 
   def check_reference
     present_ref = []
@@ -142,6 +177,12 @@ class User < ApplicationRecord
       desired_group = miq_groups.detect { |g| g.description == group_description }
       desired_group ||= MiqGroup.in_region(region_id).find_by(:description => group_description) if super_admin_user?
       self.current_group = desired_group if desired_group
+    end
+  end
+
+  def destroy_zabbix_host
+    unless my_region_number == 99
+      remove_zabbix_host_by_owner(self)
     end
   end
 
@@ -164,14 +205,18 @@ class User < ApplicationRecord
     end
     if auth.authenticate(userid, oldpwd)
       self.password = newpwd
-      self.save!
+      save!
     end
   end
 
   def ldap_group
     current_group.try(:description)
   end
-  alias_method :miq_group_description, :ldap_group
+  alias miq_group_description ldap_group
+
+  def set_current_group(data)
+    update_attribute(:current_group, MiqGroup.find(data["current_group"]["id"]))
+  end
 
   def role_allows?(options = {})
     Rbac.role_allows?(options.merge(:user => self))
@@ -183,6 +228,50 @@ class User < ApplicationRecord
 
   def miq_user_role_name
     miq_user_role.try(:name)
+  end
+
+  def services_chargeback
+    user = User.current_user
+    priority_tenant = self.class.priority_tenant_for(user)
+
+    if priority_tenant.nil?
+      user.current_group.tenant.services_chargeback(user)
+    else
+      priority_tenant.services_chargeback
+    end
+  end
+
+  def self.priority_tenant_for(user)
+    Tenant.in_my_region.find_tagged_with(:any =>
+      ["manager/#{email2tag(user.userid)}"], :ns => "/managed")
+          .min { |tenant1, tenant2| tenant1.depth <=> tenant2.depth }
+  end
+
+  def email2tag
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
+  end
+
+  def managed_tenants
+    res = []
+    managed_tenants = Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], :ns => "/managed")
+    managed_tenants.each do |tenant|
+      res.push(:id => tenant.id, :region_name => tenant.region.name)
+    end
+    res
+  end
+
+  def managed_tenant
+    Tenant.find_tagged_with(:any =>
+      ["manager/#{email2tag}"], :ns => "/managed")
+  end
+
+  def current_chargeback
+    services_chargebacks('current').first || {:start_date => Date.today.at_beginning_of_month, :cost => 0}
+  end
+
+  def last_chargeback
+    services_chargebacks('last').first || {:start_date => Date.today.at_beginning_of_month - 1.month, :cost => 0}
   end
 
   def self.authenticator(username = nil)
@@ -214,8 +303,7 @@ class User < ApplicationRecord
 
   def get_expressions(db = nil)
     sql = ["((search_type=? and search_key is null) or (search_type=? and search_key is null) or (search_type=? and search_key=?))",
-           'default', 'global', 'user', userid
-          ]
+           'default', 'global', 'user', userid]
     unless db.nil?
       sql[0] += "and db=?"
       sql << db.to_s
@@ -252,6 +340,24 @@ class User < ApplicationRecord
     userid == "admin"
   end
 
+  def icdc_manager?
+    self.class.icdc_manager?(userid)
+  end
+
+  def self.icdc_manager?(userid)
+    ["ICDC-admin", "ICDC-billing"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
+  end
+
+  def self.missing_user_features(db_user)
+    if !db_user
+      "User"
+    elsif !db_user.current_group
+      "Group"
+    elsif !db_user.current_group.miq_user_role
+      "Role"
+    end
+  end
+
   def subscribed_widget_sets
     MiqWidgetSet.subscribed_for_user(self)
   end
@@ -279,11 +385,24 @@ class User < ApplicationRecord
   end
 
   def self.super_admin
-    in_my_region.find_by_userid("admin")
+    in_my_region.find_by(:userid => "admin")
   end
 
   def self.current_tenant
     current_user.try(:current_tenant)
+  end
+
+  def self.with_user_group(user, group, &block)
+    return yield if user.nil?
+
+    user = User.find(user) unless user.kind_of?(User)
+    if group&.kind_of?(MiqGroup)
+      user.current_group = group
+    elsif group != user.current_group_id
+      group = MiqGroup.find_by(:id => group)
+      user.current_group = group if group
+    end
+    User.with_user(user, &block)
   end
 
   # Save the current user from the session object as a thread variable to allow lookup from other areas of the code
@@ -296,18 +415,6 @@ class User < ApplicationRecord
   ensure
     Thread.current[:user]   = saved_user
     Thread.current[:userid] = saved_userid
-  end
-
-  def self.with_user_group(user, group, &block)
-    return yield if user.nil?
-    user = User.find(user) unless user.kind_of?(User)
-    if group && group.kind_of?(MiqGroup)
-      user.current_group = group
-    elsif group != user.current_group_id
-      group = MiqGroup.find_by(:id => group)
-      user.current_group = group if group
-    end
-    User.with_user(user, &block)
   end
 
   def self.current_user=(user)
@@ -329,20 +436,16 @@ class User < ApplicationRecord
     includes(:miq_groups).where(:miq_groups => {:id => miq_group_ids})
   end
 
-  def self.missing_user_features(db_user)
-    if !db_user
-      "User"
-    elsif !db_user.current_group
-      "Group"
-    elsif !db_user.current_group.miq_user_role
-      "Role"
-    end
+  def self.with_current_user_groups(user = nil)
+    user ||= current_user
+    user.tenant_admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
   end
 
   def self.seed
     seed_data.each do |user_attributes|
       user_id = user_attributes[:userid]
-      next if in_my_region.find_by_userid(user_id)
+      next if in_my_region.find_by(:userid => user_id)
+
       log_attrs = user_attributes.slice(:name, :userid, :group)
       _log.info("Creating user with parameters #{log_attrs.inspect}")
 
@@ -366,4 +469,15 @@ class User < ApplicationRecord
     File.exist?(seed_file_name) ? YAML.load_file(seed_file_name) : []
   end
   private_class_method :seed_data
+
+  def self.email2tag(email)
+    email.gsub(/[^A-Za-z0-9]/, '_').downcase
+  end
+
+  def projects
+    managed_projects = []
+    managed_projects << (current_tenant.project? ? current_tenant.parent : current_tenant)
+    managed_projects << (icdc_manager? ? current_tenant.all_subprojects : tenants.select(&:project?))
+    managed_projects.flatten
+  end
 end

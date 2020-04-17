@@ -16,6 +16,7 @@ module MiqServer::WorkerManagement::Monitor::Kill
     # This is called very early from evm_application and ensures we attempt to call MiqWorker#kill
     # to remove the problematic rows, and their in flight queue messages.
     bad_workers = miq_workers.where.not(:type => MiqWorker.descendants.map(&:name))
+    _log.info("DBG AHR bad workers #{bad_workers.inspect}")
     if bad_workers.size.positive?
       begin
         MiqWorker.inheritance_column = "__disabled"

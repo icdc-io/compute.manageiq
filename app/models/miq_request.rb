@@ -1,5 +1,6 @@
 class MiqRequest < ApplicationRecord
   extend InterRegionApiMethodRelay
+  include QuotaApproveRequestMixin
 
   ACTIVE_STATES = %w(active queued)
   REQUEST_UNIQUE_KEYS = %w(id state status created_on updated_on type).freeze
@@ -114,7 +115,7 @@ class MiqRequest < ApplicationRecord
       :VmRetireRequest                     => {
         :vm_retire => N_("VM Retire")
       },
-    },
+    }
   }.freeze
 
   REQUEST_TYPES_BACKEND_ONLY = {
@@ -139,7 +140,7 @@ class MiqRequest < ApplicationRecord
     joins(:miq_approvals).where("miq_approvals.reason LIKE (?)", "#{reason[:start] ? '%' : ''}#{sanitize_sql_like(reason[:content])}#{reason[:end] ? '%' : ''}")
   end
 
-  def self.user_or_group_owned(user, miq_group)
+  def self.user_or_group_owned(user, miq_group, include_shared = true)
     if user && miq_group
       user_owned(user).or(group_owned(miq_group))
     elsif user

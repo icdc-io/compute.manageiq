@@ -39,7 +39,7 @@ class MiqWorkerType < ApplicationRecord
 
   private_class_method def self.seed_worker(klass)
     instance = find_or_initialize_by(:worker_type => klass.name)
-
+    _log.info("DBG AHR work #{instance} :: #{klass}")
     instance.update!(
       :bundler_groups => klass.bundler_groups,
       :kill_priority  => klass.kill_priority

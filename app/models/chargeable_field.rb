@@ -16,7 +16,7 @@ class ChargeableField < ApplicationRecord
 
   belongs_to :detail_measure, :class_name => 'ChargebackRateDetailMeasure', :foreign_key => :chargeback_rate_detail_measure_id
 
-  validates :metric, :uniqueness => true, :presence => true
+  validates :metric, :uniqueness => true, :presence => true, if: proc { |cf| cf.class.in_my_region.exists?(id: cf.id) }
   validates :group, :source, :presence => true
 
   def showback_measure
@@ -88,6 +88,18 @@ class ChargeableField < ApplicationRecord
     group == 'metering' && source == 'used'
   end
 
+  def self.cols_on_metric_rollup
+    (%w(id tag_names resource_id) + chargeable_cols_on_metric_rollup).uniq
+  end
+
+  def self.col_index(column)
+    @rate_cols ||= {}
+    column = VIRTUAL_COL_USES[column] || column
+    @rate_cols[column] ||= cols_on_metric_rollup.index(column.to_s)
+  end
+
+  private
+
   def rate_name
     "#{group}_#{source}"
   end
@@ -113,8 +125,8 @@ class ChargeableField < ApplicationRecord
   end
 
   def self.seed
-    measures = ChargebackRateDetailMeasure.all.index_by(&:name)
-    existing = ChargeableField.all.index_by(&:metric)
+    measures = ChargebackRateDetailMeasure.in_my_region.index_by(&:name)
+    existing = ChargeableField.in_my_region.index_by(&:metric)
     seed_data.each do |f|
       measure = f.delete(:measure)
       if measure

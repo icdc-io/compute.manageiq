@@ -141,5 +141,11 @@ module Vmdb
     def content_directories(engine, subfolder)
       Dir.glob(engine.root.join("content", subfolder, "*"))
     end
+
+    def register_ansible_content(engine)
+      registered_content_directories(engine, "ansible") do |content_directory|
+        @registered_ansible_content << AnsibleContent.new(content_directory)
+      end
+    end
   end
 end

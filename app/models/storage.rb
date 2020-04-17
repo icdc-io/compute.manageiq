@@ -95,6 +95,14 @@ class Storage < ApplicationRecord
     [ext_management_system].compact
   end
 
+  def ext_management_systems_with_authentication_status_ok
+    ext_management_systems.select(&:authentication_status_ok?)
+  end
+
+  def ext_management_systems_with_authentication_status_ok_in_zone(zone_name)
+    ext_management_systems_with_authentication_status_ok.select { |ems| ems.my_zone == zone_name }
+  end
+
   def storage_clusters
     parents.select { |parent| parent.kind_of?(StorageCluster) }
   end

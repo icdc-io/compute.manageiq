@@ -36,6 +36,10 @@ module CustomActionsMixin
     generic_custom_buttons.select { |button| button.parent.nil? } + direct_custom_buttons
   end
 
+  def all_custom_buttons
+    generic_custom_buttons.select { |button| button } + direct_custom_buttons
+  end
+
   def direct_custom_buttons
     CustomButton.buttons_for(self).select { |b| b.parent.nil? }
   end
