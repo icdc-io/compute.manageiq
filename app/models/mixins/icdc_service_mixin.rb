@@ -115,7 +115,7 @@ module IcdcServiceMixin
   end
 
   def find_project_tag
-    tags(:ns => "/managed/project/").first&.classification&.name
+    tags.where("name LIKE?", "%/project/%").first&.classification&.name
   end
 
   def create_porject_tag

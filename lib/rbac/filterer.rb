@@ -220,6 +220,7 @@ module Rbac
       include_for_find  = options[:include_for_find]
       references        = options.fetch(:references) { include_for_find }
       search_filter     = options[:filter]
+      include_shared    = options[:include_shared] ? ActiveRecord::Type::Boolean.new.cast(options[:include_shared]) : true
 
       limit             = options[:limit]  || targets.try(:limit_value)
       offset            = options[:offset] || targets.try(:offset_value)
@@ -272,7 +273,7 @@ module Rbac
       # for belongs_to filters, scope_targets uses scope to make queries. want to remove limits for those.
       # if you note, the limits are put back into scope a few lines down from here
       scope = scope.except(:offset, :limit, :order)
-      scope = scope_targets(klass, scope, user_filters, user, miq_group)
+      scope = scope_targets(klass, scope, user_filters, user, miq_group, include_shared)
               .where(conditions).where(sub_filter).where(where_clause).where(exp_sql).where(ids_clause)
               .includes(include_for_find).includes(exp_includes)
               .order(order)
@@ -601,11 +602,14 @@ module Rbac
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
+        shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
         scope = scope.with_additional_tenants if scope_to_additional_tenants?(klass) # for eager load
 
         tenant_scope = scope_to_tenant(scope, user, miq_group)
 
-        scope = if scope_to_additional_tenants?(klass)
+        scope = if shared
+                  shared
+                elsif scope_to_additional_tenants?(klass)
                   tenant_scope.or(scope_to_additional_tenants(scope, user, miq_group))
                 else
                   tenant_scope
