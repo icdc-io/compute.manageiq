@@ -319,7 +319,6 @@ module Rbac
       end
 
       attrs[:auth_count] = auth_count unless options[:skip_counts]
-
       return targets, attrs
     rescue ActiveRecord::EagerLoadPolymorphicError
       raise Rbac::PolymorphicError
@@ -603,16 +602,13 @@ module Rbac
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
         shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
-        scope = scope.with_additional_tenants if scope_to_additional_tenants?(klass) # for eager load
-
-        tenant_scope = scope_to_tenant(scope, user, miq_group)
 
         scope = if shared
                   shared
                 elsif scope_to_additional_tenants?(klass)
-                  tenant_scope.or(scope_to_additional_tenants(scope, user, miq_group))
+                  scope.with_additional_tenants
                 else
-                  tenant_scope
+                  scope_to_tenant(scope, user, miq_group)
                 end
 
       elsif klass.respond_to?(:scope_by_cloud_tenant?) && klass.scope_by_cloud_tenant?
