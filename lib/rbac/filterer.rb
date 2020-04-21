@@ -493,7 +493,6 @@ module Rbac
 
       b_intersection_m                 = intersection.call(b_filtered_ids, m_filtered_ids)
       u_union_d_union_b_intersection_m = union.call(u_filtered_ids, d_filtered_ids, b_intersection_m)
-
       intersection.call(u_union_d_union_b_intersection_m, tenant_filter_ids)
     end
 
@@ -602,7 +601,6 @@ module Rbac
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
         shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
-
         scope = if shared
                   shared
                 elsif scope_to_additional_tenants?(klass)
@@ -815,10 +813,10 @@ module Rbac
       return nil if !tenant.nil? && tenant.project?
 
       shared = klass.send(:user_shared, user)
-      shader_ids = pluck_ids(shared) unless shared.empty?
-      if shader_ids
+      shared_ids = pluck_ids(shared) unless shared.empty?
+      if shared_ids
         tenant_ids = pluck_ids(scope_to_tenant(scope, user, miq_group))
-        filtered_ids = shader_ids + tenant_ids
+        filtered_ids = shared_ids + tenant_ids
         scope.where(:id => filtered_ids.uniq)
       else
         nil
