@@ -18,7 +18,7 @@ class Service < ApplicationRecord
   POWER_STATE_MAP = {
     :start          => "on",
     :stop           => "off",
-    :suspend        => "off",
+    :suspend        => "suspended",
     :shutdown_guest => "off"
   }.freeze
 
@@ -161,6 +161,7 @@ class Service < ApplicationRecord
     else
       return 'on' if power_states_match?(:start)
       'off' if power_states_match?(:stop)
+      'suspended' if power_states_match?(:suspend)
     end
     ps = 'partial_on' if ps == 'on' && power_states.include?('off')
     ps = 'partial_on' if ps == 'off' && power_states.include?('on')
