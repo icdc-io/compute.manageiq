@@ -12,7 +12,7 @@ module IcdcUserMixin
   def get_user_subnets
     networks = tags(:networks).to_a # fix #3447
     networks.push(*current_group.tags(:networks))
-    networks.push(*current_group.tenant.tags(:networks))
+    networks.push(*current_group.tags.where('name LIKE?', '%/networks/%'))
     current_group.tenant.ancestry.split('/').each do |tenant_id|
       networks.push(*Tenant.find_by(:id => tenant_id).tags(:networks))
     end
