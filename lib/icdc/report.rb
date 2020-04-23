@@ -2,20 +2,27 @@ module Icdc
   class Report
     BASE_REPORT = "my_account"
 
-    def self.grouped_results
-      get_result_by_role(User.current_user.current_group.miq_user_role)
+    def self.grouped_results(params = {})
+      get_result_by_role(User.current_user.current_group.miq_user_role, params[:month])
     end
 
-    def self.get_result_by_role(role)
+    def self.get_result_by_role(role, month = "current")
       return admin_report if User.current_user.super_admin_user?
-      generate_result_hash(get_report_results)
+      generate_result_hash(get_report_results(month))
     end
 
-    def self.get_report_results
+    def self.get_report_results(month)
       reports = MiqReport.where(:name => BASE_REPORT)
       result = []
-      reports.each do |report|
-        result.push(report.miq_report_results.sort_by(&:created_on).last.result_set)
+      case month
+      when "current"
+        reports.each do |report|
+          result.push(report.miq_report_results.sort_by(&:created_on).last.result_set)
+        end
+      when "last"
+        reports.each do |report| 
+          result.push(report.miq_report_results.select{|x| x.created_on <= Date.today.last_month.end_of_month}.sort_by(&:created_on).last.result_set)
+        end
       end
       final_result = []
       case User.current_user.current_group.miq_user_role.settings
