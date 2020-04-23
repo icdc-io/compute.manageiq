@@ -10,11 +10,12 @@ module IcdcUserMixin
   end
 
   def get_user_subnets
-    networks = tags(:networks).to_a # fix #3447
-    networks.push(*current_group.tags(:networks))
-    networks.push(*current_group.tenant.tags(:networks))
+    networks = []
+    networks << tagged_with(:ns => '/managed/networks')
+    networks.push(*current_group.tagged_with(:ns => '/managed/networks'))
+    networks.push(*current_group.tenant.tagged_with(:ns => '/managed/networks'))
     current_group.tenant.ancestry.split('/').each do |tenant_id|
-      networks.push(*Tenant.find_by(:id => tenant_id).tags(:networks))
+      networks.push(*Tenant.find_by(:id => tenant_id).tagged_with(:ns => '/managed/networks'))
     end
     networks = networks.uniq
     nets = []
