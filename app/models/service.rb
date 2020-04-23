@@ -604,6 +604,20 @@ class Service < ApplicationRecord
     save!
   end
 
+  def backups
+    backups_with_states
+  end
+
+  def backups_with_states
+    backups = []
+    regexp = /^bkp_([0-9_])+/
+    backups.push(self.generic_objects.select{ |b| regexp =~ b.name })
+    self.all_service_children.each do |bkp|
+      backups.push(bkp.generic_objects.select{ |b| regexp =~ b.name })
+    end
+    backups.flatten
+  end
+
   private
 
   def update_attributes_from_dialog
@@ -624,24 +638,8 @@ class Service < ApplicationRecord
     reg
   end
 
-  def backups
-    backups_with_states
-  end
-
-  def backups_with_states
-    backups = []
-    regexp = /^bkp_([0-9_])+/
-    backups.push(self.generic_objects.select{ |b| regexp =~ b.name })
-    self.all_service_children.each do |bkp|
-      backups.push(bkp.generic_objects.select{ |b| regexp =~ b.name })
-    end
-    backups.flatten
-  end
-
   def configuration_script
   end
-
-  private
 
   def apply_dialog_settings
     dialog_options = options[:dialog] || {}
