@@ -22,6 +22,7 @@ class User < ApplicationRecord
 
   # rubocop:disable Rails/HasManyOrHasOneDependent, Rails/InverseOf, Rails/HasAndBelongsToMany, Rails/Date, Naming/AccessorMethodName, Lint/MissingCopEnableDirective, Rails/SkipsModelValidations
   #
+  has_and_belongs_to_many :miq_groups
   has_many   :miq_approvals, :as => :approver
   has_many   :miq_approval_stamps,  :class_name => "MiqApproval", :foreign_key => :stamper_id
   has_many   :miq_requests, :foreign_key => :requester_id
@@ -41,7 +42,6 @@ class User < ApplicationRecord
   has_many   :authentications, :foreign_key => :evm_owner_id, :dependent => :nullify, :inverse_of => :evm_owner
   belongs_to :current_group, :class_name => "MiqGroup"
 
-  has_and_belongs_to_many :miq_groups
   scope      :superadmins, lambda {
     joins(:miq_groups => {:miq_user_role => :miq_product_features})
       .where(:miq_product_features => {:identifier => MiqProductFeature::SUPER_ADMIN_FEATURE })
