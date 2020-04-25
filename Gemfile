@@ -300,13 +300,13 @@ end
 
 if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   #GIT_CRED - Openshift secret variable
-	override_gem 'manageiq-schema', git: "https://git.icdc.io/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
-	override_gem 'manageiq-api', git: "https://git.icdc.io/icdc/compute/miq/manageiq-api.git", branch: "icdc_g"
-	override_gem 'manageiq-automation_engine', git: "https://git.icdc.io/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_j"
-	override_gem 'manageiq-ui-classic', git: "https://git.icdc.io/icdc/compute/miq/manageiq-ui-classic.git", branch: "icdc_j"
-	override_gem 'manageiq-providers-ovirt', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_j"
-	override_gem 'manageiq-providers-power_systems', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
-	override_gem 'hmc-sdk-ruby', git: "https://git.icdc.io/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
+  override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
+  override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-api.git", branch: "icdc_j"
+  override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_j"
+  override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-ui-classic.git", branch: "icdc_j"
+  override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_j"
+  override_gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+  override_gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
 end
 
 # Load other additional Gemfiles
