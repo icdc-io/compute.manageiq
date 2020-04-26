@@ -90,8 +90,8 @@ gem "terminal",                                        :require => false
 gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "icdc_j"
 #gem "manageiq-providers-power_systems",                               :git => "https://git.icdc.io/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
 #gem "hmc-sdk-ruby",                                                   :git => "https://git.icdc.io/icdc-public/hmc-sdk-ruby.git", :branch => "master"
-#gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
-#gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
+gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
 gem 'activeresource'
 
 # Modified gems (forked on Github)
