@@ -18,7 +18,14 @@ gem "handsoap", "=0.2.5.5", :require => false, :source => "http://rubygems.manag
 # when using this Gemfile inside a providers Gemfile, the dependency for the provider is already declared
 def manageiq_plugin(plugin_name)
   unless dependencies.detect { |d| d.name == plugin_name }
-    gem plugin_name, :git => "https://github.com/ManageIQ/#{plugin_name}", :branch => "jansa"
+    if ["manageiq-schema", "manageiq-api", "manageiq-automation_engine", "manageiq-ui-classic", "manageiq-providers-ovirt"].include?(plugin_name)
+      git_url = "https://#{ENV['GIT_CRED']}/icdc/compute/miq"
+      branch = "icdc_j"
+    else
+      git_url = "https://github.com/ManageIQ"
+      branch = "jansa"
+    end
+    gem plugin_name, :git => "#{git_url}/#{plugin_name}.git", :branch => branch
   end
 end
 
@@ -83,8 +90,8 @@ gem "terminal",                                        :require => false
 gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "icdc_j"
 #gem "manageiq-providers-power_systems",                               :git => "https://git.icdc.io/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
 #gem "hmc-sdk-ruby",                                                   :git => "https://git.icdc.io/icdc-public/hmc-sdk-ruby.git", :branch => "master"
-gem 'manageiq-providers-power_systems', git: "https://git.icdc.io/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
-gem 'hmc-sdk-ruby', git: "https://git.icdc.io/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
+#gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
+#gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
 gem 'activeresource'
 
 # Modified gems (forked on Github)
@@ -251,7 +258,6 @@ unless ENV["APPLIANCE"]
     gem 'awesome_print'
     gem "foreman"
     gem "PoParser"
-    gem "rubocop-performance", "~>1.3",    :require => false
     # ruby_parser is required for i18n string extraction
     gem "ruby_parser",                     :require => false
     gem "yard"
@@ -299,6 +305,7 @@ def override_gem(name, *args)
   end
 end
 
+=begin
 if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   #GIT_CRED - Openshift secret variable
   override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
@@ -309,7 +316,7 @@ if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   override_gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
   override_gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
 end
-
+=end
 # Load other additional Gemfiles
 #   Developers can create a file ending in .rb under bundler.d/ to specify additional development dependencies
 Dir.glob(File.join(__dir__, 'bundler.d/*.rb')).each { |f| eval_gemfile(File.expand_path(f, __dir__)) }
