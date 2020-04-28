@@ -11,7 +11,7 @@ class MiqWorker
       end
 
       container = definition[:spec][:template][:spec][:containers].first
-      container[:image] = "#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
+      container[:image] = "#{container_image_registry}#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
       container[:env] << {:name => "WORKER_CLASS_NAME", :value => self.class.name}
       container[:env] << {:name => "BUNDLER_GROUPS", :value => self.class.bundler_groups.join(",")}
     end
@@ -25,16 +25,20 @@ class MiqWorker
       {"#{Vmdb::Appliance.PRODUCT_NAME.downcase}/zone-#{MiqServer.my_zone}" => "true"}
     end
 
+    def container_image_registry
+      ENV["CONTAINER_IMAGE_REGISTRY"] + '/' if ENV["CONTAINER_IMAGE_REGISTRY"]
+    end
+
     def container_image_namespace
       ENV["CONTAINER_IMAGE_NAMESPACE"]
     end
 
     def container_image_name
-      "manageiq-base-worker"
+      (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-base-worker"
     end
 
     def container_image_tag
-      "latest"
+      ENV["CONTAINER_IMAGE_TAG"] || "latest"
     end
 
     def deployment_prefix
