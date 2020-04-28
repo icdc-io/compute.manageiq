@@ -108,7 +108,6 @@ class EvmServer
 
     MiqServer.start_memcached
     MiqApache::Control.restart if MiqEnvironment::Command.supports_apache?
-    _log.info("DBG ICDC current_server #{@current_server.inspect} :: curent_user #{User.current_user.inspect} :: miq_groups: #{User.current_user.miq_groups}")
     MiqEvent.raise_evm_event(@current_server, "evm_server_start")
 
     msg = "Server starting in #{MiqServer.startup_mode} mode."
