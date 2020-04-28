@@ -13,8 +13,8 @@ class EvmDatabase
     Tenant
     MiqProductFeature
     MiqUserRole
-    User
     MiqGroup
+    User
     MiqReport
     VmdbDatabase
   ].freeze
