@@ -39,6 +39,6 @@ class MiqUiWorker < MiqWorker
   end
 
   def container_image_name
-    "manageiq-ui-worker"
+    (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker"
   end
 end

@@ -50,7 +50,7 @@ class MiqWorker
 
     # Can be overriden by including classes
     def container_image_name
-      "manageiq-webserver-worker"
+      (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-webserver-worker"
     end
   end
 end
