@@ -53,7 +53,7 @@ Except where otherwise noted, all ManageIQ source files are covered by
 the following copyright and license notice:
 
 Copyright 2014-2019 ManageIQ Authors.
-
+ 
 ## Export Notice
 
 By downloading ManageIQ software, you acknowledge that you understand all of the
