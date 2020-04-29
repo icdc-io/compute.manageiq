@@ -81,9 +81,6 @@ class User < ApplicationRecord
                              .select(:id))
   end
 
-  serialize :settings, Hash # Implement settings column as a hash
-  default_value_for(:settings) { {} }
-
   def self.scope_by_tenant?
     true
   end
