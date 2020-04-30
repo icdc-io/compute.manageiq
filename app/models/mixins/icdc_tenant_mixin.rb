@@ -70,7 +70,7 @@ module IcdcTenantMixin
     end
 
     def admins
-      self.users.select{|x| x.miq_groups.include?(self.miq_groups.select{|x| x.description.include?("admin")}.first)}.collect(&:email)
+      miq_groups.select{|x| x.description.include?(".admin")}.first.users.collect(&:email)
     end
   end
 
@@ -115,8 +115,12 @@ module IcdcTenantMixin
 
   def delete_project
     raise "Unable to delete: not tenant" if self.tenant?
-    self.miq_groups.each{|group| group.destroy if group.group_type != 'tenant'}
-    self.destroy
+    begin
+      self.miq_groups.each{|group| group.destroy if group.group_type != 'tenant'}
+      self.destroy
+    rescue => error
+      _log.error("Unable to delete '#{self.name}' project => #{error.message}")
+    end
     self.id
   end
 
@@ -130,6 +134,8 @@ module IcdcTenantMixin
       user ||= User.create(:name => users_names["#{ue}"] , :userid => ue , :email => ue)
       self.set_user_role(user, role)
       invited_ids.push(user.id)
+      user.miq_groups = user.miq_groups.reject{|x| x.description.include?("Demo_Account")}
+      user.save!
     end
     invited_ids
   end

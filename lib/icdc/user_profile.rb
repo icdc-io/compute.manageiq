@@ -1,12 +1,20 @@
 module Icdc
   class UserProfile
     def self.user_profile
-      {:user_info => user_info, :ssh_keys => ssh_keys, :projects_roles => projects_roles}
+      {
+        user_info: user_info,
+        ssh_keys: ssh_keys,
+        projects_roles: projects_roles
+      }
     end
 
     def self.user_info
-      name = User.current_user.name.empty? ? User.current_user.email : User.current_user.name
-      {:name => name, :email => User.current_user.email, :last_activity => User.current_user.updated_on.strftime("%d.%m.%Y")}
+      {
+        name: User.current_user.name.empty? ? User.current_user.email : User.current_user.name,
+        email: User.current_user.email,
+        last_activity: User.current_user.updated_on.strftime("%d.%m.%Y"),
+        tenant_admins: User.current_user.current_group.tenant.admins
+      }
     end
 
     def self.ssh_keys
