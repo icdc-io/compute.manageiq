@@ -264,18 +264,6 @@ class Tenant < ApplicationRecord
     where(:id => current_tenant.id)
   end
 
-  def self.tenant_id_clause(user_or_group)
-    strategy = Rbac.accessible_tenant_ids_strategy(self)
-    tenant = user_or_group.try(:current_tenant)
-    return [] if tenant.root?
-
-    tenant_ids = tenant.accessible_tenant_ids(strategy)
-
-    return if tenant_ids.empty?
-
-    {table_name => {:id => tenant_ids}}
-  end
-
   def all_subtenants
     self.class.descendants_of(self).where(:divisible => true)
   end
@@ -290,10 +278,6 @@ class Tenant < ApplicationRecord
 
   def self.regional_tenants(tenant)
     where(arel_table.grouping(Arel::Nodes::NamedFunction.new("LOWER", [arel_attribute(:name)]).eq(tenant.name.downcase)))
-  end
-
-  def accessible_tenant_ids(strategy = nil)
-    (strategy ? send(strategy) : []).append(id)
   end
 
   def name

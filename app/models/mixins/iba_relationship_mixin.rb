@@ -49,20 +49,21 @@ module IbaRelationshipMixin
 
   def icdc_sibling_ids(*args)
     master_ids = []
-    case (User.current_user.current_group.miq_user_role.name)
+    user = User.current_user || User.first
+    case (user.current_group.miq_user_role.name)
     when "ICDC-member"
-       master_ids.push(User.current_user.current_group.tenant.id)
+       master_ids.push(user.current_group.tenant.id)
        tenants_in_regions_by_ids(master_ids.push(self.id))
-    when "ICDC-admin" 
+    when "ICDC-admin"
       iba_descendant_ids(*args)
     when "ICDC-billing"
       master_ids = iba_descendant_ids(*args)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     when "ICDC-project-admin"
-      master_ids.push(User.current_user.current_group.tenant.id)
+      master_ids.push(user.current_group.tenant.id)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     else
-      master_ids.push(User.current_user.current_group.tenant.id)
+      master_ids.push(user.current_group.tenant.id)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     end
   end
