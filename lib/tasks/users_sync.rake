@@ -48,19 +48,20 @@ namespace :users_sync do
    available_regions = PglogicalSubscription.find(:all).map{|region| region.find_pass}
     arg_list = args[:regions].split('_')
     userid = arg_list.pop
+    user_master = User.in_my_region.find_by(:userid => userid).as_json
+    user_master['miq_group'] = MiqGroup.in_my_region.find_by_id(user_master['current_group_id']).description
     arg_list.each do |region|
       next if region == "main"
       slave = available_regions.select { |reg| reg.provider_region_name == region }.first
-      user_master = User.in_my_region.find_by(:userid => userid).as_json
-      user_master['miq_group'] = MiqGroup.in_my_region.find_by_id(user_master['current_group_id']).description
+      region_number = slave.provider_region
       conn = ActiveRecord::Base.establish_connection("postgres://#{slave.user}:#{slave.password}@#{slave.host}:#{slave.port}/#{slave.dbname}")
-      user = User.in_my_region.where(userid: user_master['userid']).first
+      user = User.in_region(region_number).where(userid: user_master['userid']).first
       unless user
-        user = User.in_my_region.new
+        user = User.in_region(region_number).new
         user.userid = user_master['userid']
       end
       user.email = user_master['email']
-      default_group = MiqGroup.in_my_region.find_by_description(user_master['miq_group'])
+      default_group = MiqGroup.in_region(region_number).find_by_description(user_master['miq_group'])
       user.miq_groups = [default_group]
       user.name = user_master['name']
       user.save!
