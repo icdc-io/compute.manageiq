@@ -90,9 +90,6 @@ vendor/node_root/
 # npm
 node_modules/
 
-# ignore included plugins in bundler.d
-bundler.d/*
-
 # yardoc
 /doc/
 .yardoc
