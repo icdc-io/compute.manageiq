@@ -3,6 +3,9 @@ raise "Ruby versions >= 2.7.0 are unsupported!" if RUBY_VERSION >= "2.7.0"
 
 source 'https://rubygems.org'
 
+plugin "bundler-inject", "~> 1.1"
+require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundler-inject") rescue nil
+
 #
 # VMDB specific gems
 #
@@ -272,36 +275,3 @@ unless ENV["APPLIANCE"]
     gem "rspec-rails", "~>3.9.0"
   end
 end
-#
-# Custom Gemfile modifications
-#
-# To develop a gem locally and override its source to a checked out repo
-#   you can use this helper method in Gemfile.dev.rb e.g.
-#
-# override_gem 'manageiq-ui-classic', :path => File.expand_path("../manageiq-ui-classic", __dir__)
-#
-def override_gem(name, *args)
-  if dependencies.any?
-    raise "Trying to override unknown gem #{name}" unless (dependency = dependencies.find { |d| d.name == name })
-    dependencies.delete(dependency)
-
-    calling_file = caller_locations.detect { |loc| !loc.path.include?("lib/bundler") }.path
-    gem(name, *args).tap do
-      warn "** override_gem: #{name}, #{args.inspect}, caller: #{calling_file}" unless ENV["RAILS_ENV"] == "production"
-    end
-  end
-end
-
-if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
-  override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
-  override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-api.git", branch: "icdc_j"
-  override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_j"
-  override_gem 'manageiq-ui-classic', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-ui-classic.git", branch: "icdc_j"
-  override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_j"
-  override_gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "master"
-  override_gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "master"
-end
-
-# Load other additional Gemfiles
-#   Developers can create a file ending in .rb under bundler.d/ to specify additional development dependencies
-Dir.glob(File.join(__dir__, 'bundler.d/*.rb')).each { |f| eval_gemfile(File.expand_path(f, __dir__)) }
