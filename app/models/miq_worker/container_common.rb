@@ -34,7 +34,7 @@ class MiqWorker
     end
 
     def container_image_name
-      (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-base-worker"
+      (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-base-worker" + (ENV["DEV_ENVIRONMENT"] || '')
     end
 
     def container_image_tag
