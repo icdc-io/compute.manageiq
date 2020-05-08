@@ -80,9 +80,9 @@ gem "sync",                           "~>0.5",         :require => false
 gem "sys-filesystem",                 "~>1.3.1"
 gem "terminal",                                        :require => false
 #ICDC Gems
-gem "zabbixapi",                      "=3.2.1",                       :git => "https://git.icdc.io/icdc-public/zabbixapi.git", :branch => "icdc_j"
-gem "manageiq-providers-power_systems",                               :git => "https://git.icdc.io/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
-gem "hmc-sdk-ruby",                                                   :git => "https://git.icdc.io/icdc-public/hmc-sdk-ruby.git", :branch => "master"
+gem "zabbixapi",                      "=3.2.1",                       :git => "https://#{ENV['GIT_CRED']}/icdc-public/zabbixapi.git", :branch => "master"
+gem "manageiq-providers-power_systems",                               :git => "https://#{ENV['GIT_CRED']}/icdc-public/manageiq-providers-power_systems.git", :branch => "master"
+gem "hmc-sdk-ruby",                                                   :git => "https://#{ENV['GIT_CRED']}/icdc-public/hmc-sdk-ruby.git", :branch => "master"
 gem 'activeresource'
 
 # Modified gems (forked on Github)
