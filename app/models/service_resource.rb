@@ -33,6 +33,10 @@ class ServiceResource < ApplicationRecord
     virtual_column_resource_value(:description).to_s
   end
 
+  def suspend_action
+    #This method added to avoid error from ticket #12637
+  end
+
   private
 
   def virtual_column_resource_value(key)
