@@ -7,7 +7,7 @@ module IbaRelationshipMixin
   def tenants_in_regions_by_ids(ids)
     tenants = []
     ids.each do |id|
-      tenants.push( *Tenant.where(name: Tenant.find(id).name) )
+      tenants.push( *Tenant.where(name: Tenant.find_by(:id => id).name) )
     end
 
     tenants
