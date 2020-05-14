@@ -27,6 +27,12 @@ class Chargeback < ActsAsArModel
     -chargeback_rates
     -vm_guid
     -vm_uid
+    account
+    tenant
+    uptime
+    _total
+    _name
+    _type
   ].freeze
 
   def self.dynamic_rate_columns
