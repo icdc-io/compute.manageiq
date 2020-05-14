@@ -14,7 +14,7 @@ class ContainerOrchestrator
           :template => {
             :metadata => {:name => name, :labels => {:name => name, :app => app_name}},
             :spec     => {
-              :imagePullSecrets   => [{:name => ENV["IMAGE_PULL_SECRET"].to_s}],
+              :imagePullSecrets   => image_pull_secrets,
               :serviceAccountName => "#{app_name}-anyuid",
               :containers         => [{
                 :name          => name,
@@ -92,6 +92,10 @@ class ContainerOrchestrator
 
     def app_name
       ENV["APP_NAME"]
+    end
+    
+    def image_pull_secrets
+      ENV["IMAGE_PULL_SECRET"] ? [{:name => ENV["IMAGE_PULL_SECRET"].to_s}] : nil.to_s
     end
   end
 end
