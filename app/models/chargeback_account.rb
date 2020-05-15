@@ -77,21 +77,21 @@ class ChargebackAccount < Chargeback
     build_results_for_report_chargeback(options)
   end
 
-  def self.where_clause(records, options)
+  def self.where_clause(records, options, region)
     scope = records.where(:resource_type => "VmOrTemplate")
     if options[:tag] && (@report_user.nil? || !@report_user.self_service?)
       scope.where.not(:resource_id => nil).for_tag_names(options[:tag].split("/")[2..-1])
     else
-      scope.where(:resource => vms)
+      scope.where(:resource => vms(region))
     end
   end
 
-  def self.extra_resources_without_rollups
+  def self.extra_resources_without_rollups(region)
     scope = ManageIQ::Providers::Microsoft::InfraManager::Vm
     if @options[:tag] && (@report_user.nil? || !@report_user.self_service?)
       scope.find_tagged_with(:any => @options[:tag], :ns => '*')
     else
-      scope.where(:id => vms)
+      scope.where(:id => vms(region))
     end
   end
 
@@ -162,18 +162,18 @@ class ChargebackAccount < Chargeback
     end
   end
 
-  def self.vms
+  def self.vms(region)
     @vms ||=
       begin
         if @options[:owner]
-          user = User.find_by_userid(@options[:owner])
+          user = User.in_region(region).find_by_userid(@options[:owner])
           if user.nil?
             _log.error("Unable to find user '#{@options[:owner]}'. Calculating chargeback costs aborted.")
             raise MiqException::Error, _("Unable to find user '%{name}'") % {:name => @options[:owner]}
           end
           user.vms
         elsif @options[:tag]
-          vms = Vm.find_tagged_with(:all => @options[:tag], :ns => '*')
+	  vms = Vm.in_region(region).find_tagged_with(:all => @options[:tag], :ns => '*')
           vms &= @report_user.accessible_vms if @report_user && @report_user.self_service?
           vms
         elsif @options[:tenant_id]
@@ -206,7 +206,7 @@ class ChargebackAccount < Chargeback
               end
             end
           end
-          vms 
+          vms
         else
           raise _("must provide options :owner or :tag ")
         end
