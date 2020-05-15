@@ -1,4 +1,4 @@
-if ENV["RAILS_ENV"] == "production"
+if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   override_gem 'manageiq-schema', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-schema.git", branch: "icdc_j"
   override_gem 'manageiq-api', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-api.git", branch: "icdc_j"
   override_gem 'manageiq-automation_engine', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-automation_engine.git", branch: "icdc_j"
