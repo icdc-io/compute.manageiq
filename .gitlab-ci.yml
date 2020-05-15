@@ -29,7 +29,8 @@ rubocop:
   tags: [icdc-g]
   script:
     - bundle exec rubocop -v
-    - bundle exec rubocop --format simple --fail-level E 
+    - git diff-tree -r --no-commit-id --name-only @\{u\} head | xargs rubocop --format simple --fail-level E 
+    #- bundle exec rubocop --format simple --fail-level E 
 
 brakeman:
   stage: test
