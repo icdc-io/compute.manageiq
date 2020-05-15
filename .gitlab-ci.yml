@@ -29,7 +29,7 @@ rubocop:
   tags: [icdc-g]
   script:
     - bundle exec rubocop -v
-    - bundle exec rubocop --courage
+    - { git diff HEAD --name-only --diff-filter=MA & git diff origin/icdc_j..HEAD --name-only --diff-filter=MA; } | sort | uniq | rubocop
 
 #brakeman:
 #  stage: test
