@@ -29,20 +29,19 @@ rubocop:
   tags: [icdc-g]
   script:
     - bundle exec rubocop -v
-    - git diff-tree -r --no-commit-id --name-only @\{u\} head | xargs rubocop --format simple --fail-level E 
-    #- bundle exec rubocop --format simple --fail-level E 
+    - bundle exec rubocop --courage
 
-brakeman:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - bundle exec rake test:brakeman:setup
-    - bundle exec rake test:brakeman
+#brakeman:
+#  stage: test
+#  tags: [icdc-g]
+#  script:
+#    - bundle exec rake test:brakeman:setup
+#    - bundle exec rake test:brakeman
 
-vmdb:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - export PARALLEL=true
-    - bundle exec rake test:vmdb:setup
+#vmdb:
+#  stage: test
+#  tags: [icdc-g]
+#  script:
+#    - export PARALLEL=true
+#    - bundle exec rake test:vmdb:setup
     #- bundle exec rake test:vmdb
