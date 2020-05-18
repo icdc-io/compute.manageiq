@@ -244,6 +244,7 @@ end
 # The gems listed below do not need to be packaged until we find it necessary or useful.
 # Only add gems here that we do not need on an appliance.
 #
+=begin
 unless ENV["APPLIANCE"]
   group :development do
     gem 'awesome_print'
@@ -274,4 +275,5 @@ unless ENV["APPLIANCE"]
     gem "parallel_tests"
     gem "rspec-rails", "~>3.9.0"
   end
+=end
 end
