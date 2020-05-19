@@ -275,5 +275,5 @@ unless ENV["APPLIANCE"]
     gem "parallel_tests"
     gem "rspec-rails", "~>3.9.0"
   end
-=end
 end
+=end
