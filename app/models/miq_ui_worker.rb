@@ -45,7 +45,7 @@ class MiqUiWorker < MiqWorker
   def mount_configmap(container_definition)
     return unless ENV['CUSTOM_CONFIG_NAME']
     container_definition[:spec][:template][:spec][:volumes][:configMap].merge!({:default_mode => 420, :name => ENV['CUSTOM_CONFIG_NAME']})
-    container_definition[:spec][:template][:spec][:containers].first.merge!{:volumeMounts => [{ :mountPath => '/etc/httpd/conf', :name => ENV['CUSTOM_CONFIG_NAME'], :readOnly => true }]}
+    container_definition[:spec][:template][:spec][:containers].first.merge!({:volumeMounts => [{ :mountPath => '/etc/httpd/conf', :name => ENV['CUSTOM_CONFIG_NAME'], :readOnly => true }]})
     container_definition
   end
 end
