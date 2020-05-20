@@ -41,4 +41,9 @@ class MiqUiWorker < MiqWorker
   def container_image_name
     (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker" + (ENV["DEV_ENVIRONMENT"] || '')
   end
+
+  def mount_configmap(container_definition)
+    container_definition[:spec][:template][:spec][:volumes][:configMap].merge!({:default_mode => 420, :name => ENV['CONFIG_NAME']})
+    #TODO define mount path
+  end
 end
