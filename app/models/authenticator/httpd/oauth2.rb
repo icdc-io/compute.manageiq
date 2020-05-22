@@ -123,20 +123,17 @@ module Authenticator
       def introspect_jwt_token(jwt_token)
         uri = URI.parse(oidc_token_introspection_endpoint)
         request_params = {
+	  "token_type_hint" => "access_token",
           "token" => jwt_token
         }
         request_params["scope"] = oidc_scope if oidc_scope.present?
-
         post_request = Net::HTTP::Post.new(uri)
         post_request.basic_auth(oidc_client_id, oidc_client_secret)
         post_request.form_data = request_params
-
         http_params     = {:use_ssl => (uri.scheme == "https")}
         response        = Net::HTTP.start(uri.hostname, uri.port, http_params) { |http| http.request(post_request) }
         parsed_response = JSON.parse(response.body)
-
         raise Oauth2Error, "Invalid access token, JWT is inactive" if parsed_response["active"] != true
-
         parsed_response
       rescue => e
         raise Oauth2Error, "Failed to Validate the JWT - error #{e}"

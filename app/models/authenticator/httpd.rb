@@ -102,8 +102,8 @@ module Authenticator
     end
 
     def find_userid_as_distinguished_name(user_attrs)
-      dn_domain = user_attrs[:domain].downcase.split(".").map { |s| "dc=#{s}" }.join(",")
-      user = User.in_my_region.where("userid LIKE ?", "%=#{user_attrs[:username]},%,#{dn_domain}").last
+      _log.info("AHR auth user_attrs #{user_attrs}")
+      user = User.in_my_region.find_by(:email => user_attrs[:email])
       user
     end
 
