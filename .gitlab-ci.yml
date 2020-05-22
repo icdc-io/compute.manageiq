@@ -18,9 +18,9 @@ services:
 before_script:
   - ruby -v
   - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
-  - bundle install
+  - bundle install 
 
-
+  
 stages:
   - test
 
@@ -29,19 +29,19 @@ rubocop:
   tags: [icdc-g]
   script:
     - bundle exec rubocop -v
-    - bundle exec rubocop --format simple --fail-level E
+    - ( git diff HEAD --name-only --diff-filter=MA & git diff origin/icdc_j..HEAD --name-only --diff-filter=MA; ) | sort | uniq | bundle exec rubocop
 
-brakeman:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - bundle exec rake test:brakeman:setup
-    - bundle exec rake test:brakeman
+#brakeman:
+#  stage: test
+#  tags: [icdc-g]
+#  script:
+#    - bundle exec rake test:brakeman:setup
+#    - bundle exec rake test:brakeman
 
-vmdb:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - export PARALLEL=true
-    - bundle exec rake test:vmdb:setup
+#vmdb:
+#  stage: test
+#  tags: [icdc-g]
+#  script:
+#    - export PARALLEL=true
+#    - bundle exec rake test:vmdb:setup
     #- bundle exec rake test:vmdb
