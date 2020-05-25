@@ -23,23 +23,23 @@ before_script:
 stages:
   - test
 
-rubocop:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | xargs bundle exec rubocop
-
-brakeman:
-  stage: test
-  tags: [icdc-g]
-  script:
-    - bundle exec rake test:brakeman:setup
-    - bundle exec rake test:brakeman
-
-#vmdb:
+#rubocop:
 #  stage: test
-#  tags: [icdc-g]
+#  tags: [icdc-j]
 #  script:
-#    - export PARALLEL=true
-#    - bundle exec rake test:vmdb:setup
-    #- bundle exec rake test:vmdb
+#    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | xargs bundle exec rubocop
+
+#brakeman:
+#  stage: test
+#  tags: [icdc-j]
+#  script:
+#    - bundle exec rake test:brakeman:setup
+#    - bundle exec rake test:brakeman
+
+vmdb:
+  stage: test
+  tags: [icdc-j]
+  script:
+    - export PARALLEL=true
+    - bundle exec rake test:vmdb:setup
+    - bundle exec rake test:vmdb
