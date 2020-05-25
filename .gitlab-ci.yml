@@ -16,8 +16,8 @@ services:
   - postgres:9.5
 
 before_script:
-  - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
-  - bundle install 
+  #- source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
+  #- bundle install 
 
   
 stages:
@@ -27,8 +27,8 @@ rubocop:
   stage: test
   tags: [icdc-g]
   script:
-    - bundle exec rubocop -v
-    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | bundle exec rubocop
+    #- bundle exec rubocop -v
+    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq #| bundle exec rubocop
 
 #brakeman:
 #  stage: test
