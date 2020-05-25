@@ -29,12 +29,12 @@ rubocop:
   script:
     - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | xargs bundle exec rubocop
 
-#brakeman:
-#  stage: test
-#  tags: [icdc-g]
-#  script:
-#    - bundle exec rake test:brakeman:setup
-#    - bundle exec rake test:brakeman
+brakeman:
+  stage: test
+  tags: [icdc-g]
+  script:
+    - bundle exec rake test:brakeman:setup
+    - bundle exec rake test:brakeman
 
 #vmdb:
 #  stage: test
