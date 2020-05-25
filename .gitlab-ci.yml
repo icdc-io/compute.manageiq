@@ -18,7 +18,7 @@ services:
 before_script:
   - ruby -v
   - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
-  - bundle install 
+  #- bundle install 
 
   
 stages:
