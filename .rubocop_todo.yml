@@ -3,7 +3,7 @@ AllCops:
     - spec/manageiq/**/*
     - vendor/**/*
     - lib/generators/provider/templates/**/*
-  TargetRubyVersion: 2.3
+  TargetRubyVersion: 2.5
 Layout/AlignHash:
   EnforcedHashRocketStyle: table
   EnforcedColonStyle: table
