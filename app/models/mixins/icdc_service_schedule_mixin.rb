@@ -95,7 +95,7 @@ module IcdcServiceScheduleMixin
   end
 
   def outdated_backups
-    backups.select { |backup| outdated_backup?(backup) }
+    backups.select { |backup| !backup.terminated && outdated_backup?(backup) }
   end
 
   module ClassMethods
