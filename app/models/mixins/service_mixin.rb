@@ -8,10 +8,25 @@ module ServiceMixin
 
     serialize  :options, Hash
 
+    virtual_attribute :vm_events, :string
+
     include UuidMixin
     acts_as_miq_taggable
   end
 
+  def vm_events
+    {:vm_events => self.available_events}
+  end
+ 
+  def available_events
+     vms = self.vms
+     result = {}
+     vms.each do |vm|
+       result[vm.name.to_sym] = vm.ems_events.collect { |e| [e.event_type => e.message] }
+     end
+     result
+  end
+ 
   def add_resource(rsc, options = {})
     rsc_type = rsc.class.base_class.name.tableize
     raise _("Cannot connect service with nil ID.") if rsc.id.nil? && rsc_type == "service_templates"

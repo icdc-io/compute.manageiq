@@ -1,6 +1,6 @@
 module Authenticator
   def self.for(config, username = nil)
-    if username == 'admin'
+    if username == 'admin' || (username.present? && username.start_with?('api-'))
       Database.new(config)
     else
       authenticator_class(config[:mode])&.new(config)
