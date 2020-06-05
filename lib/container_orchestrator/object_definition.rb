@@ -64,6 +64,7 @@ class ContainerOrchestrator
         {:name => "MEMCACHED_SERVICE_NAME",  :value => ENV["MEMCACHED_SERVICE_NAME"]},
         {:name => "WORKER_HEARTBEAT_FILE",   :value => Rails.root.join("tmp", "worker.hb").to_s},
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
+        {:name => "RAILS_ENV",               :value => ENV["RAILS_ENV"]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
         {:name      => "DATABASE_NAME",
