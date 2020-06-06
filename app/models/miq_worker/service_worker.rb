@@ -17,7 +17,6 @@ class MiqWorker
         container[:env] << {:name => "PORT", :value => container_port.to_s}
         container[:env] << {:name => "BINDING_ADDRESS", :value => "0.0.0.0"}
         add_readiness_probe(container)
-        mount_configmap(definition)
       end
 
       scale_deployment
@@ -38,10 +37,6 @@ class MiqWorker
         :initialDelaySeconds => 60,
         :timeoutSeconds      => 3
       }
-    end
-
-    def mount_configmap(container_definition)
-      puts "Should be overriden by including classes"
     end
 
     def service_label

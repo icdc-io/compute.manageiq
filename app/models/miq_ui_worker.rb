@@ -41,11 +41,4 @@ class MiqUiWorker < MiqWorker
   def container_image_name
     (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker" + (ENV["DEV_ENVIRONMENT"] || '')
   end
-
-  def mount_configmap(container_definition)
-    return unless ENV['CUSTOM_CONFIG_NAME']
-    container_definition[:spec][:template][:spec][:volumes][:configMap].merge!({:default_mode => 420, :name => 'httpd-configs-ui-worker'})
-    container_definition[:spec][:template][:spec][:containers].first.merge!({:volumeMounts => [{ :mountPath => '/etc/httpd/conf', :name => 'httpd-configs-ui-worker', :readOnly => true }]})
-    container_definition
-  end
 end
