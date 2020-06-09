@@ -17,7 +17,7 @@ class ContainerOrchestrator
 
   def create_deployment(name)
     definition = deployment_definition(name)
-    definition[:spec][:template][:spec].merge!(:imagePullSecrets => [{:name => ENV["IMAGE_PULL_SECRET"].to_s}]) if (ENV["IMAGE_PULL_SECRET"] && ENV["IMAGE_PULL_SECRET"].to_s.empty?)
+    definition[:spec][:template][:spec].merge!(:imagePullSecrets => [{:name => ENV["IMAGE_PULL_SECRET"].to_s}]) if (ENV["IMAGE_PULL_SECRET"] && !ENV["IMAGE_PULL_SECRET"].to_s.empty?)
     yield(definition) if block_given?
     kube_apps_connection.create_deployment(definition)
   rescue KubeException => e
