@@ -73,6 +73,8 @@ class ContainerOrchestrator
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "password"}}},
         {:name      => "DATABASE_USER",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "username"}}},
+        {:name      => "DATABASE_URL",
+         :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "dburl"}}},
         {:name      => "ENCRYPTION_KEY",
          :valueFrom => {:secretKeyRef=>{:name => "app-secrets", :key => "encryption-key"}}}
       ]
