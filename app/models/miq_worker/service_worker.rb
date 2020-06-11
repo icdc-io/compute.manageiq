@@ -11,7 +11,6 @@ class MiqWorker
         configure_worker_deployment(definition)
 
         definition[:spec][:template][:metadata][:labels].merge!(service_label)
-        mount_configmap(definition)
         container = definition[:spec][:template][:spec][:containers].first
         container[:ports] = [{:containerPort => SERVICE_PORT}]
         container[:env] << {:name => "PORT", :value => container_port.to_s}
@@ -53,8 +52,5 @@ class MiqWorker
       (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-webserver-worker" + (ENV["DEV_ENVIRONMENT"] || '')
     end
 
-    def mount_configmap(definition)
-      raise "Should be implement in subclass"
-    end
   end
 end
