@@ -26,11 +26,18 @@ namespace :icdc do
         version = "" if version == "default"
         next unless st.service_template_catalog
 
-        set1 = ["VDI Windows 7", "Metrics", "for IBM"].to_set
-        set2 = ["Windows"].to_set
-        st.miq_custom_set("adm_account", "Administrator") if set2.any? { |x| st.name.include?(x)} && !set1.any? { |x| st.name.include?(x)}
-        st.miq_custom_set("adm_account", "root/admin") unless set1.any? { |x| st.name.include?(x)} || set2.any? { |x| st.name.include?(x)}
-        st.miq_custom_set("adm_account", "user") if set1.any? { |x| st.name.include?(x)}
+        begin
+          set1 = ["VDI Windows 7", "Metrics", "for IBM"].to_set
+          set2 = ["Windows"].to_set
+          st.miq_custom_set("adm_account", "Administrator") if set2.any? { |x| st.name.include?(x)} && !set1.any? { |x| st.name.include?(x)}
+          st.miq_custom_set("adm_account", "root/admin") unless set1.any? { |x| st.name.include?(x)} || set2.any? { |x| st.name.include?(x)}
+          st.miq_custom_set("adm_account", "user") if set1.any? { |x| st.name.include?(x)}
+        rescue StandardError => e
+          open('/var/www/miq/vmdb/log/catalog.log', 'a+'){ |f|   
+          f.puts "----------------------------------------------------------"
+          f.puts "cannot set custom attribute for #{st.name}:#{e.message}"         
+          }
+        end
 
         catalog = st.service_template_catalog.name
         image_help_url = {}
