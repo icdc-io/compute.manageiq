@@ -237,6 +237,7 @@ namespace :dev do
   desc "Delete all miq_schedules after deployment of DEV environment"
   task :remove_schedules => :environment do
     MiqSchedule.where('description NOT LIKE ?', 'rss_%').where('description NOT LIKE ?', 'report_%').where('description NOT LIKE ?', 'chart_%').where('description NOT LIKE ?', 'tenant_%').delete_all
+    Service.all.map{|x| x.update!(:retires_on => nil)}
   end
 
   desc "Disabling C&U collection for EmsClusters in NB5"
