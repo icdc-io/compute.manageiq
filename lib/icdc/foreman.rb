@@ -99,6 +99,45 @@ module Icdc::Foreman
       ips
     end
 
+    def get(path)
+      res = RestClient::Request.execute(
+        :method     => :get,
+        :url        => @config[:foreman_url] + path,
+        :user       => @config[:user],
+        :password   => @config[:password],
+        :verify_ssl => @config[:skip_verify] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER,
+      )
+      JSON.parse(res)
+    rescue RestClient::NotFound
+      _log.info("Foreman subnet #{@config[:foreman_url] + path} not found")
+      nil # not an error
+    rescue StandardError => e
+      _log.error("Foreman request to #{@config[:foreman_url] + path} failed with error: #{e.message}")
+      nil
+    end
+
+    def put(path, payload)
+      res = RestClient::Request.execute(
+        :method     => :put,
+        :url        => @config[:foreman_url] + path,
+        :user       => @config[:user],
+        :password   => @config[:password],
+        :verify_ssl => @config[:skip_verify] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER,
+        :payload    => payload.to_json,
+        :headers    => {
+          :content_type => :json,
+          :accept       => :json
+        }
+      )
+      JSON.parse(res)
+    rescue RestClient::NotFound
+      _log.info("Foreman subnet #{@config[:foreman_url] + path} not found")
+      nil # not an error
+    rescue StandardError => e
+      _log.error("Foreman request to #{@config[:foreman_url] + path} failed with error: #{e.message}")
+      nil
+    end
+
     private
 
     def parallel(items)
@@ -127,26 +166,52 @@ module Icdc::Foreman
       subnet
     end
 
-    def get(path)
-      res = RestClient::Request.execute(
-        :method     => :get,
-        :url        => @config[:foreman_url] + path,
-        :user       => @config[:user],
-        :password   => @config[:password],
-        :verify_ssl => @config[:skip_verify] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER,
-      )
-      JSON.parse(res)
-    rescue RestClient::NotFound
-      _log.info("Foreman subnet #{@config[:foreman_url] + path} not found")
-      nil # not an error
-    rescue StandardError => e
-      _log.error("Foreman request to #{@config[:foreman_url] + path} failed with error: #{e.message}")
-      nil
-    end
-
     def free_ip(subnet)
       ip = get("/api/subnets/#{subnet}/freeip")["freeip"]
       { :subnet => subnet, :ip => ip }
+    end
+  end
+
+  class Organization < OpenStruct
+    include Vmdb::Logging
+
+    def initialize(region:, tenant_name:)
+      %i[region tenant_name].each do |param|
+        raise ArgumentError, "Required parameter #{param} not found" unless param
+      end
+      @foreman_client = Icdc::Foreman::Client.new(region)
+      org_data = @foreman_client.get("/api/organizations/#{tenant_name}")
+      super(org_data)
+      fetch_tenant_subnets
+    end
+
+    def get_subnets(filters = {})
+      result = subnets
+      filters.each do |param_name, param_value|
+        result = result.select do |subnet|
+          founded = subnet.parameters.find { |param| param['name'] == param_name.to_s }
+          founded && founded['value'].downcase == param_value
+        end
+      end
+      result
+    end
+
+    def assign_subnet(name)
+      payload = {:organization => {:name => self.name}, :subnets => []}
+      subnets.each { |subnet| payload[:subnets] << {:name => subnet.name} }
+      payload[:subnets] << {:name => name}
+      response = @foreman_client.put("/api/organizations/#{id}", payload)
+      if response['subnets'].find { |subnet| subnet['name'] == name }
+        self.subnets = response['subnets']
+      end
+      fetch_tenant_subnets
+    end
+
+    private
+
+    def fetch_tenant_subnets
+      subnets_list = subnets.map { |subnet| subnet['name'] }
+      self.subnets = @foreman_client.subnets(subnets_list)
     end
   end
 end
