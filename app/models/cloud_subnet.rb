@@ -30,6 +30,7 @@ class CloudSubnet < ApplicationRecord
   virtual_column :host_routes,      :type => :string
   virtual_column :ip_version,       :type => :string
   virtual_column :subnetpool_id,    :type => :string
+  virtual_column :assigned_vms,     :type => :string
 
   # Define all getters and setters for extra_attributes related virtual columns
   %i(allocation_pools host_routes ip_version subnetpool_id).each do |action|
@@ -40,6 +41,10 @@ class CloudSubnet < ApplicationRecord
     define_method(action) do
       extra_attributes_load(action)
     end
+  end
+
+  def assigned_vms
+    network_ports&.collect{|x| x&.device&.vm}.map{|x| { x.service&.name => { [:vm_id => x.uid_ems, :vm_name => x.name] => x.hardware.nics.map { |nic| {nic.name => nic.network} } } } }
   end
 
   def dns_nameservers_show
