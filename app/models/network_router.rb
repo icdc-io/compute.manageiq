@@ -53,17 +53,19 @@ class NetworkRouter < ApplicationRecord
   def assign_route(data = nil)
    raise ArgumentError.new("No arguments match") unless data
    network_service = self.ext_management_system.openstack_handle.detect_network_service
-   routes = network_service.get_router(self.ems_ref).dig(:body, "router", "routes")
+   routes = network_service.get_router(self.ems_ref)[:body]["router"]["routes"]
    routes << data
    network_service.update_router(self.ems_ref, {:routes => routes})
+   self.ext_management_system.refresh_ems
   end
 
   def remove_route(data = nil)
     raise ArgumentError.new("No arguments match") unless data
     network_service = self.ext_management_system.openstack_handle.detect_network_service
-    routes = network_service.get_router(self.ems_ref).dig(:body, "router", "routes")
+    routes = network_service.get_router(self.ems_ref)[:body]["router"]["routes"]
     routes.delete_if { |route| route["destination"] == data["destination"] }
     network_service.update_router(self.ems_ref, {:routes => routes})
+    self.ext_management_system.refresh_ems
   end
 
   private
