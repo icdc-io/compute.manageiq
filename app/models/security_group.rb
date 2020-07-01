@@ -31,4 +31,14 @@ class SecurityGroup < ApplicationRecord
     # TODO: use a factory on ExtManagementSystem side to return correct class for each provider
     ext_management_system && ext_management_system.class::SecurityGroup
   end
+
+  def add_firewall_rule(data = nil)
+    %i[direction security_group_id].each do |param|
+      raise "DBG LDM Required parameter '#{param}' was not found" unless data[param.to_s]
+    end
+    network_service = self.ext_management_system.openstack_handle.detect_network_service
+    rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
+    rule.save
+    self.ext_management_system.refresh_ems
+  end
 end
