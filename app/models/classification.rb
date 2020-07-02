@@ -316,7 +316,7 @@ class Classification < ApplicationRecord
   end
 
   def category?
-    parent_id.nil?
+    parent_id == 0
   end
 
   def category
