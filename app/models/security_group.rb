@@ -34,11 +34,34 @@ class SecurityGroup < ApplicationRecord
 
   def add_firewall_rule(data = nil)
     %i[direction security_group_id].each do |param|
-      raise "DBG LDM Required parameter '#{param}' was not found" unless data[param.to_s]
+      raise "Required parameter '#{param}' was not found" unless data[param.to_s]
     end
     network_service = self.ext_management_system.openstack_handle.detect_network_service
     rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
     rule.save
     self.ext_management_system.refresh_ems
+  end
+
+  def remove_firewall_rule(data = nil)
+    raise ArgumentError.new("No arguments match") unless data
+    network_service = self.ext_management_system.openstack_handle.detect_network_service
+    rule = network_service.security_groups.get(self.ems_ref).security_group_rules.get(data)
+    rule.destroy
+    self.ext_management_system.refresh_ems
+  end
+
+  def assigned_vms
+    network_ports.collect { |port| port.device&.vm }
+                  .map { |vm| vm.nics }
+                  .map { |nic| { 
+                    :nic => nic.first.name, 
+                    :nicId => nic.first.uid_ems, 
+                    :ipv4 => nic.first.network&.ipaddress, 
+                    :ipv6 => nic.first.network&.ipv6address, 
+                    :mac => nic.first.address, 
+                    :vmName => nic.first.vm&.name, 
+                    :vmId => nic.first.vm&.uid_ems, 
+                    :serviceName => nic.first.vm&.service&.name 
+                  } }
   end
 end
