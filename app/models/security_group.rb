@@ -50,6 +50,22 @@ class SecurityGroup < ApplicationRecord
     self.ext_management_system.refresh_ems
   end
 
+  def edit_firewall_rule(data = nil)
+    # TODO: this operation is not stable now and needs refactoring
+    raise ArgumentError.new("No arguments match") unless data
+    network_service = self.ext_management_system.openstack_handle.detect_network_service
+    security_group_rules = network_service.security_groups.get(self.ems_ref).security_group_rules
+    newRule = security_group_rules.new(data.except('id'))
+    oldRule = security_group_rules.get(data['id'])
+
+    duplicates = security_group_rules.find_all { |i| i.attributes.with_indifferent_access === data }
+    raise RuntimeError.new("Can not save duplicated rule!") if duplicates.length > 0
+    
+    newRule.save
+    oldRule.destroy
+    self.ext_management_system.refresh_ems
+  end
+
   def assigned_vms
     network_ports.collect { |port| port.device&.vm }
                   .map { |vm| vm.nics }
