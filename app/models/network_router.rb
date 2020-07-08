@@ -68,6 +68,27 @@ class NetworkRouter < ApplicationRecord
     self.ext_management_system.refresh_ems
   end
 
+  def edit_route(data = nil)
+    raise ArgumentError.new("No arguments match") unless data
+    network_service = self.ext_management_system.openstack_handle.detect_network_service
+    routes = network_service.get_router(self.ems_ref)[:body]["router"]["routes"]
+
+    if data["oldDestination"] === data["newRoute"]["destination"]
+      routes.delete_if { |route| route["destination"] == data["oldDestination"] }
+      routes << data["newRoute"]
+    else
+      if routes.find { |route| route["destination"] == data["newRoute"]["destination"] }
+        raise RuntimeError.new("The route with destination #{data["newRoute"]["destination"]} already exists")
+      else
+        routes.delete_if { |route| route["destination"] == data["oldDestination"] }
+        routes << data["newRoute"]
+      end
+    end
+
+    network_service.update_router(self.ems_ref, {:routes => routes})
+    self.ext_management_system.refresh_ems
+  end
+
   private
 
   def extra_attributes_save(key, value)
