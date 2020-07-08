@@ -43,10 +43,20 @@ class CloudSubnet < ApplicationRecord
     end
   end
 
+
   def assigned_vms
     network_ports.collect { |port| port.device&.vm }
-	         .map { |vm| { :service => vm.service&.name, :vmName => vm.name, :vmId => vm.uid_ems, :vmNics => vm.hardware.nics
-	         .map { |nic| { :nicId => nic.uid_ems, :nic => nic.name, :ipv4 => nic.network.ipaddress, :ipv6 => nic.network.ipv6address, :mac => nic.address } } } }
+                  .map { |vm| vm.nics }
+                  .map { |nic| {
+                    :nic => nic.first.name,
+                    :nicId => nic.first.uid_ems,
+                    :ipv4 => nic.first.network&.ipaddress,
+                    :ipv6 => nic.first.network&.ipv6address,
+                    :mac => nic.first.address,
+                    :vmName => nic.first.vm&.name,
+                    :vmId => nic.first.vm&.uid_ems,
+                    :serviceName => nic.first.vm&.service&.name
+                  } }
   end
 
   def dns_nameservers_show
