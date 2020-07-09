@@ -16,6 +16,8 @@ class SecurityGroup < ApplicationRecord
   belongs_to :resource_group
   has_many   :firewall_rules, :as => :resource, :dependent => :destroy
 
+  virtual_column :assigned_vms,     :type => :string
+
   has_many :network_port_security_groups, :dependent => :destroy
   has_many :network_ports, :through => :network_port_security_groups
   # TODO(lsmola) we should be able to remove table security_groups_vms, if it's unused now. Can't be backported
