@@ -88,18 +88,6 @@ class ChargeableField < ApplicationRecord
     group == 'metering' && source == 'used'
   end
 
-  def self.cols_on_metric_rollup
-    (%w(id tag_names resource_id) + chargeable_cols_on_metric_rollup).uniq
-  end
-
-  def self.col_index(column)
-    @rate_cols ||= {}
-    column = VIRTUAL_COL_USES[column] || column
-    @rate_cols[column] ||= cols_on_metric_rollup.index(column.to_s)
-  end
-
-  private
-
   def rate_name
     "#{group}_#{source}"
   end
