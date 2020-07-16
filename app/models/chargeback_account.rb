@@ -148,8 +148,8 @@ class ChargebackAccount < Chargeback
  }
   end
 
-  def self.vm_owner(consumption)
-    @vm_owners ||= vms.each_with_object({}) { |vm, res| res[vm.id] = vm.evm_owner_name }
+  def self.vm_owner(consumption, region)
+    @vm_owners ||= vms(region).each_with_object({}) { |vm, res| res[vm.id] = vm.evm_owner_name }
     @vm_owners[consumption.resource_id] ||= consumption.resource.evm_owner_name
   end
 
@@ -215,7 +215,7 @@ class ChargebackAccount < Chargeback
 
   private
 
-  def init_extra_fields(consumption, _region)
+  def init_extra_fields(consumption, region)
     disk_size = []
     self.vm_id         = consumption.resource_id
     service            = self.class.get_service(consumption.resource.try(:guid))
@@ -224,7 +224,7 @@ class ChargebackAccount < Chargeback
     self.vm_name       = consumption.resource_name
     self.vm_uid        = consumption.resource.ems_ref
     self.vm_guid       = consumption.resource.try(:guid)
-    self.owner_name    = self.class.vm_owner(consumption)
+    self.owner_name    = self.class.vm_owner(consumption, region)
     self.provider_name = consumption.parent_ems.try(:name)
     self.provider_uid  = consumption.parent_ems.try(:guid)
     self.license_cost  = consumption.resource.try(:license_cost)
