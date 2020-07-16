@@ -215,7 +215,7 @@ class ChargebackAccount < Chargeback
 
   private
 
-  def init_extra_fields(consumption)
+  def init_extra_fields(consumption, _region)
     disk_size = []
     self.vm_id         = consumption.resource_id
     service            = self.class.get_service(consumption.resource.try(:guid))
