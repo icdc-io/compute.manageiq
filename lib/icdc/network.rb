@@ -37,7 +37,7 @@ module Icdc
 
     def as_json(options = {})
       parameters_hash = {}
-      parameters.each { |p| parameters_hash[p["name"].to_sym] = p["value"] } if parameters
+      parameters&.each { |p| parameters_hash[p["name"].to_sym] = p["value"] }
       # We need attribute whitelist here, because there is sensitive data:
       # DHCP addresses, DHCP ip range, Smartproxy IDs
       @table.as_json({
@@ -70,7 +70,7 @@ module Icdc
         [net_name, nic_arr.group_by(&:address)]
       end.to_h
       # Request authorized networks (CMDB DHCP records) for both: VM nics and service VIPs
-      networks = foreman_networks(service.region_id, net_macs) do |alloc|
+      networks = fetch_networks(service, net_macs) do |alloc|
         nic = net_mac_nics.dig(alloc.subnet, alloc.mac)&.first
         if nic
           alloc.nic = nic
@@ -88,6 +88,15 @@ module Icdc
         alloc
       end
       networks
+    end
+
+    def self.fetch_networks(service, net_macs)
+      # TODO: make it properly someday :)
+      begin
+        foreman_networks(service.region_id, net_macs) +  ovirt_networks(net_macs)
+      rescue
+        ovirt_networks(net_macs)
+      end
     end
 
     def self.foreman_networks(foreman_id, net_macs)
@@ -109,6 +118,32 @@ module Icdc
           yield(IpAllocation.new(alloc)) if block_given?
         end
         network
+      end
+    end
+
+    def self.ovirt_networks(net_macs)
+      net_macs.map do |net, macs|
+        network_params = CloudNetwork.find_by(:name => net).cloud_subnets&.first
+        network = new(network_params.as_json.merge!(:name => network_params.cloud_network.name))
+        network.allocations = os_allocs(macs) do |alloc|
+          yield(IpAllocation.new(alloc)) if block_given?
+        end
+        network
+      end
+    end
+
+    def self.os_allocs(macs)
+      macs.map do |mac|
+        alloc = NetworkPort.find_by(:mac_address => mac)
+        nic = {
+          :hostname => '',
+          :ip       => alloc.ipaddresses&.first,
+          :mac      => alloc.mac_address
+        }
+        os_alloc = OpenStruct.new(nic)
+        os_alloc.subnet = alloc.cloud_subnets&.first&.name
+	os_alloc.type = :nic
+        os_alloc
       end
     end
 
@@ -159,3 +194,4 @@ module Icdc
     end
   end
 end
+
