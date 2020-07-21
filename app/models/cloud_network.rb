@@ -3,6 +3,9 @@ class CloudNetwork < ApplicationRecord
   include SupportsFeatureMixin
   include CloudTenancyMixin
   include CustomActionsMixin
+  include CustomAttributeMixin
+
+  ALLOWED_CUSTOM_ATTRIBUTES = %w(description)
 
   acts_as_miq_taggable
 
@@ -53,6 +56,45 @@ class CloudNetwork < ApplicationRecord
 
   def self.tenant_id_clause_format(tenant_ids)
     ["((tenants.id IN (?) OR cloud_networks.shared IS TRUE OR cloud_networks.external_facing IS TRUE) AND ext_management_systems.tenant_mapping_enabled IS TRUE) OR ext_management_systems.tenant_mapping_enabled IS FALSE OR ext_management_systems.tenant_mapping_enabled IS NULL", tenant_ids]
+  end
+
+  def self.create_network(id, data = nil)
+    raise ArgumentError.new("No arguments match") unless data
+    ext_management_system = ExtManagementSystem.find_by(:id => id)
+    network_service = ext_management_system.openstack_handle.detect_network_service
+    network = network_service.create_network(:name => data["name"])
+    network_id = network[:body]["network"]["id"]
+    ext_management_system.refresh_ems
+    refresh_wait(network_id)
+    CloudNetwork.find_by(:ems_ref => network_id).add_description({'description' => data["description"]})
+    network_id
+  end
+
+  def self.add_subnet(id, net_id, data)
+    ext_management_system = ExtManagementSystem.find_by(:id => id)
+    network_service = ext_management_system.openstack_handle.detect_network_service
+    network_service.networks.find_by_id(net_id).subnets.create(data)
+    ext_management_system.refresh_ems
+  end
+
+  def self.refresh_wait(network_id)
+    CloudNetwork.uncached do
+      30.times do
+        network = CloudNetwork.find_by(:ems_ref => network_id)
+        if network
+          break
+        else
+          sleep 2
+          next
+        end
+      end
+    end
+  end
+
+  def add_description(data)
+    ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| self.miq_custom_set(attr, data[attr])}
+  rescue => e
+    _log.error("Unable to set custom attributes for network #{self}: #{e}")
   end
 
   private
