@@ -125,9 +125,8 @@ module Icdc
       net_macs.map do |net, macs|
         network_params = CloudNetwork.find_by(:name => net).cloud_subnets&.first
         network = new(network_params.as_json.merge!(:name => network_params.cloud_network.name))
-        network.allocations = os_allocs(macs) do |alloc|
-          yield(IpAllocation.new(alloc)) if block_given?
-        end
+	network.allocations = os_allocs(macs)
+	p network
         network
       end
     end
@@ -143,7 +142,10 @@ module Icdc
         os_alloc = OpenStruct.new(nic)
         os_alloc.subnet = alloc.cloud_subnets&.first&.name
 	os_alloc.type = :nic
-        os_alloc
+	os_alloc.vm_id = alloc.device&.vm&.id
+	os_alloc.vm_name = alloc.device&.vm&.name
+	os_alloc.hostname = alloc.device&.hardware&.hostnames&.first
+	IpAllocation.new(os_alloc)
       end
     end
 
