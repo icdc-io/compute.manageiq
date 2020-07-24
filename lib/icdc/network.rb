@@ -136,15 +136,15 @@ module Icdc
         alloc = NetworkPort.find_by(:mac_address => mac)
         nic = {
           :hostname => '',
-          :ip       => alloc.ipaddresses&.first,
-          :mac      => alloc.mac_address
+          :ip       => alloc&.ipaddresses&.first,
+          :mac      => alloc&.mac_address
         }
         os_alloc = OpenStruct.new(nic)
-        os_alloc.subnet = alloc.cloud_subnets&.first&.name
+        os_alloc.subnet = alloc&.cloud_subnets&.first&.name
 	os_alloc.type = :nic
-	os_alloc.vm_id = alloc.device&.vm&.id
-	os_alloc.vm_name = alloc.device&.vm&.name
-	os_alloc.hostname = alloc.device&.hardware&.hostnames&.first
+	os_alloc.vm_id = alloc&.device&.vm&.id
+	os_alloc.vm_name = alloc&.device&.vm&.name
+	os_alloc.hostname = alloc&.device&.hardware&.hostnames&.first
 	IpAllocation.new(os_alloc)
       end
     end
