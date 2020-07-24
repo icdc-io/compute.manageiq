@@ -16,6 +16,11 @@ module ManageIQ::Providers
       self
     end
 
+    def self.catalog_types
+      {}
+    end
+    delegate :catalog_types, :to => :class
+
     def supported_catalog_types
       []
     end

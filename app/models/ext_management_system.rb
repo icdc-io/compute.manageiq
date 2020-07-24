@@ -43,8 +43,16 @@ class ExtManagementSystem < ApplicationRecord
     leaf_subclasses.select(&:supported_for_create?)
   end
 
+  def self.supported_types_for_catalog
+    supported_subclasses.select(&:supported_for_catalog?)
+  end
+
   def self.supported_for_create?
     !reflections.include?("parent_manager")
+  end
+
+  def self.supported_for_catalog?
+    catalog_types.present?
   end
 
   def self.provider_create_params
