@@ -1099,7 +1099,7 @@
   :security: none
   :timeout: 120
   :authentication_timeout: 30.seconds
-  :url:
+  :url: localhost:4000
 :workers:
   :worker_base:
     :defaults:
