@@ -70,10 +70,34 @@ class CloudNetwork < ApplicationRecord
     network_id
   end
 
+  def edit_network(net_id, data = nil)
+    raise ArgumentError.new("Must specify data for editing resource") unless data
+    network_service = ext_management_system.openstack_handle.detect_network_service
+    network = network_service.update_network(net_id, {:name => data["name"]})
+    ext_management_system.refresh_ems
+  end
+
   def self.add_subnet(id, net_id, data)
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
     network_service.networks.find_by_id(net_id).subnets.create(data)
+    ext_management_system.refresh_ems
+  end
+
+  def edit_subnet(net_id, data)
+    network_service = ext_management_system.openstack_handle.detect_network_service
+    network = network_service.networks.find_by_id(net_id)
+    if data["subnet"]
+      data["subnet"]["network_id"] = net_id
+      if network.subnets.first
+        subnet_id = network.subnets.first.id
+        network.subnets.create(data["subnet"]) if network_service.delete_subnet(subnet_id)
+      else
+        network.subnets.create(data["subnet"])
+      end
+    else
+      network_service.delete_subnet(network.subnets.first.id)
+    end
     ext_management_system.refresh_ems
   end
 
