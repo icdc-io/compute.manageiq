@@ -1,5 +1,8 @@
+require 'ancestry'
+require 'ancestry_patch'
+
 class MiqAeNamespace < ApplicationRecord
-  acts_as_tree
+  has_ancestry
   include MiqAeSetUserInfoMixin
   include MiqAeYamlImportExportMixin
 
@@ -8,53 +11,71 @@ class MiqAeNamespace < ApplicationRecord
                          /^commit_time/, /^commit_sha/, /^ref$/, /^ref_type$/,
                          /^last_import_on/, /^source/, /^top_level_namespace/].freeze
 
-  belongs_to :parent,        :class_name => "MiqAeNamespace",  :foreign_key => :parent_id
-  has_many   :ae_namespaces, :class_name => "MiqAeNamespace",  :foreign_key => :parent_id,    :dependent => :destroy
-  has_many   :ae_classes, -> { includes([:ae_methods, :ae_fields, :ae_instances]) },    :class_name => "MiqAeClass",      :foreign_key => :namespace_id, :dependent => :destroy
+  belongs_to :domain, :class_name => "MiqAeDomain", :inverse_of => false
+  has_many :ae_classes, -> { includes([:ae_methods, :ae_fields, :ae_instances]) }, :class_name => "MiqAeClass",
+           :foreign_key => :namespace_id, :dependent => :destroy, :inverse_of => :ae_namespace
 
-  validates_presence_of   :name
-  validates_format_of     :name, :with    => /\A[\w\.\-\$]+\z/i,
-                                 :message => N_("may contain only alphanumeric and _ . - $ characters")
-  validates_uniqueness_of :name, :scope => :parent_id, :case_sensitive => false
+  validates :name,
+            :format     => {:with => /\A[\w\.\-\$]+\z/i, :message => N_("may contain only alphanumeric and _ . - $ characters")},
+            :presence   => true,
+            :uniqueness => {:scope => :ancestry, :case_sensitive => false}
+
+  alias_attribute :fqname_sans_domain, :relative_path
+  virtual_has_many :ae_namespaces
+  alias ae_namespaces children
+
+  before_validation :set_relative_path
+  after_save :set_children_relative_path
+
+  def parent
+    parent_id == domain_id ? domain : super
+  end
 
   def self.lookup_by_fqname(fqname, include_classes = true)
     return nil if fqname.blank?
 
-    fqname   = fqname[0] == '/' ? fqname : "/#{fqname}"
-    fqname   = fqname.downcase
-    last     = fqname.split('/').last
-    low_name = arel_table[:name].lower
-    query    = includes(:parent)
-    query    = query.includes(:ae_classes) if include_classes
-    query.where(low_name.eq(last)).detect { |namespace| namespace.fqname.downcase == fqname }
+    dname, *partial = split_fqname(fqname)
+    domain_query = MiqAeDomain.unscoped.where(MiqAeDomain.arel_table[:name].lower.eq(dname)).where(:domain_id => nil)
+    return domain_query.first if partial.empty?
+
+    query = include_classes ? includes(:ae_classes) : all
+    query = query.where(arel_table[:relative_path].lower.eq(partial.join("/")))
+    query.find_by(:domain_id => domain_query.select(:id))
   end
 
   singleton_class.send(:alias_method, :find_by_fqname, :lookup_by_fqname)
   Vmdb::Deprecation.deprecate_methods(singleton_class, :find_by_fqname => :lookup_by_fqname)
 
+  def self.split_fqname(fqname)
+    fqname = fqname[1..-1] if fqname[0] == '/'
+    fqname.downcase.split('/')
+  end
+
   def self.find_or_create_by_fqname(fqname, include_classes = true)
     return nil if fqname.blank?
 
-    fqname   = fqname[1..-1] if fqname[0] == '/'
+    fqname = fqname[1..-1] if fqname[0] == '/'
     found = lookup_by_fqname(fqname, include_classes)
     return found unless found.nil?
 
     parts = fqname.split('/')
     new_parts = [parts.pop]
     loop do
+      break if parts.empty?
+
       found = lookup_by_fqname(parts.join('/'), include_classes)
       break unless found.nil?
       new_parts.unshift(parts.pop)
-      break if parts.empty?
     end
 
     new_parts.each do |p|
-      found = create(:name => p, :parent_id => found.try(:id))
+      found = found ? create(:name => p, :parent => found) : create(:name => p)
     end
 
     found
   end
 
+  # TODO: broken since 2017
   def self.find_tree(find_options = {})
     namespaces = where(find_options)
     ns_lookup = namespaces.inject({}) do |h, ns|
@@ -82,7 +103,9 @@ class MiqAeNamespace < ApplicationRecord
   end
 
   def fqname
-    @fqname ||= "/#{ancestors.collect(&:name).reverse.push(name).join('/')}"
+    return "/#{name}" if domain_id.blank?
+
+    ["", domain&.name, relative_path].compact.join("/")
   end
 
   def editable?(user = User.current_user)
@@ -97,27 +120,31 @@ class MiqAeNamespace < ApplicationRecord
     fqname.sub(domain_name.to_s, '')
   end
 
-  def fqname_sans_domain
-    fqname.split('/')[2..-1].join("/")
-  end
-
   def domain_name
-    domain.try(:name)
-  end
-
-  def domain
-    if domain?
-      self
-    elsif (ns = ancestors.last) && ns.domain?
-      ns
-    end
+    domain&.name
   end
 
   def domain?
-    parent_id.nil? && name != '$'
+    root? && name != '$'
   end
 
   def self.display_name(number = 1)
     n_('Automate Namespace', 'Automate Namespaces', number)
+  end
+
+  private
+
+  def set_relative_path
+    return if root?
+
+    self.domain_id ||= parent.domain_id || parent.id
+    self.relative_path = [parent.relative_path, name].compact.join("/") if name_changed? || relative_path.nil?
+  end
+
+  def set_children_relative_path
+    return unless saved_change_to_relative_path?
+
+    ae_namespaces.each { |ns| ns.update!(:parent => self, :relative_path => nil) }
+    ae_classes.each { |klass| klass.update!(:ae_namespace => self, :relative_path => nil) }
   end
 end
