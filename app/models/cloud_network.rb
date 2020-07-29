@@ -121,6 +121,13 @@ class CloudNetwork < ApplicationRecord
     _log.error("Unable to set custom attributes for network #{self}: #{e}")
   end
 
+  def delete_network
+    network_service = ext_management_system.openstack_handle.detect_network_service
+    network_service.delete_network(self.ems_ref)
+    destroy!
+    ext_management_system.refresh_ems
+  end
+
   private
 
   def extra_attributes_save(key, value)
