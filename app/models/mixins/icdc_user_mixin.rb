@@ -33,11 +33,17 @@ module IcdcUserMixin
   end
 
   def get_user_available_subnets
-    all_user_networks = get_user_subnets
-    return nil if all_user_networks.empty?
-
-    available_networks = Icdc::Foreman::Client.new(miq_region.region).free_ips(all_user_networks.collect { |x| x["subnet"] }).reject { |entry| entry[:ip].nil? }.map { |entry| entry[:subnet] }
-    all_user_networks.select { |entry| available_networks.include?(entry["subnet"]) }
+    # ahrechushkin: Unfortunately since icdc_j version we use OVN networks without Foreman
+    # TODO: fix it more perfectly
+    case miq_region.description.downcase
+    when "idc", "nb5"
+      all_user_networks = get_user_subnets
+      return nil if all_user_networks.empty?
+      available_networks = Icdc::Foreman::Client.new(miq_region.region).free_ips(all_user_networks.collect { |x| x["subnet"] }).reject { |entry| entry[:ip].nil? }.map { |entry| entry[:subnet] }
+      all_user_networks.select { |entry| available_networks.include?(entry["subnet"]) }
+    else
+      get_user_subnets
+    end
   end
 
   def ssh_keys
