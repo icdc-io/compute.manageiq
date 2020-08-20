@@ -69,7 +69,7 @@ class SecurityGroup < ApplicationRecord
   end
 
   def assigned_vms
-    network_ports.collect { |port| port.device&.vm }
+    network_ports.where(:device_type => "GuestDevice").collect { |port| port.device&.vm }
                   .map { |vm| vm.nics }
                   .map { |nic| { 
                     :nic => nic.first.name, 
