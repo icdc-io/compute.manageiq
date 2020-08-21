@@ -6,6 +6,7 @@ if ENV["RAILS_ENV"] == "production" || ENV["RAILS_ENV"] == "test"
   override_gem 'manageiq-providers-ovirt', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-ovirt.git", branch: "icdc_j"
   override_gem 'manageiq-providers-power_systems', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", branch: "icdc_j"
   override_gem 'hmc-sdk-ruby', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", branch: "icdc_j"
+  override_gem 'manageiq-decorators', git: "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-decorators.git", branch: "icdc_j"
 elsif ENV["RAILS_ENV"] == "development"
   override_gem 'manageiq-schema', :path => File.expand_path('/opt/manageiq/manageiq-schema')
   override_gem 'manageiq-api', :path => File.expand_path('/opt/manageiq/manageiq-api')
