@@ -70,9 +70,10 @@ module Icdc
         h[:uptime] = uptime.sum
         storage =  squash_disks(disk_type)
         h[:backups_size] = service.second.first['backup_disk']
-        h[:disk_fast] = storage[:Fast]
-        h[:disk_medium] = storage[:Medium]
-        h[:disk_slow] = storage[:Slow]
+        h[:disk_nvme] = storage[:NVMe]
+        h[:disk_ssd] = storage[:SSD]
+        h[:disk_hdd_c] = storage[:'HDD Cold']
+        h[:disk_hdd_s] = storage[:'HDD Standard']
         result_set.push(h)
       end
       {:data => result_set, :total => calculate_total_values(result_set)}
@@ -91,7 +92,7 @@ module Icdc
 
     def self.squash_disks(disks)
       disks_array = []
-      result_hash = {:Fast => 0, :Medium => 0, :Slow => 0}
+      result_hash = {:NVMe => 0, :SSD => 0, :'HDD Cold' => 0, :'HDD Standard' => 0}
       disks.each { |d| d.split(";").each { |disk| disks_array << disk.squish } }
       disks_array.reject{|da| da == ""}.each do |disk|
         result_hash[disk.split(":").first.squish.to_sym] += disk.split(":").second.squish.to_i
