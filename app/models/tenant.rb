@@ -87,7 +87,7 @@ class Tenant < ApplicationRecord
   virtual_attribute :available_roles, :string
 
   before_save :nil_blanks
-  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group
+  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group, :build_account_infrastructure
   before_destroy :ensure_can_be_destroyed
 
   api_relay_method :set_quotas do |options|
@@ -442,6 +442,11 @@ class Tenant < ApplicationRecord
       role = "project-#{role}" if self.project?
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
+  end
+
+  def build_account_infrastructure
+    return if project?
+    Icdc::Account::Infrastructure.build(name)
   end
 
   private
