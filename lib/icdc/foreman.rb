@@ -6,6 +6,20 @@ module Icdc::Foreman
     def as_json(options = nil)
       @table.as_json(options)
     end
+
+    def set_parameter(param_name, param_value)
+      payload = {:parameter => {:name => param_name, :value => param_value}}
+      if parameter_exists(param_name)
+        p = parameters.select { |param| param['name'] == param_name }
+        connection.put("/api/subnets/#{id}/parameters/#{p.first['id']}", payload)
+      else
+        connection.post("/api/subnets/#{id}/parameters", payload)
+      end
+    end
+
+    def parameter_exists(param)
+      parameters.find { |parameter| parameter['name'] == param } ? true : false
+    end
   end
 
   class SmartProxy < OpenStruct
@@ -138,6 +152,28 @@ module Icdc::Foreman
       nil
     end
 
+    def post(path, payload)
+      res = RestClient::Request.execute(
+        :method     => :post,
+        :url        => @config[:foreman_url] + path,
+        :user       => @config[:user],
+        :password   => @config[:password],
+        :verify_ssl => @config[:skip_verify] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER,
+        :payload    => payload.to_json,
+        :headers    => {
+          :content_type => :json,
+          :accept       => :json
+        }
+      )
+      JSON.parse(res)
+    rescue RestClient::NotFound
+      _log.info("Foreman subnet #{@config[:foreman_url] + path} not found")
+      nil # not an error
+    rescue StandardError => e
+      _log.error("Foreman request to #{@config[:foreman_url] + path} failed with error: #{e.message}")
+      nil
+    end
+
     private
 
     def parallel(items)
@@ -193,6 +229,7 @@ module Icdc::Foreman
           founded && founded['value'].downcase == param_value
         end
       end
+      result.each { |subnet| subnet.connection = @foreman_client }
       result
     end
 
