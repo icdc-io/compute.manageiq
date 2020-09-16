@@ -101,6 +101,7 @@ module Icdc
 
     def self.foreman_networks(foreman_id, net_macs)
       client = Icdc::Foreman::Client.new(foreman_id)
+      return [] unless client.ready?
       subnets = client.subnets(net_macs.keys) # L2 net name == L3 subnet name in foreman for IPv4
                       .reject { |subnet| subnet.name.nil? } # L2 network has no equalent in Foreman
                       .reject { |subnet| subnet.dhcp.nil? } # L3 subnet is not managed by Foreman
