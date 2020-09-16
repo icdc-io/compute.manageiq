@@ -84,7 +84,12 @@ module Icdc::Foreman
       @config = CONFIG[region]
     end
 
+    def ready?
+      @config.present?
+    end
+
     def subnets(names)
+      return [] unless ready?
       subnets = []
       tasks = parallel(names) { |name| subnet(name) }
       process(tasks) do |net|
@@ -94,6 +99,7 @@ module Icdc::Foreman
     end
 
     def ip_allocations(subnet_macs)
+      return [] unless ready?
       allocs = []
       tasks = parallel(subnet_macs) do |entry|
         entry[:subnet].dhcp.ip_allocations(entry[:subnet], entry[:macs])
@@ -105,6 +111,7 @@ module Icdc::Foreman
     end
 
     def free_ips(subnets)
+      return [] unless ready?
       ips = []
       tasks = parallel(subnets) { |subnet| free_ip(subnet) }
       process(tasks) do |ip|
@@ -216,12 +223,19 @@ module Icdc::Foreman
         raise ArgumentError, "Required parameter #{param} not found" unless param
       end
       @foreman_client = Icdc::Foreman::Client.new(region)
-      org_data = @foreman_client.get("/api/organizations/#{tenant_name}")
-      super(org_data)
-      fetch_tenant_subnets
+      if ready?
+        org_data = @foreman_client.get("/api/organizations/#{tenant_name}")
+        super(org_data)
+        fetch_tenant_subnets
+      end      
+    end
+
+    def ready?
+      @foreman_client.ready?
     end
 
     def get_subnets(filters = {})
+      return [] unless ready?
       result = subnets
       filters.each do |param_name, param_value|
         result = result.select do |subnet|
@@ -234,6 +248,7 @@ module Icdc::Foreman
     end
 
     def assign_subnet(name)
+      return [] unless ready?
       payload = {:organization => {:name => self.name}, :subnets => []}
       subnets.each { |subnet| payload[:subnets] << {:name => subnet.name} }
       payload[:subnets] << {:name => name}
