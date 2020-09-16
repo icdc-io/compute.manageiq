@@ -1,0 +1,18 @@
+resources:
+  routers:
+  - default
+  networks:
+  - public:
+      mtu: 1500
+      subnet: 
+        cidr: 10.209.0.0/16
+        dhcp: true
+        gateway: 10.209.0.1
+        router: default
+  - private:
+      mtu: 1500
+      subnet:
+        cidr: 10.210.0.0/16
+        dhcp: true
+        gateway: 10.210.0.1
+        router: default
