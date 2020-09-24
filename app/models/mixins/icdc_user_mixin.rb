@@ -25,9 +25,9 @@ module IcdcUserMixin
   def subnets
     subnet_hash = {}
     ovn_subnets = CloudSubnet.all.select{ |subnet| subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{current_tenant.name.downcase}_") }
-                                 .collect(&:name).map { |subnet_name| subnet_hash.merge!(subnet_name => "#{subnet_name}(#{subnet_name})") }
+                                 .collect(&:name).map { |subnet_name| subnet_hash.merge!("#{subnet_name}(#{subnet_name})" => subnet_name) }
     foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => current_tenant.name)
-    foreman_tenant.subnets.map { |subnet| subnet_hash.merge!(subnet.description => "#{subnet.name}(#{subnet.name})") } if foreman_tenant.ready?
+    foreman_tenant.subnets.map { |subnet| subnet_hash.merge!("#{subnet.name}(#{subnet.name})" => subnet.description) } if foreman_tenant.ready?
     subnet_hash
   end
 end
