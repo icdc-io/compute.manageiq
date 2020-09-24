@@ -5,45 +5,7 @@ module IcdcUserMixin
 
   included do
     virtual_attribute :ssh_keys, :string
-    virtual_column :get_user_subnets, :type => :string
-    virtual_column :get_user_available_subnets, :type => :string
-  end
-
-  def get_user_subnets
-    networks = []
-    networks << tagged_with(:ns => '/managed/networks')
-    networks.push(*current_group.tagged_with(:ns => '/managed/networks'))
-    networks.push(*current_group.tenant.tagged_with(:ns => '/managed/networks'))
-    current_group.tenant.ancestry.split('/').each do |tenant_id|
-      networks.push(*Tenant.find_by(:id => tenant_id).tagged_with(:ns => '/managed/networks'))
-    end
-    networks = networks.uniq
-    nets = []
-    networks.each do |tag|
-      tag_info = {}
-      next unless /\/managed\/networks\// =~ tag.name
-
-      tag_info["subnet"] = tag.categorization["name"]
-      tag_info["description"] = tag.categorization["description"]
-      unless tag_info["description"].include?("All IP consumed")
-        nets.push(tag_info)
-      end
-    end
-    nets
-  end
-
-  def get_user_available_subnets
-    # ahrechushkin: Unfortunately since icdc_j version we use OVN networks without Foreman
-    # TODO: fix it more perfectly
-    case miq_region.description.downcase
-    when "idc", "nb5"
-      all_user_networks = get_user_subnets
-      return nil if all_user_networks.empty?
-      available_networks = Icdc::Foreman::Client.new(miq_region.region).free_ips(all_user_networks.collect { |x| x["subnet"] }).reject { |entry| entry[:ip].nil? }.map { |entry| entry[:subnet] }
-      all_user_networks.select { |entry| available_networks.include?(entry["subnet"]) }
-    else
-      get_user_subnets
-    end
+    virtual_column :subnets, :string
   end
 
   def ssh_keys
@@ -57,5 +19,15 @@ module IcdcUserMixin
       result.push(template)
     end
     result
+  end
+
+ 
+  def subnets
+    subnet_hash = {}
+    ovn_subnets = CloudSubnet.all.select{ |subnet| subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{current_tenant.name.downcase}_") }
+                                 .collect(&:name).map { |subnet_name| subnet_hash.merge!(subnet_name => "#{subnet_name}(#{subnet_name})") }
+    foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => current_tenant.name)
+    foreman_tenant.subnets.map { |subnet| subnet_hash.merge!(subnet.description => "#{subnet.name}(#{subnet.name})") } if foreman_tenant.ready?
+    subnet_hash
   end
 end

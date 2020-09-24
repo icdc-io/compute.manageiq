@@ -111,7 +111,7 @@ class Service < ApplicationRecord
   virtual_column :location,                                 :type => :string
   virtual_column :license_type,                             :type => :string
   virtual_column :license_cost,                             :type => :integer
-  virtual_column :get_user_subnets,                         :type => :string
+  virtual_column :subnets,                                  :type => :string
 
   validates :name, :presence => true
 
@@ -182,8 +182,8 @@ class Service < ApplicationRecord
     MiqRequest.find_by_id(request.resource_id).options[:license_cost] if request
   end
 
-  def get_user_subnets
-    evm_owner.get_user_subnets
+  def subnets
+    evm_owner.subnets
   end
 
   def service_id
