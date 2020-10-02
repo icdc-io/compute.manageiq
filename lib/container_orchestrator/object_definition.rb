@@ -84,7 +84,7 @@ class ContainerOrchestrator
       {
         :exec                => {:command => ["/usr/local/bin/manageiq_liveness_check"]},
         :initialDelaySeconds => 120,
-        :timeoutSeconds      => 2
+        :timeoutSeconds      => 3
       }
     end
 
