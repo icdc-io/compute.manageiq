@@ -6,8 +6,11 @@ require 'ipaddr'
 
 class HaproxyCluster < ApplicationRecord
   def self.get_proxy_server(service)
-    region_number = service.region_number
-    HaproxyCluster.in_region(region_number).first
+    location_name = service.miq_region.description.downcase
+    account = service.tenant.project? && service.tenant.parent || service.tenant
+    account_name = account.name.downcase.slice(0..4)
+    HaproxyCluster.in_region(service.region_number).find_by(:name => "#{location_name}_#{account_name}_default") ||
+    HaproxyCluster.in_region(service.region_number).first # legacy for IDC/NB5
   end
 
   def self.create_proxy_server(params)
@@ -169,10 +172,8 @@ class HaproxyCluster < ApplicationRecord
       },
     }
 
-    @region = object.region_number
-
     data[:vms].each do |vm|
-      raise "Wrong or private IP address #{vm[:host]}" unless ip_allowed(vm[:host])
+      raise "Wrong or private IP address #{vm[:host]}" unless ip_allowed(object, vm[:host])
       server = {"name" => vm[:id], "host" => vm[:host], "port" => data[:port]}
       body["backend"]["servers"].push(server)
     end
@@ -180,31 +181,16 @@ class HaproxyCluster < ApplicationRecord
     body
   end
 
-  def public_subnets
-    @public_subnets ||= find_public_subnets
+  def public_subnets(service)
+    @public_subnets ||= begin
+      service.networks
+        .reject{|n| n.name.match?(/^\w{3}_vl_/)} # Reject Foreman private VLAN
+        .map{|n| n.network_address || n.cidr}.compact # network_address = Foreman, cidr = OVN
+        .map{|addr| IPAddr.new(addr)}
+    end
   end
 
-  def request_subnets
-    foreman_config = YAML.load_file('config/foreman_config.yml')[@region]
-
-    uri = URI.parse(foreman_config[:foreman_url])
-
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-
-    req = Net::HTTP::Get.new('/api/subnets')
-    req.basic_auth(foreman_config[:user], foreman_config[:password])
-
-    response = http.request(req)
-    JSON.parse(response.body)["results"]
-  end
-
-  def find_public_subnets
-    request_subnets.map { |s| IPAddr.new("#{s["network"]}/#{s["mask"]}") if s["name"].include?("pvl") }.compact
-  end
-
-  def ip_allowed(ip)
-    public_subnets.find { |s| s.include?(ip) }
+  def ip_allowed(object, ip)
+    public_subnets(object).find { |s| s.include?(ip) }
   end
 end
