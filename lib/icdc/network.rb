@@ -125,9 +125,13 @@ module Icdc
     def self.ovirt_networks(net_macs)
       net_macs.map do |net, macs|
         network_params = CloudNetwork.find_by(:name => net).cloud_subnets&.first
-        network = new(network_params.as_json.merge!(:name => network_params.cloud_network.name))
-	network.allocations = os_allocs(macs)
-	p network
+        # Remove location and account id and make human readable
+        display_name = (net.split("_")[2..-1]&.join("_") || net).humanize()
+        network = new(network_params.as_json.merge!(
+          :name => network_params.cloud_network.name,
+          :parameters => [ { "name" => "display_name", "value" => display_name } ]
+        ))
+        network.allocations = os_allocs(macs)
         network
       end
     end
