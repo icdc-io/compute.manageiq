@@ -183,7 +183,7 @@ class Service < ApplicationRecord
   end
 
   def subnets
-    evm_owner.subnets
+    evm_owner.subnets.map { |k, v| {:subnet => k.split(" ")[0], :description => v } }
   end
 
   def service_id
