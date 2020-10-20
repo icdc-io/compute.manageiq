@@ -95,6 +95,13 @@ module IcdcServiceMixin
     networks
   end
 
+  def add_haproxy_routes(data)
+    proxy_server = HaproxyCluster.get_proxy_server(self)
+    raise RuntimeError, "Haproxy cluster doesn't found"
+    response = proxy_server.add_service_routes(self, data)
+    return {:host => JSON.parse(response.body).dig("host"), :port => JSON.parse(response.body).dig("port")}
+  end
+
   private
 
   def invoke_custom_action_with_dialog(_type, resource, _action, data, custom_button)
