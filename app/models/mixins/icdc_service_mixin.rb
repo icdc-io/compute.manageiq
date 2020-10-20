@@ -90,8 +90,8 @@ module IcdcServiceMixin
         networks << gnet
       end
     end
-    # Sort IP Allocations: IPv4, IPv6
-    networks.each { |net| net.allocations = net.allocations.sort_by(&:ip) }
+    # Sort IP Allocations by Service or VM, and then by IP type: IPv4, IPv6
+    networks.each { |net| net.allocations = net.allocations.sort_by{ |a| [a.service_id || a.vm_id || 0, a.ip] } }
     networks
   end
 
