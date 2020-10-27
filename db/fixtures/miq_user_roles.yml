@@ -1388,6 +1388,7 @@
   - sui_orders
   - sui_svc_catalog
   - sui_cart
+  - sui_tags
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1438,6 +1439,7 @@
   - sui_vm
   - sui_svc_catalog
   - sui_cart
+  - sui_tags
   - service_report
   - service_report_view
   - user_profiles
@@ -1496,6 +1498,7 @@
   - sui_vm
   - sui_cart
   - sui_projects
+  - sui_tags
   - sui_users
   - service_report
   - sui_services_change_tenant
@@ -1550,6 +1553,7 @@
   - sui_vm
   - sui_cart
   - sui_projects_view
+  - sui_tags
   - sui_users_view
   - service_report_view
   - service_report_chargeback
@@ -1601,6 +1605,7 @@
   - sui_reports_view
   - sui_reports_services_show
   - sui_services
+  - sui_tags
   - sui_vm
   - sui_cart
   - sui_users
@@ -1655,6 +1660,7 @@
   - sui_reports_services_show
   - sui_vm
   - sui_svc_catalog
+  - sui_tags
   - sui_cart
   - service_report
   - service_report_view
@@ -1709,6 +1715,7 @@
   - sui_vm
   - sui_cart
   - sui_projects_view
+  - sui_tags
   - sui_users_view
   - service_report_view
   - service_report_chargeback
