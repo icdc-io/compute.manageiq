@@ -97,9 +97,16 @@ module IcdcServiceMixin
 
   def add_haproxy_routes(data)
     proxy_server = HaproxyCluster.get_proxy_server(self)
-    raise RuntimeError, "Haproxy cluster doesn't found"
+    raise RuntimeError, "Haproxy cluster doesn't found" unless proxy_server
     response = proxy_server.add_service_routes(self, data)
     return {:host => JSON.parse(response.body).dig("host"), :port => JSON.parse(response.body).dig("port")}
+  end
+
+  def remove_haproxy_routes
+    proxy_service = HaproxyCluster.get_proxy_server(self)
+    raise RuntimeError, "Haproxy cluster doesn't found" unless proxy_server
+    routes_ids = proxy_server.get_service_routes(object).collect{ |route| route["id"] }
+    routes_ids.each { |route_id| proxy_server.delete_service_routes(self, {:route_id => route_id}) }
   end
 
   private
