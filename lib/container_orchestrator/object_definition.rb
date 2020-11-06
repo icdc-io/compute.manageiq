@@ -65,6 +65,8 @@ class ContainerOrchestrator
         {:name => "WORKER_HEARTBEAT_FILE",   :value => Rails.root.join("tmp", "worker.hb").to_s},
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
         {:name => "RAILS_ENV",               :value => ENV["WORKERS_ENV"]},
+	{:name => "HELPDESK_TOKEN",          :value => helpdesk_creds[:HELPDESK_TOKEN]},
+	{:name => "HELPDESK_URL",            :value => helpdesk_creds[:HELPDESK_URL]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
         {:name      => "DATABASE_NAME",
@@ -97,5 +99,11 @@ class ContainerOrchestrator
       ENV["APP_NAME"]
     end
 
+    def helpdesk_creds
+      config = YAML.load_file(File.join(Rails.root, "config/helpdesk.yml"))
+      {:HELPDESK_TOKEN => config[MiqRegion.my_region.description.downcase].dig(:token), :HELPDESK_URL => config[MiqRegion.my_region.description.downcase].dig(:url)}
+    rescue Errno::ENOENT => e
+      {:HELPDESK_TOKEN => "", :HELPDESK_URL => ""} unless config
+    end
   end
 end
