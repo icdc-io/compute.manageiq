@@ -28,6 +28,10 @@ module Icdc
     def initialize(hash = nil)
       super(hash)
       parse_name_info(name)
+      if parameters
+        display_name_param = parameters.detect{|p| p.dig("name") == "display_name"}
+        displayName = display_name_param.dig("value") if display_name_param
+      end
     end
 
     def name=(name)
@@ -70,33 +74,26 @@ module Icdc
         [net_name, nic_arr.group_by(&:address)]
       end.to_h
       # Request authorized networks (CMDB DHCP records) for both: VM nics and service VIPs
-      networks = fetch_networks(service, net_macs) do |alloc|
-        nic = net_mac_nics.dig(alloc.subnet, alloc.mac)&.first
-        if nic
-          alloc.nic = nic
-          alloc.type = :nic
-          alloc.vm_id = nic.hardware.vm.id
-          alloc.vm_name = nic.hardware.vm.name
-        else
-          vip = vips.where(:subnet => alloc.subnet, :mac => alloc.mac).first
-          if vip
-            alloc.type = :virtual
-            alloc.service_id = vip.service_id
-            alloc.id = vip.id
+      networks = foreman_networks(service.region_id, net_macs) + ovirt_networks(net_macs)
+      networks.each do |network|
+        network.allocations.each do |alloc|
+          nic = net_mac_nics.dig(alloc.subnet, alloc.mac)&.first
+          if nic
+            alloc.nic = nic
+            alloc.type = :nic
+            alloc.vm_id = nic.hardware.vm.id
+            alloc.vm_name = nic.hardware.vm.name
+          else
+            vip = vips.where(:subnet => alloc.subnet, :mac => alloc.mac).first
+            if vip
+              alloc.type = :virtual
+              alloc.service_id = vip.service_id
+              alloc.id = vip.id
+            end
           end
         end
-        alloc
       end
       networks
-    end
-
-    def self.fetch_networks(service, net_macs)
-      # TODO: make it properly someday :)
-      begin
-        foreman_networks(service.region_id, net_macs) +  ovirt_networks(net_macs)
-      rescue
-        ovirt_networks(net_macs)
-      end
     end
 
     def self.foreman_networks(foreman_id, net_macs)
@@ -115,43 +112,37 @@ module Icdc
       end
       client.ip_allocations(subnet_macs_tuples).group_by(&:subnet).map do |name, allocs|
         network = new(subnets[name])
-        network.allocations = allocs.map do |alloc|
-          yield(IpAllocation.new(alloc)) if block_given?
-        end
+        network.allocations = allocs.map{|alloc| IpAllocation.new(alloc)}
         network
       end
     end
 
     def self.ovirt_networks(net_macs)
       net_macs.map do |net, macs|
-        network_params = CloudNetwork.find_by(:name => net).cloud_subnets&.first
+        network_params = CloudNetwork.find_by(:name => net)&.cloud_subnets&.first
+        network = new(network_params.as_json.merge!(:name => net))
         # Remove location and account id and make human readable
-        display_name = (net.split("_")[2..-1]&.join("_") || net).humanize()
-        network = new(network_params.as_json.merge!(
-          :name => network_params.cloud_network.name,
-          :parameters => [ { "name" => "display_name", "value" => display_name } ]
-        ))
-        network.allocations = os_allocs(macs)
+        network.displayName = (net.split("_")[2..-1]&.join("_") || net).humanize()
+        network.allocations = macs.map do |mac|
+          network_port = NetworkPort.find_by(:mac_address => mac)
+          IpAllocation.new(:mac => mac,
+            :type => :nic,
+            :ip => network_port&.ipaddresses&.first,
+            :subnet => network_port&.cloud_subnets&.first&.name,
+            :hostname => (network_port&.device&.hardware&.hostnames&.first || 'N/A'),
+            :vm_id => network_port&.device&.vm&.id,
+            :vm_name => network_port&.device&.vm&.name
+          )
+        end
         network
-      end
+      end.compact
     end
 
-    def self.os_allocs(macs)
-      macs.map do |mac|
-        alloc = NetworkPort.find_by(:mac_address => mac)
-        nic = {
-          :hostname => '',
-          :ip       => alloc&.ipaddresses&.first,
-          :mac      => alloc&.mac_address
-        }
-        os_alloc = OpenStruct.new(nic)
-        os_alloc.subnet = alloc&.cloud_subnets&.first&.name
-	os_alloc.type = :nic
-	os_alloc.vm_id = alloc&.device&.vm&.id
-	os_alloc.vm_name = alloc&.device&.vm&.name
-	os_alloc.hostname = alloc&.device&.hardware&.hostnames&.first
-	IpAllocation.new(os_alloc)
-      end
+    def displayName=(name)
+      # Foreman format
+      self.parameters = [ { "name" => "display_name", "value" => name } ]
+      # New format - compatible with OVN and Foreman
+      self.display_name = name
     end
 
     def self.guest_networks(service)
@@ -159,7 +150,7 @@ module Icdc
       service.vms.each do |vm|
         vm.hardware.networks.each do |netif|
           nic = nil
-          net_name = "local:#{vm.name}" # net name for internal guest network interfaces
+          net_name = vm.name # net name for internal guest network interfaces
           if netif.device_id # real network interface
             nic = vm.hardware.nics.where(:id => netif.device_id).first
             next unless nic # bad record
@@ -179,6 +170,7 @@ module Icdc
               :vm_name  => vm.name
             )
             get_or_create(networks, net_name).allocations << alloc
+            get_or_create(networks, net_name).displayName = "Local"
           end
         end
       end
