@@ -127,7 +127,8 @@ END_OF_CONFIG
     end
 
     def self.killall
-      MiqUtil.runcmd("killall -9 memcached")
+      # TODO: fix VM restarts
+      # MiqUtil.runcmd("killall -9 memcached")
     rescue AwesomeSpawn::CommandResultError => err
       raise unless err.result.output =~ /memcached: no process/
     end
