@@ -4,10 +4,9 @@ require 'open-uri'
 namespace :icdc do
   namespace :images do
     task :sync_desc => :environment do
-      base_url = "https://catalog.icdc.io/en/Service_Catalog/"
       page_urls = []
       dir_urls = Queue.new
-      dir_urls << base_url
+      dir_urls << "https://help.icdc.io/compute/en/Service_Catalog/Distributions/"
       until dir_urls.empty? # Recursive dir walk-through
         dir_url = dir_urls.pop
         doc = Nokogiri::HTML(URI.parse(dir_url).open)
@@ -83,6 +82,7 @@ namespace :icdc do
         # FIX: was not implemented in new catalog
         desc = desc[:en]
         st.long_description = desc # .to_json
+        st.save!
         # Additional attributes saved in custom_attributes
         data[:en][:supported_by] = "ICDC" unless data[:en][:supported_by]
         data[:en].keys.each do |key|
