@@ -8,6 +8,8 @@ module IcdcServiceMixin
     virtual_column :shared_users,      :type => :string
     virtual_column :miq_request_state, :type => :string
     virtual_column :networks,          :type => :string
+    virtual_column :available_networks, :type => :string
+    virtual_column :subnets,           :type => :string # Legacy
 
     api_relay_method :share do |options|
       options
@@ -73,7 +75,7 @@ module IcdcServiceMixin
   end
 
   def networks
-    networks = Icdc::Network.authorized_networks(self)
+    networks = Icdc::Network.authorized_networks(self).compact
     # FIX: currently we allow only one authorized subnet (IPv4 or IPv6) on L2 logical network
     auth_net_lookup = networks.group_by(&:name)
     # Merge information about guest networks into authorized networks
@@ -94,6 +96,21 @@ module IcdcServiceMixin
     networks.each { |net| net.allocations = net.allocations.sort_by{ |a| [a.service_id || a.vm_id || 0, a.ip] } }
     networks
   end
+
+  def available_networks
+    account = evm_owner.current_tenant.project? && evm_owner.current_tenant.parent || evm_owner.current_tenant
+    # OVN Networks
+    nets = CloudSubnet.all.select{ |subnet| 
+      subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account.name.downcase}_")
+    }.map{ |subnet|
+      { :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize() }
+    }
+    # Foreman Networks
+    foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => account.name)
+    nets += foreman_tenant.subnets.map{ |subnet| {:subnet => subnet.name, :description => subnet.description} } if foreman_tenant.ready?
+    nets
+  end
+  alias_method :subnets, :available_networks
 
   def add_haproxy_routes(data)
     proxy_server = HaproxyCluster.get_proxy_server(self)

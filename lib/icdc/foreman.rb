@@ -262,6 +262,7 @@ module Icdc::Foreman
     private
 
     def fetch_tenant_subnets
+      subnets = [] unless subnets
       subnets_list = subnets.map { |subnet| subnet['name'] }
       self.subnets = @foreman_client.subnets(subnets_list)
     end
