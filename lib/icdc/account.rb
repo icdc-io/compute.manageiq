@@ -9,7 +9,7 @@ module Icdc
 	@account_name = "#{region}_#{account_name.downcase}"       
         @config = load_config
 	manager = ExtManagementSystem.where(:type => "ManageIQ::Providers::Redhat::NetworkManager").first
-        @network_service = manager.openstack_handle.detect_network_service
+        @network_service = manager.openstack_handle.detect_network_service if manager
       end
 
       def load_config
