@@ -3,11 +3,14 @@ module IcdcTenantMixin
   ALLOWED_CUSTOM_ATTRIBUTES = %w(exp_date)
 
   included do
+    virtual_has_one   :account
+    virtual_attribute :account_users, :string
     virtual_attribute :project_users, :string
     virtual_attribute :available_users, :string
     virtual_attribute :available_roles, :string
     virtual_attribute :project_details, :string
     virtual_attribute :admins, :string
+    virtual_attribute :available_networks, :string
     extend InterRegionApiMethodRelay
     api_relay_method :create_project do |options|
       options
@@ -32,14 +35,41 @@ module IcdcTenantMixin
     api_relay_method :services_change_tenant do |options|
       options
     end
+  
+    def account
+      project? && parent || self
+    end
+ 
+    def account_users
+      users.map do |account_user|
+        user = account_user.as_json
+        user["group"] = self.miq_groups.select{|x| x.description.include?(".member")}.first.description
+        user
+      end
+    end
+
+    def available_networks
+      # OVN Networks
+      nets = CloudSubnet.all.select{ |subnet|
+        subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account.name.downcase}_")
+      }.map{ |subnet|
+        { :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize() }
+      }
+      # Foreman Networks
+      foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => account.name)
+      nets += foreman_tenant.subnets.map{ |subnet| {:subnet => subnet.name, :description => subnet.description} } if foreman_tenant.ready?
+      nets 
+    end
 
     def project_users
-      project_users = []
-      uniq_users = self.users
-      uniq_users.each do |user|
-        project_users.push({:email => user.email, :name => user.name, :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last, :name => x.description.split(".").last.capitalize]}.flatten})
+      users.map do |user|
+        {
+         :email => user.email,
+         :name => user.name,
+         :roles => (user.miq_groups & self.miq_groups).collect{|x| [:id => x.description.split(".").last,
+         :name => x.description.split(".").last.capitalize]}.flatten
+        }
       end
-      project_users
     end
 
     def available_users
@@ -47,7 +77,11 @@ module IcdcTenantMixin
     end
 
     def available_roles
-      [{ :id => "admin", :name => "Admin"}, {:id => "billing",:name  => "Billing"}, {:id => "member", :name => "Member"}]
+      [
+        { :id => "admin", :name => "Admin" },
+        { :id => "billing",:name => "Billing" },
+        { :id => "member", :name => "Member" }
+      ]
     end
 
     def project_details
@@ -193,6 +227,11 @@ module IcdcTenantMixin
       end
       service.save!
     end
+  end
+
+  def build_account_infrastructure
+    return if project?
+    Icdc::Account::Infrastructure.build(name)
   end
 
 end

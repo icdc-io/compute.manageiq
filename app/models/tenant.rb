@@ -53,11 +53,9 @@ class Tenant < ApplicationRecord
   virtual_has_one  :services_in_regions
   virtual_has_one  :current_chargeback
   virtual_has_one  :last_chargeback
-  virtual_has_one  :account
   virtual_has_one  :children
   virtual_has_one  :managers
   virtual_has_many :custom_attributes
-
 
   belongs_to :default_miq_group, :class_name => "MiqGroup", :dependent => :destroy
   belongs_to :source, :polymorphic => true
@@ -77,14 +75,7 @@ class Tenant < ApplicationRecord
 
   virtual_column :parent_name,  :type => :string
   virtual_column :display_type, :type => :string
-  virtual_column :get_account_users, :type => :string
-  virtual_column :get_account, :type => :string
-  virtual_column :get_account_subnet, :type => :string
-  virtual_column :get_tenant_users, :type => :string
   virtual_column :combined_quotas, :type => :string
-  virtual_attribute :project_users, :string
-  virtual_attribute :available_users, :string
-  virtual_attribute :available_roles, :string
 
   before_save :nil_blanks
   after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group, :build_account_infrastructure
@@ -154,14 +145,6 @@ class Tenant < ApplicationRecord
     tenant_attribute(:login_text, :custom_login_text)
   end
 
-  def get_account_users
-    self.users.map do |account_user|
-      user = account_user.as_json
-      user["group"] = self.miq_groups.select{|x| x.description.include?(".member")}.first.description
-      user
-    end
-  end
-
   def get_quotas
     tenant_quotas.each_with_object({}) do |q, h|
       h[q.name.to_sym] = q.quota_hash
@@ -216,43 +199,6 @@ class Tenant < ApplicationRecord
       h[q.name.to_sym][:available]   = q.new_record? ? 0 : q.available
       h[q.name.to_sym][:used]        = q.used
     end.reverse_merge(TenantQuota.quota_definitions)
-  end
-
-  def get_account
-    ancestors.each do |ancestor|
-      return ancestor if check_account(ancestor.tags) == 0
-    end
-    self
-  end
-  alias_method :account, :get_account
-
-  def check_account(tags)
-    return 0 if tags.find_index { |tag| /\/managed\/account\// =~ tag.name }
-  end
-
-  def get_account_subnet
-    network = []
-    get_account.tags.each do |tag|
-      tag_info = {}
-      if /\/managed\/networks\// =~ tag.name
-        tag_info["subnet"] = tag.categorization["name"]
-        tag_info["description"] = tag.categorization["description"]
-        network.push(tag_info)
-      end
-    end
-    network
-  end
-
-  def get_tenant_users
-    tenant_users = []
-    tenant_users = users
-    tenant_users.map do |tenant_user|
-      group = MiqGroup.find_by_id(tenant_user.current_group_id)
-      user = tenant_user.as_json
-      user["tags"] = tenant_user.tags
-      user["group"] = group.get_title
-      user
-    end
   end
 
   def self.scope_by_tenant?
@@ -442,11 +388,6 @@ class Tenant < ApplicationRecord
       role = "project-#{role}" if self.project?
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
-  end
-
-  def build_account_infrastructure
-    return if project?
-    Icdc::Account::Infrastructure.build(name)
   end
 
   private

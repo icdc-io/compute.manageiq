@@ -5,7 +5,6 @@ module IcdcUserMixin
 
   included do
     virtual_attribute :ssh_keys, :string
-    virtual_column :subnets, :string
   end
 
   def ssh_keys

@@ -98,17 +98,7 @@ module IcdcServiceMixin
   end
 
   def available_networks
-    account = evm_owner.current_tenant.project? && evm_owner.current_tenant.parent || evm_owner.current_tenant
-    # OVN Networks
-    nets = CloudSubnet.all.select{ |subnet| 
-      subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account.name.downcase}_")
-    }.map{ |subnet|
-      { :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize() }
-    }
-    # Foreman Networks
-    foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => account.name)
-    nets += foreman_tenant.subnets.map{ |subnet| {:subnet => subnet.name, :description => subnet.description} } if foreman_tenant.ready?
-    nets
+    tenant.available_networks
   end
   alias_method :subnets, :available_networks
 

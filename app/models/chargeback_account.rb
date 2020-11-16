@@ -229,7 +229,7 @@ class ChargebackAccount < Chargeback
     self.provider_uid  = consumption.parent_ems.try(:guid)
     self.license_cost  = consumption.resource.try(:license_cost)
     self.license_type  = consumption.resource.try(:license_type)
-    self.account       = consumption.resource.tenant.get_account.description
+    self.account       = consumption.resource.tenant.account.description
     self.tenant        = consumption.resource.tenant.id
     self.uptime        = calculate_uptime(consumption)
     self.cpu_allocated_total     = consumption.resource.cpu_total_cores

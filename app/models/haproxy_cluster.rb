@@ -192,6 +192,6 @@ class HaproxyCluster < ApplicationRecord
 
   def ip_allowed(object, ip)
     public_subnets(object).find { |s| s.include?(ip) } || 
-    ip.match?(/10.211.0.[0..9]*/) # FIX: it someday. This is workaround for PowerSystem in SBG
+    ip&.match?(/10.211.0.[0..9]*/) # FIX: it someday. This is workaround for PowerSystem in SBG
   end
 end
