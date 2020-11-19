@@ -5,6 +5,7 @@ module IcdcTenantMixin
   included do
     virtual_has_one   :account
     virtual_attribute :account_users, :string
+    virtual_attribute :get_account_users, :string # Legacy, used in change-ownership
     virtual_attribute :project_users, :string
     virtual_attribute :available_users, :string
     virtual_attribute :available_roles, :string
@@ -47,6 +48,7 @@ module IcdcTenantMixin
         user
       end
     end
+    alias_method :get_account_users, :account_users
 
     def available_networks
       # OVN Networks
