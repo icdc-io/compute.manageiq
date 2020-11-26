@@ -3,7 +3,7 @@ namespace :icdc do
 task :dialog_assignment => :environment do
   reserved_templates = ["LoadBalancer", "LoadBalancer.Route", "Clone Service #{MiqRegion.my_region.description.upcase}", "AIX:7.2:SBG"]
   dialog_id = Dialog.where(name: 'Service Provisioning').first.id
-  ResourceAction.where(:resource_type => 'ServiceTemplate').reject_if { |ra| reserved_templates.include? ra.resource.name }.each do |action|
+  ResourceAction.where(:resource_type => 'ServiceTemplate').reject { |ra| reserved_templates.include? ra.resource.name }.each do |action|
     action.update!(:dialog_id => dialog_id)
   end
 end
