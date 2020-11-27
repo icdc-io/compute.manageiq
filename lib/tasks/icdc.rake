@@ -1,5 +1,29 @@
 namespace :icdc do
 
+task :dialog_assignment => :environment do
+  reserved_templates = ["LoadBalancer", "LoadBalancer.Route", "Clone Service #{MiqRegion.my_region.description.upcase}", "AIX:7.2:SBG"]
+  dialog_id = Dialog.where(name: 'Service Provisioning').first.id
+  ResourceAction.where(:resource_type => 'ServiceTemplate').reject { |ra| reserved_templates.include? ra.resource.name }.each do |action|
+    action.update!(:dialog_id => dialog_id)
+  end
+end
+
+desc "Activate MiqServer role"
+task :activate_role, [:role] => :environment do |_,args|
+  if args.nil? or args[:role].nil?
+    abort("Provide valid MiqServer role name. For example: rake #{_}[cockpit_ws]")
+  end
+  server = MiqServer.my_server
+  roles_list = ["automate", "cockpit_ws", "database_operations", "database_owner", "embedded_ansible", "ems_inventory", "ems_metrics_collector", "ems_metrics_coordinator", "ems_metrics_processor", "ems_operations", "event", "git_owner", "internet_connectivity", "notifier", "reporting", "scheduler", "smartproxy", "smartstate", "user_interface", "remote_console", "web_services"]
+  roles = server.settings_for_resource.server.role.split(",")
+  args[:role].split(",").each do |role|
+    abort("You must pass valid role name from list: #{roles_list}") unless roles_list.include? role
+  end
+  roles.push(args[:role])
+  setting = {server: {role: roles.uniq.sort.join(",")}}
+  Vmdb::Settings.save!(MiqServer.my_server, setting)
+end
+
 desc "OB Templates Renamer"
 task :rename_templates => :environment do
   require 'csv'
@@ -423,18 +447,6 @@ namespace :dev do
     puts "[fix_cb_seeding] all ChargebackRate deleted"
   end
 
-  desc "Activate MiqServer role"
-  task :activate_role, [:role] => :environment do |_,args|
-    if args.nil? or args[:role].nil?
-      abort("Provide valid MiqServer role name. For example: rake #{_}[cockpit_ws]")
-    end
-    server = MiqServer.in_my_region.first
-    roles = server.settings_for_resource.server.role.split(",")
-    roles.push(args[:role])
-    setting = {server: {role: roles.sort.join(",")}}
-    Vmdb::Settings.save!(MiqServer.in_my_region.first, setting)
-  end
-
   desc "Deactivate MiqServer role"
   task :deactivate_role, [:role] => :environment do |_,args|
     if args.nil? or args[:role].nil?
@@ -514,15 +526,6 @@ namespace :dev do
       action.save
      end
    end
-
-  task :dialog_assignment => :environment do
-      for action in ResourceAction.all
-        if (action.resource_type == 'ServiceTemplate')
-          action.dialog_id = Dialog.where(name: 'SimpleService_new').first.id
-        end
-        action.save
-      end
-  end
 
   desc "ICDC temporarily solution: We need to install haikunator latest version (from github)"
   task :fix_haikunator => :environment do
