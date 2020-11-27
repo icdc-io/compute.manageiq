@@ -110,9 +110,9 @@ module IcdcServiceMixin
   end
 
   def remove_haproxy_routes
-    proxy_service = HaproxyCluster.get_proxy_server(self)
+    proxy_server = HaproxyCluster.get_proxy_server(self)
     raise RuntimeError, "Haproxy cluster doesn't found" unless proxy_server
-    routes_ids = proxy_server.get_service_routes(object).collect{ |route| route["id"] }
+    routes_ids = proxy_server.get_service_routes(self).collect{ |route| route["id"] }
     routes_ids.each { |route_id| proxy_server.delete_service_routes(self, {:route_id => route_id}) }
   end
 
