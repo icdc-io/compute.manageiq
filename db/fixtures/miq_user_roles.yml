@@ -1442,6 +1442,7 @@
   - sui_tags
   - service_report
   - service_report_view
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1502,6 +1503,7 @@
   - sui_users
   - service_report
   - sui_services_change_tenant
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1558,6 +1560,7 @@
   - service_report_view
   - service_report_chargeback
   - sui_services_change_tenant
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1611,6 +1614,7 @@
   - sui_users
   - service_report_view
   - sui_services_change_tenant
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1664,6 +1668,7 @@
   - sui_cart
   - service_report
   - service_report_view
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1720,6 +1725,7 @@
   - service_report_view
   - service_report_chargeback
   - sui_services_change_tenant
+  - storage_view
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
