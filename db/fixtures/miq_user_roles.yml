@@ -1353,6 +1353,7 @@
   - service_edit
   - service_reconfigure
   - storage_view
+  - storage_show
   - service_retire
   - service_create
   - service_retire_now
@@ -1443,6 +1444,7 @@
   - service_report
   - service_report_view
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1504,6 +1506,7 @@
   - service_report
   - sui_services_change_tenant
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1561,6 +1564,7 @@
   - service_report_chargeback
   - sui_services_change_tenant
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1615,6 +1619,7 @@
   - service_report_view
   - sui_services_change_tenant
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1669,6 +1674,7 @@
   - service_report
   - service_report_view
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
@@ -1726,6 +1732,7 @@
   - service_report_chargeback
   - sui_services_change_tenant
   - storage_view
+  - storage_show
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
