@@ -19,7 +19,6 @@ RSpec.describe MiqWorker::ContainerCommon do
           :template => {
             :metadata => {:name => "test", :labels => {:name => "test", :app => "manageiq"}},
             :spec     => {
-              :serviceAccountName => "miq-anyuid",
               :containers         => [{
                 :name => "test",
                 :env  => []
@@ -91,6 +90,131 @@ RSpec.describe MiqWorker::ContainerCommon do
       worker = MiqGenericWorker.new
       expect(worker).to receive(:delete_container_objects)
       worker.scale_deployment
+    end
+  end
+
+  describe "#container_image" do
+    let(:generic_worker) { MiqGenericWorker.new }
+    let(:ui_worker)      { MiqUiWorker.new }
+    let(:api_worker)     { MiqWebServiceWorker.new }
+
+    it "uses the BASE_WORKER_IMAGE value for a generic worker" do
+      image_ref = "registry.example.com/manageiq/manageiq-test@sha256:2997e41a1195df90d8daf9714b619c9ae0c053f3d79e39bd8ed2d18b3c8da52a"
+      stub_const("ENV", ENV.to_h.merge("BASE_WORKER_IMAGE" => image_ref))
+      expect(generic_worker.container_image).to eq(image_ref)
+    end
+
+    it "uses the UI_WORKER_IMAGE value for a UI worker" do
+      image_ref = "registry.example.com/manageiq/manageiq-ui-test@sha256:2997e41a1195df90d8daf9714b619c9ae0c053f3d79e39bd8ed2d18b3c8da52a"
+      stub_const("ENV", ENV.to_h.merge("UI_WORKER_IMAGE" => image_ref))
+      expect(ui_worker.container_image).to eq(image_ref)
+    end
+
+    it "uses the WEBSERVER_WORKER_IMAGE value for an API worker" do
+      image_ref = "registry.example.com/manageiq/manageiq-web-test@sha256:2997e41a1195df90d8daf9714b619c9ae0c053f3d79e39bd8ed2d18b3c8da52a"
+      stub_const("ENV", ENV.to_h.merge("WEBSERVER_WORKER_IMAGE" => image_ref))
+      expect(api_worker.container_image).to eq(image_ref)
+    end
+
+    context "when CONTAINER_IMAGE_NAMESPACE is set" do
+      before { stub_const("ENV", ENV.to_h.merge("CONTAINER_IMAGE_NAMESPACE" => "registry.example.com/manageiq")) }
+
+      it "uses the correct default value" do
+        expect(generic_worker.container_image).to eq("registry.example.com/manageiq/manageiq-base-worker:latest")
+        expect(ui_worker.container_image).to eq("registry.example.com/manageiq/manageiq-ui-worker:latest")
+        expect(api_worker.container_image).to eq("registry.example.com/manageiq/manageiq-webserver-worker:latest")
+      end
+
+      it "allows tag overrides" do
+        stub_const("ENV", ENV.to_h.merge("CONTAINER_IMAGE_TAG" => "jansa-1"))
+        expect(generic_worker.container_image).to eq("registry.example.com/manageiq/manageiq-base-worker:jansa-1")
+        expect(ui_worker.container_image).to eq("registry.example.com/manageiq/manageiq-ui-worker:jansa-1")
+        expect(api_worker.container_image).to eq("registry.example.com/manageiq/manageiq-webserver-worker:jansa-1")
+      end
+    end
+  end
+
+  describe "#resource_constraints" do
+    context "when allowing resource constraints" do
+      before { stub_settings(:server => {:worker_monitor => {:enforce_resource_constraints => true}}) }
+
+      it "returns an empty hash when no thresholds are set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return({})
+        expect(MiqGenericWorker.new.resource_constraints).to eq({})
+      end
+
+      it "returns the correct hash when both values are set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:memory_threshold => 500.megabytes, :cpu_threshold_percent => 50)
+        constraints = {
+          :limits => {
+            :memory => "500Mi",
+            :cpu    => "500m"
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+
+      it "returns only memory when memory is set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:memory_threshold => 500.megabytes)
+        constraints = {
+          :limits => {
+            :memory => "500Mi",
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+
+      it "returns only cpu when cpu is set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:cpu_threshold_percent => 80)
+        constraints = {
+          :limits => {
+            :cpu => "800m"
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+
+      it "returns default cpu when it is set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:cpu_request_percent => 10)
+        constraints = {
+          :requests => {
+            :cpu => "100m"
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+
+      it "returns default memory when it is set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:memory_request => 250.megabytes)
+        constraints = {
+          :requests => {
+            :memory => "250Mi",
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+
+      it "returns memory pair when set" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:memory_request => 250.megabytes, :memory_threshold => 600.megabytes)
+        constraints = {
+          :requests => {
+            :memory => "250Mi",
+          },
+          :limits         => {
+            :memory => "600Mi",
+          }
+        }
+        expect(MiqGenericWorker.new.resource_constraints).to eq(constraints)
+      end
+    end
+
+    context "when not allowing resource constraints" do
+      before { stub_settings(:server => {:worker_monitor => {:enforce_resource_constraints => false}}) }
+
+      it "always returns an empty hash" do
+        allow(MiqGenericWorker).to receive(:worker_settings).and_return(:memory_threshold => 500.megabytes, :cpu_threshold => 50)
+        expect(MiqGenericWorker.new.resource_constraints).to eq({})
+      end
     end
   end
 end

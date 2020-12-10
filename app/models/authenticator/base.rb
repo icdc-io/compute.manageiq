@@ -35,16 +35,28 @@ module Authenticator
       false
     end
 
+    def user_authorizable_with_system_token?
+      false
+    end
+
     def authorize_user(userid)
       return unless user_authorizable_without_authentication?
       authenticate(userid, '', nil, {:require_user => true, :authorize_only => true})
     end
 
+    def authorize_user_with_system_token(userid, user_metadata = {})
+      return unless user_authorizable_without_authentication? && user_authorizable_with_system_token?
+      return if userid != user_metadata[:userid]
+
+      authenticate(userid, "", {}, {:require_user => true, :authorize_only => true, :authorize_with_system_token => user_metadata})
+    end
+
     def authenticate(username, password, request = nil, options = {})
+      log_auth_debug("authenticate(username=#{username}, options=#{options})")
+
       options = options.dup
       options[:require_user] ||= false
       options[:authorize_only] ||= false
-      fail_message = _("Authentication failed")
 
       user_or_taskid = nil
 
@@ -52,7 +64,10 @@ module Authenticator
         username = normalize_username(username)
         audit = {:event => audit_event, :userid => username}
 
-        authenticated = options[:authorize_only] || _authenticate(username, password, request)
+        # The fail_message might or might not come from the _authenticate method
+        authenticated, fail_message = options[:authorize_only] || _authenticate(username, password, request)
+        fail_message ||= _("Authentication failed") # Fall back to the default fail_message
+
         if authenticated
           audit_success(audit.merge(:message => "User #{username} successfully validated by #{self.class.proper_name}"))
 
@@ -137,7 +152,18 @@ module Authenticator
           end
 
           user.lastlogon = Time.now.utc
-          user.save!
+          if user.new_record?
+            User.with_lock do
+              user.save!
+            rescue ActiveRecord::RecordInvalid # Try update when catching create race condition.
+              userid, user = find_or_initialize_user(identity, username)
+              update_user_attributes(user, userid, identity)
+              user.miq_groups = matching_groups
+              user.save!
+            end
+          else
+            user.save!
+          end
 
           _log.info("Authorized User: [#{user.userid}]")
           task.userid = user.userid
@@ -299,6 +325,14 @@ module Authenticator
 
     def normalize_username(username)
       username.downcase
+    end
+
+    def debug_auth?
+      !!Settings.authentication.debug
+    end
+
+    def log_auth_debug(msgs)
+      Array(msgs).each { |msg| _log.info(msg) } if debug_auth?
     end
 
     private def audit_success(options)

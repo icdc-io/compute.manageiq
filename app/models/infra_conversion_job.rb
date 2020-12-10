@@ -217,8 +217,13 @@ class InfraConversionJob < Job
     state_hash
   end
 
+  def task_progress
+    migration_task.options[:progress] || {:current_state => state, :status => "ok", :percent => 0.0, :states => {}}
+  end
+
   def update_migration_task_progress(state_phase, state_progress = nil)
-    progress = migration_task.options[:progress] || {:current_state => state, :status => "ok", :percent => 0.0, :states => {}}
+    progress = task_progress
+    return if progress[:status] == "error"
     state_hash = send(state_phase, progress[:states][state.to_sym], state_progress)
     progress[:states][state.to_sym] = state_hash
     if state_phase == :on_entry
@@ -242,10 +247,12 @@ class InfraConversionJob < Job
   end
 
   def abort_conversion(message, status)
+    _log.error("Aborting conversion: #{message}")
     migration_task.canceling
-    progress = migration_task.options[:progress]
+    progress = task_progress
     progress[:current_description] = "Migration failed: #{message}. Cancelling"
-    progress[:status] = "error"
+    progress[:status] = status
+    progress[:states][state.to_sym] = {} if state == 'waiting_to_start'
     migration_task.update_options(:progress => progress)
     queue_signal(:abort_virtv2v)
   end
@@ -327,6 +334,14 @@ class InfraConversionJob < Job
         # If no playbook is expected to run, we don't need to wait for the IP address.
         service_template = migration_task.send("#{migration_phase}_ansible_playbook_service_template")
         if target_vm.ipaddresses.empty? && service_template.present?
+          if context["retries_#{state}".to_sym] % 10 == 0
+            target = InventoryRefresh::Target.new(
+              :association => :vms,
+              :manager_ref => {:ems_ref => target_vm.ems_ref},
+              :manager     => target_vm.ext_management_system
+            )
+            EmsRefresh.queue_refresh(target)
+          end
           update_migration_task_progress(:on_retry)
           return queue_signal(:wait_for_ip_address)
         end
@@ -628,7 +643,7 @@ class InfraConversionJob < Job
     end
 
     migration_task.kill_virtv2v('TERM') if context["retries_#{state}".to_sym] == 1
-    queue_signal(:abort_virtv2v)
+    queue_signal(:abort_virtv2v, :deliver_on => Time.now.utc + state_retry_interval)
   end
 
   def poll_automate_state_machine

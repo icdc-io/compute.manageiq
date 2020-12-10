@@ -39,11 +39,17 @@ class ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Credential < Mana
   end
 
   def raw_update_in_provider(params)
-    update!(self.class.params_to_attributes(params.except(:task_id, :miq_task_id)))
+    update!(params_for_update(params))
   end
 
   def raw_delete_in_provider
     destroy!
+  end
+
+  def params_for_update(params)
+    update_params           = params.dup
+    update_params[:options] = options.merge(update_params[:options] || {}) if options
+    self.class.params_to_attributes(update_params.except(:task_id, :miq_task_id))
   end
 
   def native_ref
@@ -53,5 +59,11 @@ class ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Credential < Mana
   def set_manager_ref
     self.manager_ref = self.id
     save!
+  end
+
+  private
+
+  def ensure_newline_for_ssh_key
+    self.auth_key = "#{auth_key}\n" if auth_key.present? && auth_key[-1] != "\n"
   end
 end

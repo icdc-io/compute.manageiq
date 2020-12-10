@@ -11,9 +11,17 @@ class MiqWorker
       end
 
       container = definition[:spec][:template][:spec][:containers].first
-      container[:image] = "#{container_image_registry}#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
+
+      if container_image_tag.include?("latest")
+        container[:imagePullPolicy] = "Always"
+      else
+        container[:imagePullPolicy] = "IfNotPresent"
+      end
+
+      container[:image] = container_image
       container[:env] << {:name => "WORKER_CLASS_NAME", :value => self.class.name}
       container[:env] << {:name => "BUNDLER_GROUPS", :value => self.class.bundler_groups.join(",")}
+      container[:resources] = resource_constraints
     end
 
     def scale_deployment
@@ -27,6 +35,31 @@ class MiqWorker
 
     def container_image_registry
       ENV["CONTAINER_IMAGE_REGISTRY"] + '/' if ENV["CONTAINER_IMAGE_REGISTRY"]
+    end
+
+    def container_image
+      "#{container_image_registry}#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
+    end
+
+    def default_image
+      "#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
+    end
+
+    def resource_constraints
+      return {} unless Settings.server.worker_monitor.enforce_resource_constraints
+
+      mem_limit = self.class.worker_settings[:memory_threshold]
+      cpu_limit = self.class.worker_settings[:cpu_threshold_percent]
+      mem_request   = self.class.worker_settings[:memory_request]
+      cpu_request   = self.class.worker_settings[:cpu_request_percent]
+
+      {}.tap do |h|
+        h.store_path(:limits, :memory, format_memory_threshold(mem_limit)) if mem_limit
+        h.store_path(:limits, :cpu, format_cpu_threshold(cpu_limit)) if cpu_limit
+
+        h.store_path(:requests, :memory, format_memory_threshold(mem_request)) if mem_request
+        h.store_path(:requests, :cpu, format_cpu_threshold(cpu_request)) if cpu_request
+      end
     end
 
     def container_image_namespace
@@ -51,6 +84,16 @@ class MiqWorker
         deployment_name << "-#{Array(ems_id).map { |id| ApplicationRecord.split_id(id).last }.join("-")}" if respond_to?(:ems_id)
         "#{deployment_prefix}#{deployment_name.underscore.dasherize.tr("/", "-")}"
       end
+    end
+
+    private
+
+    def format_memory_threshold(value)
+      "#{value / 1.megabyte}Mi"
+    end
+
+    def format_cpu_threshold(value)
+      "#{((value / 100.0) * 1000).to_i}m"
     end
   end
 end

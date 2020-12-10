@@ -156,12 +156,28 @@ class ServiceTemplate < ApplicationRecord
     end
   end
 
+  def self.all_catalog_item_types
+    @all_catalog_item_types ||= begin
+      builtin_catalog_item_types = {
+        "generic"               => N_("Generic"),
+        "generic_orchestration" => N_("Orchestration"),
+      }
+
+      ExtManagementSystem.supported_types_for_catalog
+        .flat_map(&:catalog_types)
+        .reduce(builtin_catalog_item_types, :merge)
+    end
+  end
+
   def self.catalog_item_types
-    ci_types = Set.new(Rbac.filtered(ExtManagementSystem.all).flat_map(&:supported_catalog_types))
+    ems_classes = Rbac.filtered(ExtManagementSystem.all).collect(&:class).uniq.select(&:supported_for_catalog?)
+    ci_types = Set.new(ems_classes.flat_map(&:catalog_types).reduce({}, :merge).keys)
+
     ci_types.add('generic_orchestration') if Rbac.filtered(OrchestrationTemplate).exists?
     ci_types.add('generic')
-    CATALOG_ITEM_TYPES.each.with_object({}) do |(key, description), hash|
-      hash[key] = { :description => description, :display => ci_types.include?(key) }
+
+    all_catalog_item_types.each.with_object({}) do |(key, description), hash|
+      hash[key] = {:description => description, :display => ci_types.include?(key)}
     end
   end
 

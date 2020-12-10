@@ -28,8 +28,12 @@ production:
   <<: *base
   database: vmdb_production
 
-test: &test
+test:
   <<: *base
   pool: 3
   host: localhost
   database: vmdb_test<%= ENV['TEST_ENV_NUMBER'] %>
+
+i18n:
+  <<: *base
+  database: vmdb_i18n

@@ -15,7 +15,7 @@ class InfraConversionThrottler
 
         preflight_check = job.migration_task.preflight_check
         if preflight_check[:status] == 'Error'
-          _log.error("Preflight check for #{vm_name} has failed. Discarding.")
+          _log.error("Preflight check for #{vm_name} has failed: #{preflight_check[:message]}. Discarding.")
           job.abort_conversion(preflight_check[:message], 'error')
           next
         end
@@ -80,6 +80,12 @@ class InfraConversionThrottler
   # Applying the limits is done via the conversion_host which handles the writing.
   def self.apply_limits
     running_conversion_jobs.each do |ch, jobs|
+      if ch.nil?
+        bad_tasks = jobs.map { |j| j.migration_task&.source&.name }.compact.join(', ')
+        _log.error("The following migrating VMs don't have a conversion host: #{bad_tasks}.")
+        next
+      end
+
       number_of_jobs = jobs.size
 
       cpu_limit = ch.cpu_limit || Settings.transformation.limits.cpu_limit_per_host
@@ -91,13 +97,14 @@ class InfraConversionThrottler
       jobs.each do |job|
         migration_task = job.migration_task
         next unless migration_task.virtv2v_running?
+        next unless migration_task.options.fetch_path(:virtv2v_wrapper, 'throttling_file')
 
         limits = {
           :cpu     => cpu_limit,
           :network => network_limit
         }
         unless migration_task.options[:virtv2v_limits] == limits
-          ch.apply_task_limits(migration_task.id, limits)
+          ch.apply_task_limits(migration_task.options.fetch_path(:virtv2v_wrapper, 'throttling_file'), limits)
           migration_task.update_options(:virtv2v_limits => limits)
         end
       end

@@ -54,6 +54,9 @@ module ConversionHost::Configurations
       params = params.symbolize_keys
       resource = params.delete(:resource)
 
+      raise "#{resource.class.name.demodulize} '#{resource.name}' doesn't have a hostname or IP address in inventory" if resource.hostname.nil? && resource.ipaddresses.empty?
+      raise "the resource '#{resource.name}' is already configured as a conversion host" if ConversionHost.exists?(:resource => resource)
+
       params[:resource_id] = resource.id
       params[:resource_type] = resource.class.base_class.name
 
@@ -75,7 +78,7 @@ module ConversionHost::Configurations
 
       ssh_key = params.delete(:conversion_host_ssh_private_key)
 
-      tls_ca_certs = params.delete(:tls_ca_certs)
+      openstack_tls_ca_certs = params.delete(:openstack_tls_ca_certs)
 
       new(params).tap do |conversion_host|
         if ssh_key
@@ -87,7 +90,7 @@ module ConversionHost::Configurations
           )
         end
 
-        conversion_host.enable_conversion_host_role(vmware_vddk_package_url, vmware_ssh_private_key, tls_ca_certs, miq_task_id)
+        conversion_host.enable_conversion_host_role(vmware_vddk_package_url, vmware_ssh_private_key, openstack_tls_ca_certs, miq_task_id)
         conversion_host.save!
 
         if miq_task_id
@@ -111,12 +114,13 @@ module ConversionHost::Configurations
 
   def disable(_params = nil, _auth_user = nil)
     resource_info = "type=#{resource.class.name} id=#{resource.id}"
-    _log.debug("Disabling a conversion_host #{resource_info}")
+    raise "There are active migration tasks running on this conversion host" if active_tasks.present?
 
+    _log.debug("Disabling a conversion_host #{resource_info}")
     disable_conversion_host_role
     destroy!
   rescue StandardError => error
-    raise
+    raise error
   ensure
     self.class.notify_configuration_result('disable', error.nil?, resource_info)
   end

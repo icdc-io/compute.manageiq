@@ -86,8 +86,16 @@ RSpec.describe ExtManagementSystem do
     expect(described_class.types).to match_array(all_types_and_descriptions.keys)
   end
 
-  it ".supported_types" do
-    expect(described_class.supported_types).to match_array(all_types_and_descriptions.keys)
+  describe ".supported_types" do
+    it "with default permissions" do
+      expect(described_class.supported_types).to match_array(all_types_and_descriptions.keys)
+    end
+
+    it "with removed permissions" do
+      allow(Vmdb::PermissionStores.instance).to receive(:supported_ems_type?).and_return(true)
+      allow(Vmdb::PermissionStores.instance).to receive(:supported_ems_type?).with("vmwarews").and_return(false)
+      expect(described_class.supported_types).not_to include("vmwarews")
+    end
   end
 
   describe ".supported_types_and_descriptions_hash" do
@@ -96,9 +104,9 @@ RSpec.describe ExtManagementSystem do
     end
 
     it "with removed permissions" do
-      stub_vmdb_permission_store_with_types(["ems-type:vmwarews"]) do
-        expect(described_class.supported_types_and_descriptions_hash).to_not include("vmwarews")
-      end
+      allow(Vmdb::PermissionStores.instance).to receive(:supported_ems_type?).and_return(true)
+      allow(Vmdb::PermissionStores.instance).to receive(:supported_ems_type?).with("vmwarews").and_return(false)
+      expect(described_class.supported_types_and_descriptions_hash).to_not include("vmwarews")
     end
   end
 
@@ -627,8 +635,15 @@ RSpec.describe ExtManagementSystem do
 
     it "destroys an ems with active workers" do
       ems = FactoryBot.create(:ext_management_system)
-      worker = FactoryBot.create(:miq_ems_refresh_worker, :queue_name => ems.queue_name, :status => "started")
+      worker = FactoryBot.create(:miq_ems_refresh_worker, :queue_name => ems.queue_name, :status => "started", :miq_server => EvmSpecHelper.local_miq_server)
+
       ems.destroy
+
+      # Simulate another process delivering the worker kill message
+      queue_message = MiqQueue.order(:id).first
+      status, message, result = queue_message.deliver
+      queue_message.delivered(status, message, result)
+
       expect(ExtManagementSystem.count).to eq(0)
       expect(worker.class.exists?(worker.id)).to eq(false)
     end
@@ -680,8 +695,8 @@ RSpec.describe ExtManagementSystem do
       ems.destroy_queue
 
       expect(MiqQueue.count).to eq(1)
-
-      deliver_queue_message
+      deliver_queue_message #  ems destroy message
+      deliver_queue_message #  worker kill message
 
       expect(MiqQueue.count).to eq(0)
       expect(ExtManagementSystem.count).to eq(0)

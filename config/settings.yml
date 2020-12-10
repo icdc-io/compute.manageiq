@@ -4,6 +4,7 @@
   :bind_dn:
   :bind_pwd:
   :bind_timeout: 30
+  :debug: false
   :follow_referrals: false
   :get_direct_groups: true
   :group_memberships_max_depth: 2
@@ -11,6 +12,8 @@
   :ldaphost:
   :ldapport: '389'
   :mode: database
+  :max_failed_login_attempts: 3
+  :locked_account_timeout: 2.minutes
   :search_timeout: 30
   :user_suffix:
   :user_type: userprincipalname
@@ -53,7 +56,6 @@
     :reindex_tables:
     - Metric
     - MiqQueue
-    - MiqWorker
     :vacuum_schedule: "0 2 * * 6"
     :vacuum_tables:
     - BinaryBlob
@@ -101,7 +103,7 @@
   :infra_provider: https://manageiq.org/docs/reference/latest/doc-Managing_Providers/miq/#infrastructure_providers
   :network_provider: https://manageiq.org/docs/reference/latest/doc-Managing_Providers/miq/#network_providers
   :physical_infra_provider: https://manageiq.org/docs/reference/latest/doc-Managing_Providers/miq/#infrastructure_providers
-  
+
 :drift_states:
   :history:
     :keep_drift_states: 6.months
@@ -1006,6 +1008,7 @@
   :worker_messaging_frequency: 5.seconds
   :worker_monitor_frequency: 15.seconds
   :worker_monitor:
+    :enforce_resource_constraints: true
     :kill_algorithm:
       :name: :used_swap_percent_gt_value
       :value: 80
@@ -1077,10 +1080,6 @@
     :max_concurrent_tasks_per_conversion_host: 10
     :cpu_limit_per_host: unlimited
     :network_limit_per_host: unlimited
-  :uci:
-    :container:
-      :registry:
-      :image: manageiq/v2v-conversion-host:latest
 :ui:
   :mark_translated_strings: false
   :display_ops_database: false
@@ -1104,10 +1103,13 @@
   :worker_base:
     :defaults:
       :count: 1
+      :cpu_request_percent: 15
+      :cpu_threshold_percent: 100
       :gc_interval: 15.minutes
       :heartbeat_freq: 10.seconds
       :heartbeat_timeout: 2.minutes
-      :memory_threshold: 400.megabytes
+      :memory_request: 500.megabytes
+      :memory_threshold: 600.megabytes
       :nice_delta: 10
       :parent_time_threshold: 3.minutes
       :poll: 3.seconds
@@ -1115,7 +1117,7 @@
       :poll_method: :normal
       :starting_timeout: 10.minutes
       :stopping_timeout: 10.minutes
-      :systemd_enabled: true
+      :systemd_enabled: false
     :agent_coordinator_worker:
       :heartbeat_timeout: 30.minutes
       :poll: 30.seconds
@@ -1142,21 +1144,18 @@
         :poll: 10.seconds
     :queue_worker_base:
       :defaults:
-        :cpu_usage_threshold: 100.percent
         :dequeue_method: :drb
-        :memory_threshold: 500.megabytes
         :poll_method: :normal
         :queue_timeout: 10.minutes
       :ems_metrics_collector_worker:
         :defaults:
           :count: 2
-          :memory_threshold: 400.megabytes
           :nice_delta: 3
           :poll_method: :escalate
         :ems_metrics_collector_worker_google: {}
       :ems_metrics_processor_worker:
         :count: 2
-        :memory_threshold: 600.megabytes
+        :memory_threshold: 800.megabytes
         :nice_delta: 7
         :poll_method: :escalate
       :ems_operations_worker: {}
@@ -1176,12 +1175,10 @@
         :ems_refresh_worker_microsoft: {}
         :ems_refresh_worker_nuage_network: {}
       :event_handler:
-        :cpu_usage_threshold: 0.percent
         :nice_delta: 7
       :generic_worker:
         :count: 2
       :priority_worker:
-        :memory_threshold: 600.megabytes
         :count: 2
         :nice_delta: 1
         :poll: 1.seconds

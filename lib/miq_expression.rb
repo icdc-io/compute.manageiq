@@ -411,29 +411,6 @@ class MiqExpression
     col_details.values.each_with_object({}) { |v, result| result.deep_merge!(v[:include]) }
   end
 
-  def self.expand_conditional_clause(klass, cond)
-    return klass.send(:sanitize_sql_for_conditions, cond) unless cond.kind_of?(Hash)
-
-    cond = klass.predicate_builder.resolve_column_aliases(cond)
-    cond = klass.send(:expand_hash_conditions_for_aggregates, cond)
-
-    klass.predicate_builder.build_from_hash(cond).map { |b| klass.connection.visitor.compile(b) }.join(' AND ')
-  end
-
-  def self.merge_where_clauses(*list)
-    list = list.compact.collect do |s|
-      expand_conditional_clause(MiqReport, s)
-    end.compact
-
-    if list.empty?
-      nil
-    elsif list.size == 1
-      list.first
-    else
-      "(#{list.join(") AND (")})"
-    end
-  end
-
   def self.get_cols_from_expression(exp, options = {})
     result = {}
     if exp.kind_of?(Hash)
@@ -832,7 +809,7 @@ class MiqExpression
     custom_attributes_details = []
 
     klass.custom_keys.each do |custom_key|
-      custom_detail_column = [model, CustomAttributeMixin.column_name(custom_key)].join("-")
+      custom_detail_column = [options[:model_for_column] || model, CustomAttributeMixin.column_name(custom_key)].join("-")
       custom_detail_name = CustomAttributeMixin.to_human(custom_key)
 
       if options[:include_model]
@@ -922,7 +899,7 @@ class MiqExpression
            else
              []
            end
-      md + td + _custom_details_for(cb_model, {})
+      md + td + _custom_details_for(cb_model, :model_for_column => model)
     else
       model_details(model, :include_model => false, :include_tags => true)
     end
@@ -1399,13 +1376,7 @@ class MiqExpression
         ids = tag.model.find_tagged_with(:any => parsed_value, :ns => tag.namespace).pluck(:id)
         tag.model.arel_attribute(:id).in(ids)
       else
-        raise unless field.associations.one?
-        reflection = field.reflections.first
-        arel = arel_attribute.eq(parsed_value)
-        arel = arel.and(Arel::Nodes::SqlLiteral.new(extract_where_values(reflection.klass, reflection.scope))) if reflection.scope
-        field.model.arel_attribute(:id).in(
-          field.arel_table.where(arel).project(field.arel_table[reflection.foreign_key]).distinct
-        )
+        subquery_for_contains(field, arel_attribute.eq(parsed_value))
       end
     when "is"
       value = parsed_value
@@ -1427,24 +1398,21 @@ class MiqExpression
     end
   end
 
-  def extract_where_values(klass, scope)
-    relation = ActiveRecord::Relation.new(klass, klass.arel_table, klass.predicate_builder)
-    relation = relation.instance_eval(&scope)
+  def subquery_for_contains(field, limiter_query)
+    return limiter_query if field.reflections.empty?
 
-    begin
-      # This is basically ActiveRecord::Relation#to_sql, only using our
-      # custom visitor instance
+    # Remove the default scopes via `base_class`. The scope is already in the main query and not needed in the subquery
+    main_model = field.model.base_class
+    primary_attribute = main_model.arel_table[main_model.primary_key]
 
-      connection = klass.connection
-      visitor    = WhereExtractionVisitor.new(connection)
+    includes_associations = field.reflections.reverse.inject({}) { |i, k| {k.name => i} }
+    relation_query = main_model.select(primary_attribute)
+                               .joins(includes_associations)
+                               .where(limiter_query)
 
-      arel  = relation.arel
-      binds = relation.bound_attributes
-      binds = binds.collect(&:value_for_database)
-      binds.map! { |value| connection.quote(value) }
-      collect = visitor.accept(arel.ast, Arel::Collectors::Bind.new)
-      collect.substitute_binds(binds).join
-    end
+    conn = main_model.connection
+    sql  = conn.unprepared_statement { conn.to_sql(relation_query.arel) }
+    Arel::Nodes::In.new(primary_attribute, Arel::Nodes::SqlLiteral.new(sql))
   end
 
   def self.determine_relat_path(ref)
