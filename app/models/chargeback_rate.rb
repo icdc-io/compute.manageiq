@@ -66,7 +66,6 @@ class ChargebackRate < ApplicationRecord
     result
   end
 
-<<<<<<< HEAD
   def self.load_prices
     prices = {}
     groups = %w(cpu memory storage)
@@ -99,8 +98,6 @@ class ChargebackRate < ApplicationRecord
     prices
   end
 
-
-=======
   def self.unassign_rate_assignments(type, cb_rates)
     validate_rate_type(type)
 
@@ -111,7 +108,7 @@ class ChargebackRate < ApplicationRecord
     end
   end
 
->>>>>>> upstream/jansa
+
   def self.set_assignments(type, cb_rates)
     validate_rate_type(type)
     ChargebackRate.where(:rate_type => type.to_s.capitalize).each(&:remove_all_assigned_tos)
