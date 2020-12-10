@@ -104,6 +104,62 @@ RSpec.describe InfraConversionJob, :v2v do
     end
   end
 
+  context '.abort_conversion' do
+    it 'updates task progress and signals :abort_virtv2v' do
+      job.state = 'waiting_for_ip_address'
+      Timecop.freeze(2019, 2, 6) do
+        progress = {
+          :current_state       => 'waiting_for_ip_address',
+          :current_description => 'Waiting for IP address',
+          :percent             => 3.5,
+          :states              => {
+            :waiting_for_ip_address     => {
+              :description => 'Waiting for VM IP address',
+              :state       => 'active',
+              :status      => 'Ok',
+              :started_on  => Time.now.utc - 10.minutes,
+              :updated_on  => Time.now.utc - 5.minutes,
+              :percent     => 10.0
+            }
+          },
+          :status              => 'ok'
+        }
+        task.update_options(:progress => progress)
+        expect(job).to receive(:queue_signal).once.ordered.with(:abort_virtv2v)
+        job.abort_conversion('fake error', 'error')
+        expect(task.reload.options[:progress]).to eq(
+          :current_state       => 'waiting_for_ip_address',
+          :current_description => 'Migration failed: fake error. Cancelling',
+          :percent             => 3.5,
+          :states              => {
+            :waiting_for_ip_address     => {
+              :description => 'Waiting for VM IP address',
+              :state       => 'active',
+              :status      => 'Ok',
+              :started_on  => Time.now.utc - 10.minutes,
+              :updated_on  => Time.now.utc - 5.minutes,
+              :percent     => 10.0
+            }
+          },
+          :status              => 'error'
+        )
+      end
+    end
+
+    it 'initiate waiting_to_start state, updates task progress and signals :abort_virtv2v' do
+      job.state = 'waiting_to_start'
+      expect(job).to receive(:queue_signal).once.ordered.with(:abort_virtv2v)
+      job.abort_conversion('fake error', 'ok')
+      expect(job.migration_task.reload.options[:progress]).to eq(
+        :current_state       => 'waiting_to_start',
+        :current_description => 'Migration failed: fake error. Cancelling',
+        :percent             => 0.0,
+        :states              => {:waiting_to_start => {}},
+        :status              => 'ok'
+      )
+    end
+  end
+
   context 'state hash methods' do
     before do
       job.state = 'running_migration_playbook'
@@ -347,6 +403,61 @@ RSpec.describe InfraConversionJob, :v2v do
                   :updated_on  => Time.now.utc
                 }
               }
+            )
+          end
+        end
+
+        it 'doesn\'t update the task progress hash if progress[:status] is "error"' do
+          Timecop.freeze(2019, 2, 6) do
+            progress = {
+              :current_state       => 'running_migration_playbook',
+              :current_description => 'Running pre-migration playbook failed: fake error',
+              :percent             => 3.5,
+              :states              => {
+                :waiting_for_ip_address     => {
+                  :description => 'Waiting for VM IP address',
+                  :state       => 'finished',
+                  :status      => 'Ok',
+                  :started_on  => Time.now.utc - 10.minutes,
+                  :updated_on  => Time.now.utc - 5.minutes,
+                  :percent     => 100.0
+                },
+                :running_migration_playbook => {
+                  :description => 'Running pre-migration playbook',
+                  :state       => 'finished',
+                  :status      => 'Error',
+                  :started_on  => Time.now.utc - 1.minute,
+                  :percent     => 10.0,
+                  :updated_on  => Time.now.utc - 30.seconds
+                }
+              },
+              :status              => 'error'
+            }
+            task.update_options(:progress => progress)
+            job.update_migration_task_progress(:on_retry, :percent => 30)
+            expect(task.reload.options[:progress]).to eq(
+              :current_state       => 'running_migration_playbook',
+              :current_description => 'Running pre-migration playbook failed: fake error',
+              :percent             => 3.5,
+              :states              => {
+                :waiting_for_ip_address     => {
+                  :description => 'Waiting for VM IP address',
+                  :state       => 'finished',
+                  :status      => 'Ok',
+                  :started_on  => Time.now.utc - 10.minutes,
+                  :updated_on  => Time.now.utc - 5.minutes,
+                  :percent     => 100.0
+                },
+                :running_migration_playbook => {
+                  :description => 'Running pre-migration playbook',
+                  :state       => 'finished',
+                  :status      => 'Error',
+                  :started_on  => Time.now.utc - 1.minute,
+                  :percent     => 10.0,
+                  :updated_on  => Time.now.utc - 30.seconds
+                }
+              },
+              :status              => 'error'
             )
           end
         end
@@ -992,9 +1103,11 @@ RSpec.describe InfraConversionJob, :v2v do
     end
 
     context '#wait_for_ip_address' do
+      let(:target) { double(InventoryRefresh::TargetCollection) }
+
       before do
         task.update_options(:migration_phase => 'pre', :source_vm_ipaddresses => ['10.0.0.1'])
-        job.state = 'started'
+        job.state = 'waiting_for_ip_address'
       end
 
       it 'abort_conversion when waiting_on_ip_address times out' do
@@ -1028,10 +1141,26 @@ RSpec.describe InfraConversionJob, :v2v do
         job.signal(:wait_for_ip_address)
       end
 
-      it 'retries if VM is powered on and does not have an IP address' do
+      it 'retries without refresh if VM is powered on, does not have an IP address and number of retries is not a multiple of 10' do
         vm_vmware.update!(:raw_power_state => 'poweredOn')
+        job.context[:retries_waiting_for_ip_address] = 14
         expect(job).to receive(:update_migration_task_progress).once.ordered.with(:on_entry)
         expect(job).to receive(:update_migration_task_progress).once.ordered.with(:on_retry)
+        expect(job).to receive(:queue_signal).with(:wait_for_ip_address)
+        job.signal(:wait_for_ip_address)
+      end
+
+      it 'retries with refresh if VM is powered on, does not have an IP address and number of retries is a multiple of 10' do
+        vm_vmware.update!(:raw_power_state => 'poweredOn')
+        job.context[:retries_waiting_for_ip_address] = 19
+        expect(job).to receive(:update_migration_task_progress).once.ordered.with(:on_entry)
+        expect(job).to receive(:update_migration_task_progress).once.ordered.with(:on_retry)
+        allow(InventoryRefresh::Target).to receive(:new).with(
+          :association => :vms,
+          :manager     => ems_vmware,
+          :manager_ref => {:ems_ref => vm_vmware.ems_ref}
+        ).and_return(target)
+        expect(EmsRefresh).to receive(:queue_refresh).with(target)
         expect(job).to receive(:queue_signal).with(:wait_for_ip_address)
         job.signal(:wait_for_ip_address)
       end
@@ -1636,15 +1765,19 @@ RSpec.describe InfraConversionJob, :v2v do
       end
 
       it 'sends TERM signal and retries to virt-v2v when entering state for the first time' do
-        expect(job.migration_task).to receive(:kill_virtv2v).with('TERM')
-        expect(job).to receive(:queue_signal).with(:abort_virtv2v)
-        job.abort_virtv2v
+        Timecop.freeze(2019, 2, 6) do
+          expect(job.migration_task).to receive(:kill_virtv2v).with('TERM')
+          expect(job).to receive(:queue_signal).with(:abort_virtv2v, :deliver_on => Time.now.utc + job.state_retry_interval)
+          job.abort_virtv2v
+        end
       end
 
       it 'retries if not entering the state for the first time' do
-        job.context[:retries_aborting_virtv2v] = 1
-        expect(job).to receive(:queue_signal).with(:abort_virtv2v)
-        job.abort_virtv2v
+        Timecop.freeze(2019, 2, 6) do
+          job.context[:retries_aborting_virtv2v] = 1
+          expect(job).to receive(:queue_signal).with(:abort_virtv2v, :deliver_on => Time.now.utc + job.state_retry_interval)
+          job.abort_virtv2v
+        end
       end
     end
   end

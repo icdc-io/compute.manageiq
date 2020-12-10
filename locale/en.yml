@@ -5,7 +5,7 @@ en:
   product:
     name: ManageIQ
     name_full: ManageIQ
-    copyright: "Copyright (c) 2019 ManageIQ. Sponsored by Red Hat Inc."
+    copyright: "Copyright (c) 2020 ManageIQ. Sponsored by Red Hat Inc."
   activerecord:
     attributes:
       ems_cloud:
@@ -1007,6 +1007,8 @@ en:
       ems_clouds:                  Cloud Providers
       ems_cluster:                 Cluster
       ems_clusters:                Clusters
+      ems_configuration:           Configuration Manager
+      ems_configurations:          Configuration Managers
       ems_custom_attribute:        VC Custom Attribute
       ems_custom_attributes:       VC Custom Attributes
       ems_event:                   Management Event

@@ -27,6 +27,8 @@ class ChargebackRate < ApplicationRecord
 
   scope :with_rate_type, ->(rate_type) { where(:rate_type => rate_type) }
 
+  virtual_column :assigned_to, :type => :string_set
+
   VALID_CB_RATE_TYPES = ["Compute", "Storage"]
   DATASTORE_MAPPING   = {'CloudVolume' => 'Storage'}.freeze
 
@@ -64,6 +66,7 @@ class ChargebackRate < ApplicationRecord
     result
   end
 
+<<<<<<< HEAD
   def self.load_prices
     prices = {}
     groups = %w(cpu memory storage)
@@ -97,6 +100,18 @@ class ChargebackRate < ApplicationRecord
   end
 
 
+=======
+  def self.unassign_rate_assignments(type, cb_rates)
+    validate_rate_type(type)
+
+    cb_rates.each do |rate|
+      rate[:cb_rate].unassign_objects(rate[:object]) if rate.key?(:object)
+      rate[:cb_rate].unassign_tags(*rate[:tag])      if rate.key?(:tag)
+      rate[:cb_rate].unassign_labels(*rate[:label])  if rate.key?(:label)
+    end
+  end
+
+>>>>>>> upstream/jansa
   def self.set_assignments(type, cb_rates)
     validate_rate_type(type)
     ChargebackRate.where(:rate_type => type.to_s.capitalize).each(&:remove_all_assigned_tos)
@@ -173,6 +188,28 @@ class ChargebackRate < ApplicationRecord
     super || description == 'Default Container Image Rate'
   end
 
+  def assigment_type_description(record, type)
+    assignment_key = if %i[object storage].include?(type)
+                       record.kind_of?(MiqEnterprise) ? "enterprise" : record.class.table_name.singularize
+                     elsif type == :tag
+                       "#{record&.second}-tags"
+                     elsif type == :label
+                       "container_image-labels"
+                     end
+    rate_type_for_tos = rate_type == "Compute" ? :chargeback_compute : :chargeback_storage
+    TermOfServiceHelper::ASSIGN_TOS[rate_type_for_tos][assignment_key] || raise("'#{assignment_key}' as chargeback assignment type is not supported for #{rate_type_for_tos} rate.")
+  end
+
+  def assigned_to
+    result = []
+
+    tos = get_assigned_tos
+    tos[:tags].each { |tag| result << {:tag => tag, :assigment_type_description => assigment_type_description(tag, :tag)} }
+    tos[:objects].each { |object| result << {:object => object, :assigment_type_description => assigment_type_description(object, :object)} }
+    tos[:labels].each { |label| result << {:label => label, :assigment_type_description => assigment_type_description(label, :label)} }
+
+    result
+  end
   ###########################################################
 
   private

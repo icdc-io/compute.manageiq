@@ -488,13 +488,30 @@ RSpec.describe MiqExpression do
       expect(sql).to eq("\"vms\".\"name\" IS NOT NULL AND \"vms\".\"name\" != ''")
     end
 
-    it "generates the SQL for a CONTAINS expression with field" do
+    it "generates the SQL for a CONTAINS expression with has_many field" do
       sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.guest_applications-name", "value" => "foo"}).to_sql
-      expect(sql).to eq("\"vms\".\"id\" IN (SELECT DISTINCT \"guest_applications\".\"vm_or_template_id\" FROM \"guest_applications\" WHERE \"guest_applications\".\"name\" = 'foo')")
+      expected = "\"vms\".\"id\" IN (SELECT \"vms\".\"id\" FROM \"vms\" INNER JOIN \"guest_applications\" ON "\
+                 "\"guest_applications\".\"vm_or_template_id\" = \"vms\".\"id\" WHERE \"guest_applications\".\"name\" = 'foo')"
+      expect(sql).to eq(expected)
     end
 
     it "can't generate the SQL for a CONTAINS expression with association.association-field" do
       sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.guest_applications.host-name", "value" => "foo"}).to_sql
+      expect(sql).to be_nil
+    end
+
+    it "can't generate the SQL for a CONTAINS expression with belongs_to field" do
+      sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.host-name", "value" => "foo"}).to_sql
+      expect(sql).to be_nil
+    end
+
+    it "can't generate the SQL for multi level contains with a scope" do
+      sql, _ = MiqExpression.new("CONTAINS" => {"field" => "ExtManagementSystem.clustered_hosts.operating_system-name", "value" => "RHEL"}).to_sql
+      expect(sql).to be_nil
+    end
+
+    it "can't generate the SQL for field belongs to 'has_and_belongs_to_many' association" do
+      sql, _ = MiqExpression.new("CONTAINS" => {"field" => "ManageIQ::Providers::InfraManager::Vm.storages-name", "value" => "abc"}).to_sql
       expect(sql).to be_nil
     end
 
@@ -504,15 +521,25 @@ RSpec.describe MiqExpression do
     end
 
     it "can't generate the SQL for a CONTAINS expression with [association.virtualassociation]" do
+      sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.evm_owner.active_vms-name", "value" => "foo"}).to_sql
+      expect(sql).to be_nil
+    end
+
+    it "can't generate the SQL for a CONTAINS expression with invalid associations" do
       sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.users.active_vms-name", "value" => "foo"}).to_sql
       expect(sql).to be_nil
     end
 
     it "generates the SQL for a CONTAINS expression with field containing a scope" do
       sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm.users-name", "value" => "foo"}).to_sql
-      expected = "\"vms\".\"id\" IN (SELECT DISTINCT \"accounts\".\"vm_or_template_id\" FROM \"accounts\" "\
-                 "WHERE \"accounts\".\"name\" = 'foo' AND \"accounts\".\"accttype\" = 'user')"
+      expected = "\"vms\".\"id\" IN (SELECT \"vms\".\"id\" FROM \"vms\" INNER JOIN \"accounts\" ON \"accounts\".\"vm_or_template_id\" = "\
+                 "\"vms\".\"id\" AND \"accounts\".\"accttype\" = 'user' WHERE \"accounts\".\"name\" = 'foo')"
       expect(sql).to eq(expected)
+    end
+
+    it "can't generate the SQL for a CONTAINS in the main table" do
+      sql, * = MiqExpression.new("CONTAINS" => {"field" => "Vm-name", "value" => "foo"}).to_sql
+      expect(sql).to be_nil
     end
 
     it "generates the SQL for a CONTAINS expression with tag" do
@@ -551,7 +578,7 @@ RSpec.describe MiqExpression do
     context "date/time support" do
       it "generates the SQL for a = expression with a date field" do
         sql, * = described_class.new("=" => {"field" => "Vm-retires_on", "value" => "2016-01-01"}).to_sql
-        expect(sql).to eq(%q("vms"."retires_on" = '2016-01-01'))
+        expect(sql).to eq(%q("vms"."retires_on" = '2016-01-01 00:00:00'))
       end
 
       it "generates the SQL for an AFTER expression" do
@@ -574,7 +601,7 @@ RSpec.describe MiqExpression do
 
       it "generates the SQL for a != expression with a date field" do
         sql, * = described_class.new("!=" => {"field" => "Vm-retires_on", "value" => "2016-01-01"}).to_sql
-        expect(sql).to eq(%q("vms"."retires_on" != '2016-01-01'))
+        expect(sql).to eq(%q("vms"."retires_on" != '2016-01-01 00:00:00'))
       end
 
       it "generates the SQL for an IS expression" do
@@ -2232,6 +2259,20 @@ RSpec.describe MiqExpression do
 
       expect(MiqExpression._custom_details_for("ContainerImage", {})).to match_array(expected_result)
     end
+
+    context "model is ChargebackVm" do
+      let(:vm) { FactoryBot.create(:vm) }
+      let!(:custom_attribute_for_vm) { FactoryBot.create(:custom_attribute, :name => 'Application', :section => 'labels', :resource => vm) }
+
+      it "returns human names of custom attributes with sections" do
+        expected_result = [
+          ['Labels: Application', 'ChargebackVm-virtual_custom_attribute_Application:SECTION:labels'],
+          ['Custom Attribute: CATTR_1', 'ChargebackVm-virtual_custom_attribute_CATTR_1']
+        ]
+
+        expect(MiqExpression._custom_details_for("Vm", :model_for_column => "ChargebackVm")).to match_array(expected_result)
+      end
+    end
   end
 
   describe "#to_human" do
@@ -2438,45 +2479,6 @@ RSpec.describe MiqExpression do
       it "detects in complex hash" do
         expect(MiqExpression.new(complex_qs_exp).quick_search?).to be_truthy
       end
-    end
-  end
-
-  describe ".merge_where_clauses" do
-    it "returns nil for nil" do
-      expect(MiqExpression.merge_where_clauses(nil)).to be_nil
-    end
-
-    it "returns nil for blank" do
-      expect(MiqExpression.merge_where_clauses("")).to be_nil
-    end
-
-    it "returns nil for multiple empty arrays" do
-      expect(MiqExpression.merge_where_clauses([],[])).to be_nil
-    end
-
-    it "returns same string single results" do
-      expect(MiqExpression.merge_where_clauses("a=5")).to eq("a=5")
-    end
-
-    it "returns same string when concatinating blank results" do
-      expect(MiqExpression.merge_where_clauses("a=5", [])).to eq("a=5")
-    end
-
-    # would be nice if we returned a hash
-    it "returns a string if the only argument is a hash" do
-      expect(MiqExpression.merge_where_clauses({"vms.id" => 5})).to eq("\"vms\".\"id\" = 5")
-    end
-
-    it "concatinates 2 arrays" do
-      expect(MiqExpression.merge_where_clauses(["a=?",5], ["b=?",5])).to eq("(a=5) AND (b=5)")
-    end
-
-    it "concatinates 2 string" do
-      expect(MiqExpression.merge_where_clauses("a=5", "b=5")).to eq("(a=5) AND (b=5)")
-    end
-
-    it "concatinates a string and a hash" do
-      expect(MiqExpression.merge_where_clauses("a=5", {"vms.id" => 5})).to eq("(a=5) AND (\"vms\".\"id\" = 5)")
     end
   end
 

@@ -67,6 +67,23 @@ RSpec.describe MiqReport::Generator do
         expect(@miq_report_profile_all.table.data[0].data).to include("min_trend_value" => 400,
                                                                       "max_trend_value" => 700)
       end
+
+      it "handles merging WHERE clauses from MiqReport#where_clause and options[:where_clause]" do
+        FactoryBot.create(:vm)       # filtered out by option[:where_clause]
+        FactoryBot.create(:template) # filtered out by report.where_clause
+        vm = FactoryBot.create(:vm, :vendor => "redhat")
+
+        rpt = FactoryBot.create(
+          :miq_report,
+          :db           => "VmOrTemplate",
+          :where_clause => ["vms.type = ?", "Vm"],
+          :col_order    => %w[id name host.name vendor]
+        )
+        rpt.generate_table(:userid => @user.userid, :where_clause => {"vms.vendor" => "redhat"})
+
+        expect(rpt.table.size).to eq(1)
+        expect(rpt.table.first.id.to_s).to eq(vm.id.to_s)
+      end
     end
   end
 
@@ -247,6 +264,28 @@ RSpec.describe MiqReport::Generator do
                           :col_order        => %w[name v_datastore_path host.name storage.name],
                           :include_for_find => {:snapshots => {}})
       expect(rpt.get_include).to eq(:v_datastore_path => {}, :host => {}, :storage => {})
+    end
+  end
+
+  describe "sorting" do
+    let(:vms)       { FactoryBot.create_list(:vm_vmware, 2) }
+    let(:vm_amazon) { FactoryBot.create(:vm_amazon) }
+
+    # nil values have special handling in sorting by forcing them to represent the maximum value from all values for the column
+    it "handles sort columns with nil values properly, when column is string" do
+      MiqReport.seed_report(name = "Vendor and Guest OS")
+      vm = vms.first
+      vm.update_attributes(:operating_system => FactoryBot.create(:operating_system, :name => "Linux", :product_name => "Linux"))
+
+      expect(vm_amazon.operating_system).to be_nil
+
+      rpt = MiqReport.where(:name => name).last
+
+      rpt.generate_table(:userid => "test")
+      report_result = rpt.build_create_results(:userid => "test")
+      report_result.reload
+
+      expect(report_result.report_results.table.data.first['vendor_display']).to eq(vm_amazon.vendor_display)
     end
   end
 end

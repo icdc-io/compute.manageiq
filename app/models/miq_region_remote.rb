@@ -45,7 +45,7 @@ class MiqRegionRemote < ApplicationRecord
     log_header = "Region: [#{region}] with guid: [#{guid}]:"
 
     with_remote_connection(host, port, username, password, database, adapter) do |conn|
-      cond = sanitize_conditions(["region = ?", region])
+      cond = sanitize_sql_for_conditions(["region = ?", region])
       reg = conn.select_one("SELECT * FROM miq_regions WHERE #{cond}")
 
       if reg.nil?
@@ -65,7 +65,7 @@ class MiqRegionRemote < ApplicationRecord
 
   def self.prepare_default_fields(database, adapter)
     if database.nil? || adapter.nil?
-      db_conf = Rails.configuration.database_configuration[Rails.env]
+      db_conf = ActiveRecord::Base.configurations[Rails.env]
       database ||= db_conf["database"]
       adapter  ||= db_conf["adapter"]
     end
@@ -84,7 +84,7 @@ class MiqRegionRemote < ApplicationRecord
     host = host.to_s.strip
     raise ArgumentError, _("host cannot be blank") if host.blank?
     if [nil, "", "localhost", "localhost.localdomain", "127.0.0.1", "0.0.0.0"].include?(host)
-      local_database = Rails.configuration.database_configuration.fetch_path(Rails.env, "database").to_s.strip
+      local_database = ActiveRecord::Base.configurations.fetch_path(Rails.env, "database").to_s.strip
       if database == local_database
         raise ArgumentError, _("host cannot be set to localhost if database matches the local database")
       end

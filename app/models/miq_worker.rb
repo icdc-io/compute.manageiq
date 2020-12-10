@@ -49,7 +49,7 @@ class MiqWorker < ApplicationRecord
   end
 
   def self.bundler_groups
-    %w[manageiq_default]
+    %w[manageiq_default ui_dependencies]
   end
 
   def self.kill_priority
@@ -316,7 +316,7 @@ class MiqWorker < ApplicationRecord
   end
 
   def self.systemd_worker?
-    MiqEnvironment::Command.supports_systemd? && supports_systemd?
+    ENV['MIQ_SYSTEMD_WORKERS'] && MiqEnvironment::Command.supports_systemd? && supports_systemd?
   end
 
   def systemd_worker?
@@ -324,7 +324,7 @@ class MiqWorker < ApplicationRecord
   end
 
   def start_runner
-    if ENV['MIQ_SYSTEMD_WORKERS'] && systemd_worker?
+    if systemd_worker?
       start_systemd_worker
     elsif containerized_worker?
       start_runner_via_container
@@ -392,6 +392,21 @@ class MiqWorker < ApplicationRecord
   def kill
     kill_process
     destroy
+  end
+
+  # kill needs be done by the worker's orchestrator pod / server process
+  # TODO: Note, stop is async through the queue, while kill is sync.  Should kill be async too?
+  # Also, this looks a lot like MiqServer#stop_worker_queue except stop_worker is called on the server row whereas
+  # we're calling kill on the worker row.
+  def kill_async
+    MiqQueue.put_unless_exists(
+      :class_name  => self.class.name,
+      :instance_id => id,
+      :method_name => 'kill',
+      :queue_name  => 'miq_server',
+      :server_guid => miq_server.guid,
+      :zone        => miq_server.my_zone
+    )
   end
 
   def kill_process

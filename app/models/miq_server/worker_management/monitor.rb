@@ -2,12 +2,14 @@ module MiqServer::WorkerManagement::Monitor
   extend ActiveSupport::Concern
 
   include_concern 'Kill'
+  include_concern 'Kubernetes'
   include_concern 'Quiesce'
   include_concern 'Reason'
   include_concern 'Settings'
   include_concern 'Start'
   include_concern 'Status'
   include_concern 'Stop'
+  include_concern 'Systemd'
   include_concern 'SystemLimits'
   include_concern 'Validation'
 
@@ -15,6 +17,7 @@ module MiqServer::WorkerManagement::Monitor
     # Clear the my_server cache so we can detect role and possibly other changes faster
     self.class.my_server_clear_cache
 
+    sync_from_system
     sync_monitor
 
     # Sync the workers after sync'ing the child worker settings
@@ -22,9 +25,7 @@ module MiqServer::WorkerManagement::Monitor
 
     MiqWorker.status_update_all
 
-    check_not_responding
-    check_pending_stop
-    clean_worker_records
+    cleanup_failed_workers
 
     # Monitor all remaining current worker records
     miq_workers.where(:status => MiqWorker::STATUSES_CURRENT_OR_STARTING).each do |worker|
@@ -61,6 +62,51 @@ module MiqServer::WorkerManagement::Monitor
       end
     end
     result
+  end
+
+  def sync_from_system
+    if podified?
+      ensure_pod_monitor_started
+    end
+
+    cleanup_orphaned_worker_rows
+  end
+
+  def cleanup_orphaned_worker_rows
+    if podified?
+      unless current_pods.empty?
+        # Hack for schema-less backport(no new system_uid column):
+        # reuse existing guid column to store/retrieve the system_uid, pod name in pods.
+        # https://github.com/ManageIQ/manageiq/pull/20792
+        #
+        # Cockpit is a threaded worker in the orchestrator that spins off a process it monitors and isn't a pod worker.
+        orphaned_rows = miq_workers.where.not(:type => %w[MiqCockpitWsWorker]).where.not(:guid => current_pods.keys)
+        unless orphaned_rows.empty?
+          _log.warn("Removing orphaned worker rows without corresponding pods: #{orphaned_rows.collect(&:guid).inspect}")
+          orphaned_rows.destroy_all
+        end
+      end
+    end
+  end
+
+  def cleanup_failed_workers
+    check_not_responding
+    check_pending_stop
+    clean_worker_records
+
+    if podified?
+      cleanup_failed_deployments
+    elsif systemd?
+      cleanup_failed_systemd_services
+    end
+  end
+
+  def podified?
+    MiqEnvironment::Command.is_podified?
+  end
+
+  def systemd?
+    MiqEnvironment::Command.supports_systemd?
   end
 
   def clean_worker_records

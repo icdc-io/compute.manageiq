@@ -21,9 +21,11 @@ module ManageIQ::Providers
     end
     delegate :catalog_types, :to => :class
 
-    def supported_catalog_types
-      []
-    end
+    # ICDC in our version we use hash instead of array
+    #def supported_catalog_types
+    #  []
+    #end
+    delegate :catalog_types, :to => :class
 
     def refresher
       self.class::Refresher

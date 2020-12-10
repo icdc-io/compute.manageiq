@@ -26,7 +26,9 @@ class Tenant < ApplicationRecord
   default_value_for :divisible,   true
   default_value_for :use_config_for_attributes, false
 
-  has_ancestry
+  before_destroy :ensure_can_be_destroyed
+
+  has_ancestry(:orphan_strategy => :restrict)
 
   has_many :providers
   has_many :ext_management_systems
@@ -379,7 +381,7 @@ class Tenant < ApplicationRecord
   def create_miq_product_features_for_tenant_nodes
     MiqProductFeature.seed_single_tenant_miq_product_features(self)
   end
-  
+
   def create_users_group
     roles = %w(admin billing member)
     roles.each do |role|
@@ -388,6 +390,10 @@ class Tenant < ApplicationRecord
       role = "project-#{role}" if self.project?
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
     end
+  end
+
+  def destroy_with_subtree
+    subtree.sort_by(&:depth).reverse.each(&:destroy)
   end
 
   private

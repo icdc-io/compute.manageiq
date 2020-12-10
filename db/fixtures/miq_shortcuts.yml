@@ -14,10 +14,20 @@
   :url: /utilization
   :rbac_feature_name: utilization
   :startup: true
-- :name: chargeback
-  :description: Overview / Chargeback
-  :url: /chargeback/explorer
-  :rbac_feature_name: chargeback
+- :name: chargeback_reports
+  :description: Overview / Chargeback / Reports
+  :url: /chargeback_report/show_list
+  :rbac_feature_name: chargeback_reports_show_list
+  :startup: true
+- :name: chargeback_rates
+  :description: Overview / Chargeback / Rates
+  :url: /chargeback_rates/show_list
+  :rbac_feature_name: chargeback_rates_show_list
+  :startup: true
+- :name: chargeback_assignments
+  :description: Overview / Chargeback / Assignments
+  :url: /chargeback_assignment
+  :rbac_feature_name: chargeback_assignments
   :startup: true
 - :name: services
   :description: Services / My Services
@@ -294,10 +304,20 @@
   :url: /migration/#settings
   :rbac_feature_name: migration_settings
   :startup: true
-- :name: configuration_management
-  :description: Configuration / Management
-  :url: provider_foreman/explorer
-  :rbac_feature_name: provider_foreman_explorer
+- :name: ems_configuration
+  :description: Configuration / Providers
+  :url: ems_configuration/show_list
+  :rbac_feature_name: ems_configuration_show_list
+  :startup: true
+- :name: configuration_profile
+  :description: Configuration / Profiles
+  :url: configuration_profile/show_list
+  :rbac_feature_name: configuration_profile_show_list
+  :startup: true
+- :name: configured_system
+  :description: Configured / Systems
+  :url: configured_system/show_list
+  :rbac_feature_name: configured_system_show_list
   :startup: true
 - :name: ems_networks
   :description: Networks / Providers
