@@ -202,7 +202,8 @@ class User < ApplicationRecord
   end
 
   def locked?
-    ::Settings.authentication.max_failed_login_attempts.positive? && failed_login_attempts >= ::Settings.authentication.max_failed_login_attempts
+    max_attempts = ::Settings.authentication.max_failed_login_attempts || 5
+    max_attempts.positive? && failed_login_attempts >= max_attempts 
   end
 
   def unlock!
