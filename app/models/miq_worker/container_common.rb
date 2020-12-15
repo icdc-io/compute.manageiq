@@ -42,7 +42,7 @@ class MiqWorker
     end
 
     def default_image
-      "#{container_image_namespace}/#{container_image_name}:#{container_image_tag}"
+      container_image  
     end
 
     def resource_constraints

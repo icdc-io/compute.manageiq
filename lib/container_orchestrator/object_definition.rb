@@ -16,11 +16,21 @@ class ContainerOrchestrator
             :metadata => {:name => name, :labels => common_labels.merge(:name => name)},
             :spec     => {
               :serviceAccountName => ENV["WORKER_SERVICE_ACCOUNT"],
+	      :volumes            => [{
+	        :name          => "filebeat",
+		:configMap     => {
+		  :name      => "filebeat"
+		}
+	      }],
               :containers         => [{
                 :name          => name,
                 :env           => default_environment,
                 :imagePullPolicy => "Always",
-                :livenessProbe => liveness_probe
+                :livenessProbe => liveness_probe,
+		:volumeMounts  => [{
+		  :name => "filebeat",
+		  :mountPath => "/etc/filebeat"
+		}]
               }]
             }
           }
