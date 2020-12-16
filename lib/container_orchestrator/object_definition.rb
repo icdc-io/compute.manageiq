@@ -28,8 +28,9 @@ class ContainerOrchestrator
                 :imagePullPolicy => "Always",
                 :livenessProbe => liveness_probe,
 		:volumeMounts  => [{
-		  :name => "filebeat",
-		  :mountPath => "/etc/filebeat"
+		  :name      => "filebeat",
+		  :mountPath => "/etc/filebeat",
+		  :readOnly  => true
 		}]
               }]
             }
