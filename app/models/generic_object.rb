@@ -21,7 +21,12 @@ class GenericObject < ApplicationRecord
 
   delegate :name, :to => :generic_object_definition, :prefix => true, :allow_nil => false
   virtual_column :generic_object_definition_name, :type => :string
+
   before_destroy :remove_go_from_all_related_services
+
+  # ICDC co-styling
+  virtual_attribute :property_attributes, :string
+  # END ICDC
 
   def initialize(attributes = {})
     # generic_object_definition will be set first since hash iteration is based on the order of key insertion
