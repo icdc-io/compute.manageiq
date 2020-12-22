@@ -331,10 +331,16 @@ class Service < ApplicationRecord
   end
 
   def update_power_status(action)
-    expected_status = "#{action}_complete"
-    return true if options[:power_status] == expected_status
-    options[:power_status] = expected_status
-    update(:options => options)
+    begin
+      expected_status = "#{action}_complete"
+      return true if options[:power_status] == expected_status
+      options[:power_status] = expected_status
+      update(:options => options)
+    rescue => e
+      # ahrechushkin: Temporarily fix for problem. Actually power_status successfully updated, 
+      # but for some broken service it may call an out of range error on callback while update db column 
+      _log.info("[icdc dbg] can't update power_status for service #{self.id} to #{action} with message #{e.message}")
+    end
   end
 
   private def update_progress(hash)
