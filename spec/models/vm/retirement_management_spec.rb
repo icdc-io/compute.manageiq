@@ -73,6 +73,38 @@ RSpec.describe "VM Retirement Management" do
         expect(vm_with_owner.retirement_requester).to eq('admin')
       end
     end
+
+    context "preventing creation of duplicate retirement request" do
+      before do
+        vm_with_owner.update(:retires_on => Time.zone.today)
+        @request = FactoryBot.create(:vm_retire_request, :requester => user, :source_id => vm_with_owner.id)
+      end
+
+      it "create request if existing request's state is 'finished' regardless approval status" do
+        @request.update(:request_state => 'finished')
+        expect(vm_with_owner.class).to receive(:make_retire_request)
+        vm_with_owner.retirement_check
+
+        @request.update(:approval_state => "approved")
+        expect(vm_with_owner.class).to receive(:make_retire_request)
+        vm_with_owner.retirement_check
+      end
+
+      it "create request if existing request's status is 'Error' regardless approval status" do
+        @request.update(:status => 'Error')
+        expect(vm_with_owner.class).to receive(:make_retire_request)
+        vm_with_owner.retirement_check
+
+        @request.update(:approval_state => "approved")
+        expect(vm_with_owner.class).to receive(:make_retire_request)
+        vm_with_owner.retirement_check
+      end
+
+      it "does not create request if existing request not approved and not finished and status is not 'Error'" do
+        expect(vm_with_owner.class).not_to receive(:make_retire_request)
+        vm_with_owner.retirement_check
+      end
+    end
   end
 
   it "#start_retirement" do
@@ -222,7 +254,7 @@ RSpec.describe "VM Retirement Management" do
   end
 
   it "#finish_retirement" do
-    message = "Vm: [#{vm2.name}], Retires On: [#{Time.zone.now.strftime("%x %R %Z")}], has been retired"
+    message = "Vm: [id:<#{vm2.id}>, name:<#{vm2.name}>] with Retires On value: [#{Time.zone.now.strftime("%x %R %Z")}], has been retired"
     expect(vm2).to receive(:raise_audit_event).with("vm_retired", message, nil)
 
     vm2.finish_retirement

@@ -73,6 +73,8 @@ class User < ApplicationRecord
   serialize     :settings, Hash   # Implement settings column as a hash
   default_value_for(:settings) { Hash.new }
 
+  default_value_for :failed_login_attempts, 0
+
   scope :with_same_userid, ->(id) { where(:userid => User.where(:id => id).pluck(:userid)) }
 
   def self.with_roles_excluding(identifier)
@@ -199,6 +201,21 @@ class User < ApplicationRecord
     end
   end
 
+  def locked?
+    max_attempts = ::Settings.authentication.max_failed_login_attempts || 5
+    max_attempts.positive? && failed_login_attempts >= max_attempts 
+  end
+
+  def unlock!
+    update!(:failed_login_attempts => 0)
+  end
+
+  def fail_login!
+    update!(:failed_login_attempts => failed_login_attempts + 1)
+
+    unlock_queue if locked?
+  end
+
   def ldap_group
     current_group.try(:description)
   end
@@ -283,6 +300,12 @@ class User < ApplicationRecord
   def self.authorize_user(userid)
     return if userid.blank? || admin?(userid)
     authenticator(userid).authorize_user(userid)
+  end
+
+  def self.authorize_user_with_system_token(userid, user_metadata = {})
+    return if userid.blank? || user_metadata.blank? || admin?(userid)
+
+    authenticator(userid).authorize_user_with_system_token(userid, user_metadata)
   end
 
   def logoff
@@ -431,6 +454,22 @@ class User < ApplicationRecord
     user.tenant_admin_user? ? all : includes(:miq_groups).where(:miq_groups => {:id => user.miq_group_ids})
   end
 
+  def self.metadata_for_system_token(userid)
+    return unless authenticator(userid).user_authorizable_with_system_token?
+
+    user = in_my_region.find_by(:userid => userid)
+    return if user.blank?
+
+    {
+      :userid      => user.userid,
+      :name        => user.name,
+      :email       => user.email,
+      :first_name  => user.first_name,
+      :last_name   => user.last_name,
+      :group_names => user.miq_groups.try(:collect, &:description)
+    }
+  end
+
   def self.seed
     seed_data.each do |user_attributes|
       user_id = user_attributes[:userid]
@@ -469,5 +508,18 @@ class User < ApplicationRecord
     managed_projects << (current_tenant.project? ? current_tenant.parent : current_tenant)
     managed_projects << (icdc_manager? ? current_tenant.all_subprojects : tenants.select(&:project?))
     managed_projects.flatten
+  end
+  
+  private
+
+  def unlock_queue
+    MiqQueue.put_or_update(
+      :class_name  => self.class.name,
+      :instance_id => id,
+      :method_name => 'unlock!',
+      :priority    => MiqQueue::MAX_PRIORITY
+    ) do |_msg, queue_options|
+      queue_options.merge(:deliver_on => Time.now.utc + ::Settings.authentication.locked_account_timeout.to_i)
+    end
   end
 end

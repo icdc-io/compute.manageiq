@@ -1,7 +1,7 @@
 raise "Ruby versions < 2.5.3 are unsupported!" if RUBY_VERSION < "2.5.3"
 raise "Ruby versions >= 2.7.0 are unsupported!" if RUBY_VERSION >= "2.7.0"
 
-source 'https://rubygems.org'
+source 'http://rubygems.org'
 
 plugin "bundler-inject", "~> 1.1"
 require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundler-inject") rescue nil
@@ -9,11 +9,10 @@ require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundle
 #
 # VMDB specific gems
 #
-
 gem "manageiq-gems-pending", ">0", :require => 'manageiq-gems-pending', :git => "https://github.com/ManageIQ/manageiq-gems-pending.git", :branch => "jansa"
 
 # Modified gems for gems-pending.  Setting sources here since they are git references
-gem "handsoap", "=0.2.5.5", :require => false, :source => "http://rubygems.manageiq.org"
+gem "handsoap", "=0.2.5.5", :require => false, :source => "https://rubygems.manageiq.org"
 
 # when using this Gemfile inside a providers Gemfile, the dependency for the provider is already declared
 def manageiq_plugin(plugin_name)
@@ -25,7 +24,7 @@ end
 manageiq_plugin "manageiq-schema"
 
 # Unmodified gems
-gem "activerecord-virtual_attributes", "~>1.5.0"
+gem "activerecord-virtual_attributes", "~>1.6.0"
 gem "activerecord-session_store",     "~>1.1"
 gem "acts_as_tree",                   "~>2.7" # acts_as_tree needs to be required so that it loads before ancestry
 gem "ancestry",                       "~>3.0.7",       :require => false
@@ -34,7 +33,7 @@ gem "bcrypt",                         "~> 3.1.10",     :require => false
 gem "bundler",                        ">=1.15",        :require => false
 gem "byebug",                                          :require => false
 gem "color",                          "~>1.8"
-gem "config",                         "~>2.2", ">=2.2.1", :require => false
+gem "config",                         "=2.2.1",        :require => false
 gem "dalli",                          "=2.7.6",        :require => false
 gem "default_value_for",              "~>3.3"
 gem "docker-api",                     "~>1.33.6",      :require => false
@@ -46,9 +45,9 @@ gem "hamlit",                         "~>2.8.5"
 gem "inifile",                        "~>3.0",         :require => false
 gem "inventory_refresh",              "~>0.2.0",       :require => false
 gem "kubeclient",                     "~>4.0",         :require => false # For scaling pods at runtime
-gem "linux_admin",                    "~>2.0",         :require => false
+gem "linux_admin",                    "~>2.0", ">=2.0.1", :require => false
 gem "log_decorator",                  "~>0.1",         :require => false
-gem "manageiq-api-client",            "~>0.3.3",       :require => false
+gem "manageiq-api-client",            "~>0.3.4",       :require => false
 gem "manageiq-loggers",               "~>0.3.0",       :require => false
 gem "manageiq-messaging",             "~>0.1.4",       :require => false
 gem "manageiq-password",              "~>0.3",         :require => false
@@ -64,8 +63,9 @@ gem "openscap",                       "~>0.4.8",       :require => false
 gem "optimist",                       "~>3.0",         :require => false
 gem "pg",                                              :require => false
 gem "pg-dsn_parser",                  "~>0.1.0",       :require => false
+gem "psych",                          "~>3.1",         :require => false # This can be dropped once we drop ruby 2.5
 gem "query_relation",                 "~>0.1.0",       :require => false
-gem "rails",                          "=5.1.7"
+gem "rails",                          "~>5.2.4", ">=5.2.4.4"
 gem "rails-i18n",                     "~>5.x"
 gem "haikunator",                                      :require => false, :git => "https://github.com/usmanbashir/haikunator.git", :branch => "master"
 gem "rake",                           ">=12.3.3",      :require => false
@@ -86,8 +86,8 @@ gem "hmc-sdk-ruby",                                                   :git => "h
 gem 'activeresource'
 
 # Modified gems (forked on Github)
-gem "rugged",                         "=0.28.2.2", :source => "http://rubygems.manageiq.org", :require => false
-gem "ruport",                         "=1.7.0.3",  :source => "http://rubygems.manageiq.org"
+gem "rugged",                         "=0.28.2.2", :source => "https://rubygems.manageiq.org", :require => false
+gem "ruport",                         "=1.7.0.3",  :source => "https://rubygems.manageiq.org"
 
 # In 1.9.3: Time.parse uses british version dd/mm/yyyy instead of american version mm/dd/yyyy
 # american_date fixes this to be compatible with 1.8.7 until all callers can be converted to the 1.9.3 format prior to parsing.
@@ -145,7 +145,7 @@ group :redfish, :manageiq_default do
 end
 
 group :qpid_proton, :optional => true do
-  gem "qpid_proton",                    "0.30.0",      :require => false
+  gem "qpid_proton",                    "~>0.30.0",      :require => false
 end
 
 group :systemd, :optional => true do
@@ -210,7 +210,7 @@ group :seed, :manageiq_default do
 end
 
 group :smartstate, :manageiq_default do
-  gem "manageiq-smartstate",            "~>0.5.3",       :require => false
+  gem "manageiq-smartstate",            "~>0.5.10",       :require => false
 end
 
 group :consumption, :manageiq_default do
@@ -221,7 +221,7 @@ group :ui_dependencies do # Added to Bundler.require in config/application.rb
   manageiq_plugin "manageiq-decorators"
   manageiq_plugin "manageiq-ui-classic"
   # Modified gems (forked on Github)
-  gem "jquery-rjs",                     "=0.1.1.1", :source => "http://rubygems.manageiq.org"
+  gem "jquery-rjs",                     "=0.1.1.1", :source => "https://rubygems.manageiq.org"
 end
 
 group :v2v, :ui_dependencies do
@@ -256,17 +256,18 @@ unless ENV["APPLIANCE"]
   end
 
   group :test do
-    gem "brakeman",         "~>3.3",    :require => false
-    gem "capybara",         "~>2.5.0",  :require => false
-    gem "coveralls",        "~>0.8.23", :require => false
-    gem "factory_bot",      "~>5.1",    :require => false
+    gem "brakeman",          "~>3.3",    :require => false
+    gem "capybara",          "~>2.5.0",  :require => false
+    gem "coveralls",         "~>0.8.23", :require => false
+    gem "db-query-matchers", "~>0.10.0"
+    gem "factory_bot",       "~>5.1",    :require => false
 
     # TODO: faker is used for url generation in git repository factory and the lenovo
     # provider, via a xclarity_client dependency
-    gem "faker",            "~>1.8",    :require => false
-    gem "timecop",          "~>0.9",    :require => false
-    gem "vcr",              "~>5.0",    :require => false
-    gem "webmock",          "~>3.7",    :require => false
+    gem "faker",             "~>1.8",    :require => false
+    gem "timecop",           "~>0.9",    :require => false
+    gem "vcr",               "~>5.0",    :require => false
+    gem "webmock",           "~>3.7",    :require => false
   end
 
   group :development, :test do

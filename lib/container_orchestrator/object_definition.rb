@@ -5,21 +5,33 @@ class ContainerOrchestrator
     def deployment_definition(name)
       {
         :metadata => {
-          :name      => name,
-          :labels    => {:app => app_name},
-          :namespace => my_namespace,
+          :name            => name,
+          :labels          => common_labels,
+          :namespace       => my_namespace,
+          :ownerReferences => owner_references
         },
         :spec     => {
           :selector => {:matchLabels => {:name => name}},
           :template => {
-            :metadata => {:name => name, :labels => {:name => name, :app => app_name}},
+            :metadata => {:name => name, :labels => common_labels.merge(:name => name)},
             :spec     => {
-              :serviceAccountName => "#{app_name}-anyuid",
+              :serviceAccountName => ENV["WORKER_SERVICE_ACCOUNT"],
+	      :volumes            => [{
+	        :name          => "filebeat",
+		:configMap     => {
+		  :name      => "filebeat"
+		}
+	      }],
               :containers         => [{
                 :name          => name,
                 :env           => default_environment,
                 :imagePullPolicy => "Always",
-                :livenessProbe => liveness_probe
+                :livenessProbe => liveness_probe,
+		:volumeMounts  => [{
+		  :name      => "filebeat",
+		  :mountPath => "/etc/filebeat",
+		  :readOnly  => true
+		}]
               }]
             }
           }
@@ -30,9 +42,10 @@ class ContainerOrchestrator
     def service_definition(name, selector, port)
       {
         :metadata => {
-          :name      => name,
-          :labels    => {:app => app_name},
-          :namespace => my_namespace
+          :name            => name,
+          :labels          => common_labels,
+          :namespace       => my_namespace,
+          :ownerReferences => owner_references
         },
         :spec     => {
           :selector => selector,
@@ -48,9 +61,10 @@ class ContainerOrchestrator
     def secret_definition(name, string_data)
       {
         :metadata   => {
-          :name      => name,
-          :labels    => {:app => app_name},
-          :namespace => my_namespace
+          :name            => name,
+          :labels          => common_labels,
+          :namespace       => my_namespace,
+          :ownerReferences => owner_references
         },
         :stringData => string_data
       }
@@ -79,14 +93,30 @@ class ContainerOrchestrator
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "dburl"}}},
         {:name      => "ENCRYPTION_KEY",
          :valueFrom => {:secretKeyRef=>{:name => "app-secrets", :key => "encryption-key"}}}
+      ] + messaging_environment
+    end
+
+    def messaging_environment
+      return [] unless ENV["MESSAGING_TYPE"].present?
+
+      [
+        {:name => "MESSAGING_PORT", :value => ENV["MESSAGING_PORT"]},
+        {:name => "MESSAGING_TYPE", :value => ENV["MESSAGING_TYPE"]},
+        {:name      => "MESSAGING_HOSTNAME",
+         :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "hostname"}}},
+        {:name      => "MESSAGING_PASSWORD",
+         :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "password"}}},
+        {:name      => "MESSAGING_USERNAME",
+         :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "username"}}}
       ]
     end
 
     def liveness_probe
       {
         :exec                => {:command => ["/usr/local/bin/manageiq_liveness_check"]},
-        :initialDelaySeconds => 120,
-        :timeoutSeconds      => 3
+        :initialDelaySeconds => 240,
+        :timeoutSeconds      => 10,
+        :periodSeconds       => 15
       }
     end
 
@@ -104,6 +134,45 @@ class ContainerOrchestrator
       {:HELPDESK_TOKEN => config[MiqRegion.my_region.description.downcase].dig(:token), :HELPDESK_URL => config[MiqRegion.my_region.description.downcase].dig(:url)}
     rescue Errno::ENOENT => e
       {:HELPDESK_TOKEN => "", :HELPDESK_URL => ""} unless config
+    end
+    
+    def app_name_label
+      {:app => app_name}
+    end
+
+    def app_name_selector
+      "app=#{app_name}"
+    end
+
+    def common_labels
+      app_name_label.merge(orchestrated_by_label)
+    end
+
+    def orchestrated_by_label
+      {:"#{app_name}-orchestrated-by" => pod_name}
+    end
+
+    def orchestrated_by_selector
+      "#{app_name}-orchestrated-by=#{pod_name}"
+    end
+
+    def owner_references
+      [{
+        :apiVersion         => "v1",
+        :blockOwnerDeletion => true,
+        :controller         => true,
+        :kind               => "Pod",
+        :name               => pod_name,
+        :uid                => pod_uid
+      }]
+    end
+
+    def pod_name
+      ENV['POD_NAME']
+    end
+
+    def pod_uid
+      ENV["POD_UID"]
     end
   end
 end

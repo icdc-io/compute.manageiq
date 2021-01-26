@@ -1,0 +1,1160 @@
+GIT
+  remote: https://@git.icdc.io/icdc/compute/zabbixapi.git
+  revision: 0600c8d153ab042084c481cb1c108b4fcfe898cb
+  branch: icdc_j
+  specs:
+    zabbixapi (3.2.1)
+      http (~> 3.0)
+      json (~> 2.0)
+
+GIT
+  remote: https://github.com/ManageIQ/amazon_ssa_support.git
+  revision: cc39b13e1b445ec2c2c5ff60ee96b5572f414086
+  branch: jansa
+  specs:
+    amazon_ssa_support (0.1.0)
+      aws-sdk-ec2 (~> 1.0)
+      aws-sdk-s3 (~> 1.0)
+      aws-sdk-sqs (~> 1.0)
+      log_decorator (~> 0.1)
+      manageiq-gems-pending (~> 0)
+      manageiq-smartstate (~> 0.2)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-consumption
+  revision: afca1058f7e7b6026be296780982a6569c38fd8f
+  branch: jansa
+  specs:
+    manageiq-consumption (0.0.1)
+      hashdiff (~> 1.0)
+      money-rails (~> 1.9)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-content
+  revision: 449c71619be6b09de90432cd92b964e3365bc5ee
+  branch: jansa
+  specs:
+    manageiq-content (0.1.0)
+      savon (~> 2.11.1)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-gems-pending.git
+  revision: 4026507c32b70f2fa88ab97dfd3c8220110ff789
+  branch: jansa
+  specs:
+    manageiq-gems-pending (0.1.0)
+      activerecord (< 5.3)
+      activesupport (< 5.3)
+      awesome_spawn (~> 1.5)
+      aws-sdk-s3 (~> 1.0)
+      binary_struct (~> 2.1)
+      bundler (>= 1.8.4)
+      erubis (= 2.7.0)
+      fog-openstack (~> 0.3)
+      handsoap (= 0.2.5.5)
+      linux_admin (~> 2.0)
+      manageiq-password (~> 0.3)
+      mime-types (~> 3.0)
+      more_core_extensions (~> 3.7)
+      net-scp (~> 1.2.1)
+      net-sftp (~> 2.1.2)
+      net-ssh (~> 4.2.0)
+      nokogiri (~> 1.10.8)
+      rake (>= 12.3.3)
+      sys-proctable (~> 1.2.3)
+      sys-uname (~> 1.2.1)
+      uuidtools (~> 2.1.3)
+      winrm (~> 2.1)
+      winrm-elevated (~> 1.0.1)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-graphql
+  revision: 9b77d1c049371ae1f5d7de61409b68ce86ea72f6
+  branch: jansa
+  specs:
+    manageiq-graphql (0.1.0)
+      graphql (~> 1.7, < 1.10.6)
+      graphql-batch (~> 0.3.8)
+      graphql-preload (~> 1.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-amazon
+  revision: a6512e1059b2f73391f84b88071e731de3508317
+  branch: jansa
+  specs:
+    manageiq-providers-amazon (0.1.0)
+      aws-sdk-cloudformation (~> 1.0)
+      aws-sdk-cloudwatch (~> 1.0)
+      aws-sdk-core (>= 3.104.3)
+      aws-sdk-ec2 (~> 1.0)
+      aws-sdk-elasticloadbalancing (~> 1.0)
+      aws-sdk-iam (~> 1.0)
+      aws-sdk-s3 (~> 1.0)
+      aws-sdk-servicecatalog (~> 1.0)
+      aws-sdk-sns (~> 1.0)
+      aws-sdk-sqs (~> 1.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-ansible_tower
+  revision: ede481b5066ae281cbdfcd12f639c2da8a9ed806
+  branch: jansa
+  specs:
+    manageiq-providers-ansible_tower (0.1.0)
+      ansible_tower_client (~> 0.20, >= 0.21.2)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-azure
+  revision: e7914f85e845fb587b7c4a52bbf0638536349014
+  branch: jansa
+  specs:
+    manageiq-providers-azure (0.1.0)
+      azure-armrest (~> 0.9.15)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-azure_stack
+  revision: 0230a8c2d30ef79fa0ba868743fcdf2647e2dd8d
+  branch: jansa
+  specs:
+    manageiq-providers-azure_stack (0.1.0)
+      azure_mgmt_compute (= 0.18.3)
+      azure_mgmt_monitor (= 0.17.1)
+      azure_mgmt_network (= 0.18.2)
+      azure_mgmt_resources (= 0.17.2)
+      ms_rest_azure (= 0.11.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-foreman
+  revision: 99b2ea21b4261212af5cf2a43de2f3e1595c4015
+  branch: jansa
+  specs:
+    manageiq-providers-foreman (0.1.0)
+      foreman_api_client (~> 1.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-google
+  revision: 96ab585c4609487dfef1380675d40d1fcd1b4434
+  branch: jansa
+  specs:
+    manageiq-providers-google (0.1.0)
+      fog-google (~> 1.9.1)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-kubernetes
+  revision: 67a920daddec52d4eab3e5ac2e5e487041e4f307
+  branch: jansa
+  specs:
+    manageiq-providers-kubernetes (0.1.0)
+      hawkular-client (~> 4.1)
+      image-inspector-client (~> 2.0)
+      kubeclient (~> 4.3)
+      more_core_extensions (~> 3.6)
+      prometheus-alert-buffer-client (~> 0.2.0)
+      prometheus-api-client (~> 0.6)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-kubevirt
+  revision: 48c1989d1b3290cdfe5a5f0439404326018ab02f
+  branch: jansa
+  specs:
+    manageiq-providers-kubevirt (0.0.1)
+      fog-kubevirt (~> 1.0)
+      manageiq-providers-kubernetes (~> 0.1.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-lenovo
+  revision: 4017aad8bd5a96e9b19b1561301bedfbc9f73b1f
+  branch: jansa
+  specs:
+    manageiq-providers-lenovo (0.2.0)
+      xclarity_client (~> 0.6.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-nuage
+  revision: 83373fa0cbe3e7567773ea6ace894a4a30b96f82
+  branch: jansa
+  specs:
+    manageiq-providers-nuage (0.1.0)
+      excon (~> 0.71)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-openshift
+  revision: 3aad53285823952f82b27364b8acd5095e91a373
+  branch: jansa
+  specs:
+    manageiq-providers-openshift (0.1.0)
+      manageiq-providers-kubernetes (~> 0.1.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-openstack
+  revision: ff2002031d69b39e4d2050b1babd4e85c3fd0bf1
+  branch: jansa
+  specs:
+    manageiq-providers-openstack (0.1.0)
+      activesupport (>= 5.0, < 5.3)
+      bunny (~> 2.1.0)
+      excon (~> 0.71)
+      fog-openstack (>= 0.3.10)
+      more_core_extensions (~> 3.2)
+      parallel (~> 1.12.0)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-redfish
+  revision: 3628884001c121c9fac8a3a26c1b70a0d09e0ad0
+  branch: jansa
+  specs:
+    manageiq-providers-redfish (0.1.0)
+      redfish_client (~> 0.5.1)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-scvmm
+  revision: 6a40c87c3035d0b21e6dab0c169a541259d33096
+  branch: jansa
+  specs:
+    manageiq-providers-scvmm (0.1.0)
+      addressable (~> 2.4)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-providers-vmware
+  revision: 0646b908e4b702140b5e083e44b5d775eda2d775
+  branch: jansa
+  specs:
+    manageiq-providers-vmware (0.1.0)
+      ffi-vix_disk_lib (~> 1.1)
+      fog-vcloud-director (~> 0.3.0)
+      rbvmomi (~> 2.0.0)
+      vmware_web_service (~> 1.0.8)
+      vsphere-automation-sdk (~> 0.2.1)
+
+GIT
+  remote: https://github.com/ManageIQ/manageiq-v2v
+  revision: 0b260939952fb855317fa4b640316439196edfc5
+  branch: jansa
+  specs:
+    manageiq-v2v (0.0.1)
+
+GIT
+  remote: https://github.com/usmanbashir/haikunator.git
+  revision: b313a160d880395f36d4fdf58a948066f359667d
+  branch: master
+  specs:
+    haikunator (1.1.0)
+
+PATH
+  remote: /opt/manageiq/hmc-sdk-ruby
+  specs:
+    hmc-sdk-ruby (0.2.0)
+      json
+      net-ssh
+      nori
+      rest-client
+
+PATH
+  remote: /opt/manageiq/manageiq-api
+  specs:
+    manageiq-api (4.2.0)
+      config
+      jbuilder (~> 2.5, != 2.9.0)
+
+PATH
+  remote: /opt/manageiq/manageiq-automation_engine
+  specs:
+    manageiq-automation_engine (0.1.0)
+      rubyzip (~> 2.0.0)
+
+PATH
+  remote: /opt/manageiq/manageiq-decorators
+  specs:
+    manageiq-decorators (0.1.0)
+
+PATH
+  remote: /opt/manageiq/manageiq-providers-ovirt
+  specs:
+    manageiq-providers-ovirt (0.1.0)
+      ovirt-engine-sdk (~> 4.3.0)
+
+PATH
+  remote: /opt/manageiq/manageiq-providers-power_systems
+  specs:
+    manageiq-providers-power_systems (0.1.0)
+
+PATH
+  remote: /opt/manageiq/manageiq-schema
+  specs:
+    manageiq-schema (0.1.0)
+      activerecord-id_regions (~> 0.3.0)
+      ancestry
+      linux_admin (~> 2.0)
+      manageiq-password (~> 0.3)
+      more_core_extensions (~> 3.5)
+      pg
+      pg-pglogical (~> 2.1.1)
+      rails (~> 5.2.4, >= 5.2.4.3)
+
+PATH
+  remote: /opt/manageiq/manageiq-ui-classic
+  specs:
+    manageiq-ui-classic (0.1.0)
+      coffee-rails
+      font-fabulous (~> 1.0.5)
+      high_voltage (~> 3.0.0)
+      more_core_extensions (>= 3.2, < 5)
+      novnc-rails (~> 0.2)
+      patternfly-sass (~> 3.59.1)
+      rails (>= 5.0.0.1, < 5.3)
+      sass-rails
+      uglifier (~> 3.0.0)
+      webpacker (~> 2.0.0)
+
+GEM
+  remote: http://rubygems.org/
+  remote: https://rubygems.manageiq.org/
+  specs:
+    actioncable (5.2.4.4)
+      actionpack (= 5.2.4.4)
+      nio4r (~> 2.0)
+      websocket-driver (>= 0.6.1)
+    actionmailer (5.2.4.4)
+      actionpack (= 5.2.4.4)
+      actionview (= 5.2.4.4)
+      activejob (= 5.2.4.4)
+      mail (~> 2.5, >= 2.5.4)
+      rails-dom-testing (~> 2.0)
+    actionpack (5.2.4.4)
+      actionview (= 5.2.4.4)
+      activesupport (= 5.2.4.4)
+      rack (~> 2.0, >= 2.0.8)
+      rack-test (>= 0.6.3)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.0, >= 1.0.2)
+    actionview (5.2.4.4)
+      activesupport (= 5.2.4.4)
+      builder (~> 3.1)
+      erubi (~> 1.4)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.0, >= 1.0.3)
+    activejob (5.2.4.4)
+      activesupport (= 5.2.4.4)
+      globalid (>= 0.3.6)
+    activemodel (5.2.4.4)
+      activesupport (= 5.2.4.4)
+    activemodel-serializers-xml (1.0.2)
+      activemodel (> 5.x)
+      activesupport (> 5.x)
+      builder (~> 3.1)
+    activerecord (5.2.4.4)
+      activemodel (= 5.2.4.4)
+      activesupport (= 5.2.4.4)
+      arel (>= 9.0)
+    activerecord-id_regions (0.3.1)
+      activerecord (>= 5.0, < 6.1)
+      activesupport (>= 5.0, < 6.1)
+      pg
+    activerecord-session_store (1.1.3)
+      actionpack (>= 4.0)
+      activerecord (>= 4.0)
+      multi_json (~> 1.11, >= 1.11.2)
+      rack (>= 1.5.2, < 3)
+      railties (>= 4.0)
+    activerecord-virtual_attributes (1.6.0)
+      activerecord (>= 5.0)
+    activeresource (5.1.1)
+      activemodel (>= 5.0, < 7)
+      activemodel-serializers-xml (~> 1.0)
+      activesupport (>= 5.0, < 7)
+    activestorage (5.2.4.4)
+      actionpack (= 5.2.4.4)
+      activerecord (= 5.2.4.4)
+      marcel (~> 0.3.1)
+    activesupport (5.2.4.4)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+    acts_as_tree (2.9.1)
+      activerecord (>= 3.0.0)
+    addressable (2.5.2)
+      public_suffix (>= 2.0.2, < 4.0)
+    akami (1.3.1)
+      gyoku (>= 0.4.0)
+      nokogiri
+    american_date (1.1.1)
+    amq-protocol (2.3.2)
+    ancestry (3.0.7)
+      activerecord (>= 3.2.0)
+    ansible_tower_client (0.21.2)
+      activesupport
+      faraday
+      faraday_middleware
+      more_core_extensions (~> 3.0)
+    apipie-bindings (0.0.15)
+      json (>= 1.2.1)
+      oauth
+      rest-client (>= 1.6.5)
+    arel (9.0.0)
+    autoprefixer-rails (10.1.0.0)
+      execjs
+    awesome_spawn (1.5.0)
+    aws-eventstream (1.1.0)
+    aws-partitions (1.405.0)
+    aws-sdk-cloudformation (1.46.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-cloudwatch (1.47.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-core (3.110.0)
+      aws-eventstream (~> 1, >= 1.0.2)
+      aws-partitions (~> 1, >= 1.239.0)
+      aws-sigv4 (~> 1.1)
+      jmespath (~> 1.0)
+    aws-sdk-ec2 (1.216.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-elasticloadbalancing (1.29.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-iam (1.46.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-kms (1.39.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-s3 (1.86.1)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sdk-kms (~> 1.26)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-servicecatalog (1.55.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-sns (1.36.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-sqs (1.34.0)
+      aws-sdk-core (~> 3, >= 3.109.0)
+      aws-sigv4 (~> 1.1)
+    aws-sigv4 (1.2.2)
+      aws-eventstream (~> 1, >= 1.0.2)
+    azure-armrest (0.9.16)
+      activesupport (>= 4.2.2)
+      addressable (~> 2.5.0)
+      azure-signature (~> 0.2.3)
+      json (~> 2)
+      memoist (~> 0.15)
+      parallel (~> 1.12.0)
+      rest-client (~> 2.0)
+    azure-signature (0.2.3)
+      addressable
+    azure_mgmt_compute (0.18.3)
+      ms_rest_azure (~> 0.11.0)
+    azure_mgmt_monitor (0.17.1)
+      ms_rest_azure (~> 0.11.0)
+    azure_mgmt_network (0.18.2)
+      ms_rest_azure (~> 0.11.0)
+    azure_mgmt_resources (0.17.2)
+      ms_rest_azure (~> 0.11.0)
+    bcrypt (3.1.16)
+    binary_struct (2.1.0)
+    bootstrap-sass (3.4.1)
+      autoprefixer-rails (>= 5.2.1)
+      sassc (>= 2.0.0)
+    builder (3.2.4)
+    bunny (2.1.0)
+      amq-protocol (>= 2.0.0)
+    byebug (11.1.3)
+    coffee-rails (5.0.0)
+      coffee-script (>= 2.2.0)
+      railties (>= 5.2.0)
+    coffee-script (2.4.1)
+      coffee-script-source
+      execjs
+    coffee-script-source (1.12.2)
+    color (1.8)
+    concurrent-ruby (1.1.7)
+    config (2.2.1)
+      deep_merge (~> 1.2, >= 1.2.1)
+      dry-validation (~> 1.0, >= 1.0.0)
+    crass (1.0.6)
+    dalli (2.7.6)
+    dbus-systemd (1.1.2)
+      ruby-dbus (~> 0.14)
+    declarative (0.0.20)
+    declarative-option (0.1.0)
+    deep_merge (1.2.1)
+    default_value_for (3.3.0)
+      activerecord (>= 3.2.0, < 6.1)
+    digest-crc (0.6.1)
+      rake (~> 13.0)
+    docker-api (1.33.6)
+      excon (>= 0.38.0)
+      json
+    domain_name (0.5.20190701)
+      unf (>= 0.0.5, < 1.0.0)
+    dry-configurable (0.11.6)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 0.4, >= 0.4.7)
+      dry-equalizer (~> 0.2)
+    dry-container (0.7.2)
+      concurrent-ruby (~> 1.0)
+      dry-configurable (~> 0.1, >= 0.1.3)
+    dry-core (0.5.0)
+      concurrent-ruby (~> 1.0)
+    dry-equalizer (0.3.0)
+    dry-inflector (0.2.0)
+    dry-initializer (3.0.4)
+    dry-logic (1.0.8)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 0.2)
+      dry-equalizer (~> 0.2)
+    dry-schema (1.5.6)
+      concurrent-ruby (~> 1.0)
+      dry-configurable (~> 0.8, >= 0.8.3)
+      dry-core (~> 0.4)
+      dry-equalizer (~> 0.2)
+      dry-initializer (~> 3.0)
+      dry-logic (~> 1.0)
+      dry-types (~> 1.4)
+    dry-types (1.4.0)
+      concurrent-ruby (~> 1.0)
+      dry-container (~> 0.3)
+      dry-core (~> 0.4, >= 0.4.4)
+      dry-equalizer (~> 0.3)
+      dry-inflector (~> 0.1, >= 0.1.2)
+      dry-logic (~> 1.0, >= 1.0.2)
+    dry-validation (1.6.0)
+      concurrent-ruby (~> 1.0)
+      dry-container (~> 0.7, >= 0.7.1)
+      dry-core (~> 0.4)
+      dry-equalizer (~> 0.2)
+      dry-initializer (~> 3.0)
+      dry-schema (~> 1.5, >= 1.5.2)
+    elif (0.1.0)
+    erubi (1.10.0)
+    erubis (2.7.0)
+    escape_utils (1.2.1)
+    et-orbi (1.2.4)
+      tzinfo
+    ethon (0.12.0)
+      ffi (>= 1.3.0)
+    event_emitter (0.2.6)
+    excon (0.78.1)
+    execjs (2.7.0)
+    faker (1.8.7)
+      i18n (>= 0.7)
+    faraday (0.9.2)
+      multipart-post (>= 1.2, < 3)
+    faraday-cookie_jar (0.0.7)
+      faraday (>= 0.8.0)
+      http-cookie (~> 1.0.0)
+    faraday_middleware (0.10.1)
+      faraday (>= 0.7.4, < 1.0)
+    fast_gettext (2.0.3)
+    ffi (1.13.1)
+    ffi-vix_disk_lib (1.1.1)
+      ffi
+    fog-core (2.1.0)
+      builder
+      excon (~> 0.58)
+      formatador (~> 0.2)
+      mime-types
+    fog-google (1.9.1)
+      fog-core (<= 2.1.0)
+      fog-json (~> 1.2)
+      fog-xml (~> 0.1.0)
+      google-api-client (~> 0.23.0)
+    fog-json (1.2.0)
+      fog-core
+      multi_json (~> 1.10)
+    fog-kubevirt (1.3.4)
+      fog-core (~> 2.1)
+      kubeclient (~> 4.3)
+    fog-openstack (0.3.10)
+      fog-core (>= 1.45, <= 2.1.0)
+      fog-json (>= 1.0)
+      ipaddress (>= 0.8)
+    fog-vcloud-director (0.3.0)
+      fog-core (>= 1.40)
+      fog-xml
+    fog-xml (0.1.3)
+      fog-core
+      nokogiri (>= 1.5.11, < 2.0.0)
+    font-awesome-sass (4.6.2)
+      sass (>= 3.2)
+    font-fabulous (1.0.5)
+    foreman_api_client (1.0.1)
+      apipie-bindings (= 0.0.15)
+      rest-client (~> 2.0)
+    formatador (0.2.5)
+    fugit (1.4.1)
+      et-orbi (~> 1.1, >= 1.1.8)
+      raabro (~> 1.4)
+    gettext (3.3.6)
+      locale (>= 2.0.5)
+      text (>= 1.3.0)
+    gettext_i18n_rails (1.7.2)
+      fast_gettext (>= 0.9.0)
+    gettext_i18n_rails_js (1.3.0)
+      gettext (>= 3.0.2)
+      gettext_i18n_rails (>= 0.7.1)
+      po_to_json (>= 1.0.0)
+      rails (>= 3.2.0)
+    globalid (0.4.2)
+      activesupport (>= 4.2.0)
+    google-api-client (0.23.9)
+      addressable (~> 2.5, >= 2.5.1)
+      googleauth (>= 0.5, < 0.7.0)
+      httpclient (>= 2.8.1, < 3.0)
+      mime-types (~> 3.0)
+      representable (~> 3.0)
+      retriable (>= 2.0, < 4.0)
+      signet (~> 0.9)
+    googleauth (0.5.1)
+      faraday (~> 0.9)
+      jwt (~> 1.4)
+      logging (~> 2.0)
+      memoist (~> 0.12)
+      multi_json (~> 1.11)
+      os (~> 0.9)
+      signet (~> 0.7)
+    graphql (1.10.5)
+    graphql-batch (0.3.10)
+      graphql (>= 0.8, < 2)
+      promise.rb (~> 0.7.2)
+    graphql-preload (1.0.4)
+      activerecord (>= 3.2, < 6)
+      graphql (>= 1.5, < 2)
+      graphql-batch (~> 0.3)
+      promise.rb (~> 0.7)
+    gssapi (1.3.1)
+      ffi (>= 1.0.1)
+    gyoku (1.3.1)
+      builder (>= 2.1.2)
+    hamlit (2.8.10)
+      temple (>= 0.8.0)
+      thor
+      tilt
+    handsoap (0.2.5.5)
+      nokogiri (>= 1.2.3)
+    hashdiff (1.0.1)
+    hawkular-client (4.1.0)
+      addressable
+      rest-client (~> 2.0.0)
+      websocket-client-simple (~> 0.3.0)
+    high_voltage (3.0.0)
+    http (3.3.0)
+      addressable (~> 2.3)
+      http-cookie (~> 1.0)
+      http-form_data (~> 2.0)
+      http_parser.rb (~> 0.6.0)
+    http-cookie (1.0.3)
+      domain_name (~> 0.5)
+    http-form_data (2.3.0)
+    http_parser.rb (0.6.0)
+    httpclient (2.8.3)
+    httpi (2.4.5)
+      rack
+      socksify
+    i18n (1.8.5)
+      concurrent-ruby (~> 1.0)
+    image-inspector-client (2.0.0)
+      json
+      recursive-open-struct (~> 1.0)
+      rest-client (~> 2.0)
+    inifile (3.0.0)
+    iniparse (1.5.0)
+    inventory_refresh (0.2.2)
+      activerecord (~> 5.0)
+      more_core_extensions (>= 3.5, < 5)
+      pg (> 0)
+    ipaddress (0.8.3)
+    jbuilder (2.10.1)
+      activesupport (>= 5.0.0)
+    jmespath (1.4.0)
+    jquery-rails (4.4.0)
+      rails-dom-testing (>= 1, < 3)
+      railties (>= 4.2.0)
+      thor (>= 0.14, < 2.0)
+    jquery-rjs (0.1.1.1)
+      jquery-rails
+      rails (>= 3.2)
+    json (2.3.1)
+    json-schema (2.8.1)
+      addressable (>= 2.4)
+    jsonpath (1.0.6)
+      multi_json
+    jwt (1.5.6)
+    kubeclient (4.9.1)
+      http (>= 3.0, < 5.0)
+      jsonpath (~> 1.0)
+      recursive-open-struct (~> 1.1, >= 1.1.1)
+      rest-client (~> 2.0)
+    linux_admin (2.0.1)
+      awesome_spawn (~> 1.3)
+      inifile
+      more_core_extensions (~> 3.0)
+      net-ssh (~> 4.2.0)
+      nokogiri (>= 1.8.5, < 2, != 1.10.2, != 1.10.1, != 1.10.0)
+      openscap
+    linux_block_device (0.2.1)
+    little-plugger (1.1.4)
+    locale (2.1.3)
+    log_decorator (0.1.0)
+    logging (2.3.0)
+      little-plugger (~> 1.1)
+      multi_json (~> 1.14)
+    loofah (2.8.0)
+      crass (~> 1.0.2)
+      nokogiri (>= 1.5.9)
+    macaddr (1.7.2)
+      systemu (~> 2.6.5)
+    mail (2.7.1)
+      mini_mime (>= 0.1.1)
+    manageiq-api-client (0.3.5)
+      activesupport (>= 5.0, < 6.1)
+      faraday (~> 0.9)
+      faraday_middleware (~> 0.10.0)
+      json (~> 2.3)
+      more_core_extensions
+      query_relation
+    manageiq-loggers (0.3.0)
+      activesupport (>= 5.0)
+      manageiq-password (~> 0.1)
+    manageiq-messaging (0.1.6)
+      activesupport (~> 5.2.4.3)
+      ruby-kafka (~> 1.0)
+      stomp (~> 1.4.4)
+    manageiq-password (0.3.0)
+    manageiq-postgres_ha_admin (3.1.1)
+      activesupport (~> 5.0)
+      awesome_spawn (~> 1.4)
+      manageiq-password (~> 0.3)
+      pg
+      pg-dsn_parser (~> 0.1)
+    manageiq-smartstate (0.5.10)
+      azure-armrest (~> 0.9.6)
+      binary_struct (~> 2.1)
+      iniparse
+      linux_block_device (~> 0.2.1)
+      manageiq-password (~> 0.3)
+      memory_buffer (>= 0.1.0)
+      rufus-lru (~> 1.0.3)
+      sys-uname (~> 1.2.1)
+      vmware_web_service (~> 1.0)
+    marcel (0.3.3)
+      mimemagic (~> 0.3.2)
+    memoist (0.15.0)
+    memory_buffer (0.1.0)
+    method_source (1.0.0)
+    mime-types (3.3.1)
+      mime-types-data (~> 3.2015)
+    mime-types-data (3.2020.1104)
+    mimemagic (0.3.5)
+    mini_mime (1.0.2)
+    mini_portile2 (2.4.0)
+    minitest (5.14.2)
+    monetize (1.9.4)
+      money (~> 6.12)
+    money (6.13.8)
+      i18n (>= 0.6.4, <= 2)
+    money-rails (1.13.3)
+      activesupport (>= 3.0)
+      monetize (~> 1.9.0)
+      money (~> 6.13.2)
+      railties (>= 3.0)
+    more_core_extensions (3.8.0)
+      activesupport
+    ms_rest (0.7.6)
+      concurrent-ruby (~> 1.0)
+      faraday (>= 0.9, < 2.0.0)
+      timeliness (~> 0.3.10)
+    ms_rest_azure (0.11.0)
+      concurrent-ruby (~> 1.0)
+      faraday (~> 0.9)
+      faraday-cookie_jar (~> 0.0.6)
+      ms_rest (~> 0.7.2)
+    multi_json (1.15.0)
+    multipart-post (2.1.1)
+    net-ldap (0.16.3)
+    net-ping (1.7.8)
+    net-scp (1.2.1)
+      net-ssh (>= 2.6.5)
+    net-sftp (2.1.2)
+      net-ssh (>= 2.6.5)
+    net-ssh (4.2.0)
+    netrc (0.11.0)
+    nio4r (2.5.4)
+    nokogiri (1.10.10)
+      mini_portile2 (~> 2.4.0)
+    nori (2.6.0)
+    novnc-rails (0.2)
+      railties (>= 3.1.0)
+    oauth (0.5.4)
+    openscap (0.4.9)
+      ffi (>= 1.0.9)
+    optimist (3.0.1)
+    os (0.9.6)
+    ovirt-engine-sdk (4.3.1)
+      json (>= 1, < 3)
+    ovirt_metrics (3.0.1)
+      activerecord (< 5.3)
+      pg
+    parallel (1.12.1)
+    patternfly-sass (3.59.5)
+      bootstrap-sass (~> 3.4.0)
+      font-awesome-sass (~> 4.6.2)
+      sassc (> 2.0.1, < 3.0)
+    pdf-writer (1.1.8)
+      color (>= 1.4.0)
+      transaction-simple (~> 1.3)
+    pg (1.2.3)
+    pg-dsn_parser (0.1.0)
+    pg-logical_replication (1.0.0)
+      pg
+    pg-pglogical (2.1.3)
+      activerecord
+      pg
+    po_to_json (1.0.1)
+      json (>= 1.6.0)
+    prometheus-alert-buffer-client (0.2.0)
+      faraday (~> 0.9.2)
+    prometheus-api-client (0.6.2)
+      faraday (>= 0.9, < 2.0.0)
+    promise.rb (0.7.4)
+    psych (3.2.0)
+    public_suffix (3.1.1)
+    puma (4.3.7)
+      nio4r (~> 2.0)
+    qpid_proton (0.30.0)
+    query_relation (0.1.1)
+      activesupport
+      more_core_extensions
+    raabro (1.4.0)
+    rack (2.2.3)
+    rack-test (1.1.0)
+      rack (>= 1.0, < 3)
+    rails (5.2.4.4)
+      actioncable (= 5.2.4.4)
+      actionmailer (= 5.2.4.4)
+      actionpack (= 5.2.4.4)
+      actionview (= 5.2.4.4)
+      activejob (= 5.2.4.4)
+      activemodel (= 5.2.4.4)
+      activerecord (= 5.2.4.4)
+      activestorage (= 5.2.4.4)
+      activesupport (= 5.2.4.4)
+      bundler (>= 1.3.0)
+      railties (= 5.2.4.4)
+      sprockets-rails (>= 2.0.0)
+    rails-dom-testing (2.0.3)
+      activesupport (>= 4.2.0)
+      nokogiri (>= 1.6)
+    rails-html-sanitizer (1.3.0)
+      loofah (~> 2.3)
+    rails-i18n (5.1.3)
+      i18n (>= 0.7, < 2)
+      railties (>= 5.0, < 6)
+    railties (5.2.4.4)
+      actionpack (= 5.2.4.4)
+      activesupport (= 5.2.4.4)
+      method_source
+      rake (>= 0.8.7)
+      thor (>= 0.19.0, < 2.0)
+    rake (13.0.1)
+    rb-fsevent (0.10.4)
+    rb-inotify (0.10.1)
+      ffi (~> 1.0)
+    rbvmomi (2.0.1)
+      builder (~> 3.0)
+      json (>= 1.8)
+      nokogiri (~> 1.5)
+      optimist (~> 3.0)
+    recursive-open-struct (1.1.3)
+    redfish_client (0.5.2)
+      excon (~> 0.71)
+      server_sent_events (~> 0.1)
+    representable (3.0.4)
+      declarative (< 0.1.0)
+      declarative-option (< 0.2.0)
+      uber (< 0.2.0)
+    responders (2.4.1)
+      actionpack (>= 4.2.0, < 6.0)
+      railties (>= 4.2.0, < 6.0)
+    rest-client (2.0.2)
+      http-cookie (>= 1.0.2, < 2.0)
+      mime-types (>= 1.16, < 4.0)
+      netrc (~> 0.8)
+    retriable (3.1.2)
+    ripper_ruby_parser (1.5.1)
+      sexp_processor (~> 4.10)
+    ruby-dbus (0.16.0)
+    ruby-kafka (1.3.0)
+      digest-crc
+    ruby-progressbar (1.7.5)
+    rubyntlm (0.6.2)
+    rubyzip (2.0.0)
+    rufus-lru (1.0.7)
+    rufus-scheduler (3.6.0)
+      fugit (~> 1.1, >= 1.1.6)
+    rugged (0.28.2.2)
+    ruport (1.7.0.3)
+      pdf-writer (= 1.1.8)
+    sass (3.7.4)
+      sass-listen (~> 4.0.0)
+    sass-listen (4.0.0)
+      rb-fsevent (~> 0.9, >= 0.9.4)
+      rb-inotify (~> 0.9, >= 0.9.7)
+    sass-rails (6.0.0)
+      sassc-rails (~> 2.1, >= 2.1.1)
+    sassc (2.4.0)
+      ffi (~> 1.9)
+    sassc-rails (2.1.2)
+      railties (>= 4.0.0)
+      sassc (>= 2.0)
+      sprockets (> 3.0)
+      sprockets-rails
+      tilt
+    savon (2.11.2)
+      akami (~> 1.2)
+      builder (>= 2.1.2)
+      gyoku (~> 1.2)
+      httpi (~> 2.3)
+      nokogiri (>= 1.4.0)
+      nori (~> 2.4)
+      wasabi (~> 3.4)
+    secure_headers (3.9.0)
+      useragent
+    server_sent_events (0.1.2)
+    sexp_processor (4.15.1)
+    signet (0.12.0)
+      addressable (~> 2.3)
+      faraday (~> 0.9)
+      jwt (>= 1.5, < 3.0)
+      multi_json (~> 1.10)
+    snmp (1.2.0)
+    socksify (1.7.1)
+    sprockets (3.7.2)
+      concurrent-ruby (~> 1.0)
+      rack (> 1, < 3)
+    sprockets-rails (3.2.2)
+      actionpack (>= 4.0)
+      activesupport (>= 4.0)
+      sprockets (>= 3.0.0)
+    sqlite3 (1.3.13)
+    sshkey (1.8.0)
+    stomp (1.4.10)
+    surro-gate (1.0.5)
+      concurrent-ruby
+    sync (0.5.0)
+    sys-filesystem (1.3.4)
+      ffi
+    sys-proctable (1.2.6)
+      ffi
+    sys-uname (1.2.2)
+      ffi (~> 1.1)
+    systemd-journal (1.4.2)
+      ffi (~> 1.9)
+    systemu (2.6.5)
+    temple (0.8.2)
+    terminal (2.0.0)
+      escape_utils (~> 1.0)
+    text (1.3.1)
+    thor (1.0.1)
+    thread_safe (0.3.6)
+    tilt (2.0.10)
+    timeliness (0.3.10)
+    transaction-simple (1.4.0.2)
+    typhoeus (1.4.0)
+      ethon (>= 0.9.0)
+    tzinfo (1.2.8)
+      thread_safe (~> 0.1)
+    uber (0.1.0)
+    uglifier (3.0.4)
+      execjs (>= 0.3.0, < 3)
+    unf (0.1.4)
+      unf_ext
+    unf_ext (0.0.7.7)
+    useragent (0.16.10)
+    uuid (2.3.9)
+      macaddr (~> 1.0)
+    uuidtools (2.1.5)
+    vmware_web_service (1.0.8)
+      activesupport (>= 5.0, < 5.3)
+      ffi-vix_disk_lib (~> 1.1)
+      handsoap (~> 0.2.5)
+      httpclient (~> 2.8.0)
+      more_core_extensions (>= 3.2, < 5)
+      rbvmomi (~> 2.0)
+    vsphere-automation-appliance (0.2.2)
+      vsphere-automation-cis (~> 0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+    vsphere-automation-cis (0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+    vsphere-automation-content (0.2.2)
+      vsphere-automation-cis (~> 0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+    vsphere-automation-runtime (0.2.2)
+      typhoeus (~> 1.3)
+    vsphere-automation-sdk (0.2.2)
+      vsphere-automation-appliance (~> 0.2.2)
+      vsphere-automation-cis (~> 0.2.2)
+      vsphere-automation-content (~> 0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+      vsphere-automation-vapi (~> 0.2.2)
+      vsphere-automation-vcenter (~> 0.2.2)
+    vsphere-automation-vapi (0.2.2)
+      vsphere-automation-cis (~> 0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+    vsphere-automation-vcenter (0.2.2)
+      vsphere-automation-cis (~> 0.2.2)
+      vsphere-automation-runtime (~> 0.2.2)
+    wasabi (3.6.1)
+      addressable
+      httpi (~> 2.0)
+      nokogiri (>= 1.4.2)
+    webpacker (2.0)
+      activesupport (>= 4.2)
+      multi_json (~> 1.2)
+      railties (>= 4.2)
+    websocket (1.2.8)
+    websocket-client-simple (0.3.0)
+      event_emitter
+      websocket
+    websocket-driver (0.6.5)
+      websocket-extensions (>= 0.1.0)
+    websocket-extensions (0.1.5)
+    winrm (2.3.5)
+      builder (>= 2.1.2)
+      erubi (~> 1.8)
+      gssapi (~> 1.2)
+      gyoku (~> 1.0)
+      httpclient (~> 2.2, >= 2.2.0.2)
+      logging (>= 1.6.1, < 3.0)
+      nori (~> 2.0)
+      rubyntlm (~> 0.6.0, >= 0.6.1)
+    winrm-elevated (1.0.1)
+      winrm (~> 2.0)
+      winrm-fs (~> 1.0)
+    winrm-fs (1.3.5)
+      erubi (~> 1.8)
+      logging (>= 1.6.1, < 3.0)
+      rubyzip (~> 2.0)
+      winrm (~> 2.0)
+    xclarity_client (0.6.8)
+      faker (~> 1.8.3)
+      faraday (>= 0.9, < 2.0.0)
+      faraday-cookie_jar (~> 0.0.6)
+      httpclient (~> 2.8.3)
+      json-schema (~> 2.8.0)
+      uuid (~> 2.3.8)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activerecord-session_store (~> 1.1)
+  activerecord-virtual_attributes (~> 1.6.0)
+  activeresource
+  acts_as_tree (~> 2.7)
+  amazon_ssa_support!
+  american_date
+  ancestry (~> 3.0.7)
+  aws-sdk-s3 (~> 1.0)
+  bcrypt (~> 3.1.10)
+  bundler (>= 1.15)
+  byebug
+  color (~> 1.8)
+  config (= 2.2.1)
+  dalli (= 2.7.6)
+  dbus-systemd (~> 1.1.0)
+  default_value_for (~> 3.3)
+  docker-api (~> 1.33.6)
+  elif (= 0.1.0)
+  et-orbi (>= 1.2.2)
+  fast_gettext (~> 2.0.1)
+  gettext_i18n_rails (~> 1.7.2)
+  gettext_i18n_rails_js (~> 1.3.0)
+  haikunator!
+  hamlit (~> 2.8.5)
+  handsoap (= 0.2.5.5)!
+  hmc-sdk-ruby!
+  inifile (~> 3.0)
+  inventory_refresh (~> 0.2.0)
+  jquery-rjs (= 0.1.1.1)!
+  kubeclient (~> 4.0)
+  linux_admin (~> 2.0, >= 2.0.1)
+  log_decorator (~> 0.1)
+  manageiq-api!
+  manageiq-api-client (~> 0.3.4)
+  manageiq-automation_engine!
+  manageiq-consumption!
+  manageiq-content!
+  manageiq-decorators!
+  manageiq-gems-pending (> 0)!
+  manageiq-graphql!
+  manageiq-loggers (~> 0.3.0)
+  manageiq-messaging (~> 0.1.4)
+  manageiq-password (~> 0.3)
+  manageiq-postgres_ha_admin (~> 3.1)
+  manageiq-providers-amazon!
+  manageiq-providers-ansible_tower!
+  manageiq-providers-azure!
+  manageiq-providers-azure_stack!
+  manageiq-providers-foreman!
+  manageiq-providers-google!
+  manageiq-providers-kubernetes!
+  manageiq-providers-kubevirt!
+  manageiq-providers-lenovo!
+  manageiq-providers-nuage!
+  manageiq-providers-openshift!
+  manageiq-providers-openstack!
+  manageiq-providers-ovirt!
+  manageiq-providers-power_systems!
+  manageiq-providers-redfish!
+  manageiq-providers-scvmm!
+  manageiq-providers-vmware!
+  manageiq-schema!
+  manageiq-smartstate (~> 0.5.10)
+  manageiq-ui-classic!
+  manageiq-v2v!
+  memoist (~> 0.15.0)
+  mime-types
+  money (~> 6.13.5)
+  more_core_extensions (~> 3.7)
+  net-ldap (~> 0.16.1)
+  net-ping (~> 1.7.4)
+  openscap (~> 0.4.8)
+  optimist (~> 3.0)
+  ovirt_metrics (~> 3.0.1)
+  pg
+  pg-dsn_parser (~> 0.1.0)
+  pg-logical_replication (~> 1.0)
+  psych (~> 3.1)
+  puma (~> 4.2)
+  qpid_proton (~> 0.30.0)
+  query_relation (~> 0.1.0)
+  rails (~> 5.2.4, >= 5.2.4.4)
+  rails-i18n (~> 5.x)
+  rake (>= 12.3.3)
+  responders (~> 2.0)
+  rest-client (~> 2.0.0)
+  ripper_ruby_parser (~> 1.5.1)
+  ruby-dbus
+  ruby-progressbar (~> 1.7.0)
+  rubyzip (~> 2.0.0)
+  rufus-scheduler
+  rugged (= 0.28.2.2)!
+  ruport (= 1.7.0.3)!
+  secure_headers (~> 3.9)
+  snmp (~> 1.2.0)
+  sprockets (~> 3.7.2)
+  sqlite3 (~> 1.3.0)
+  sshkey (~> 1.8.0)
+  surro-gate (~> 1.0.5)
+  sync (~> 0.5)
+  sys-filesystem (~> 1.3.1)
+  systemd-journal (~> 1.4.0)
+  terminal
+  websocket-driver (~> 0.6.3)
+  zabbixapi (= 3.2.1)!
+
+BUNDLED WITH
+   1.16.1

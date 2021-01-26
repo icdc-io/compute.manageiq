@@ -32,7 +32,7 @@ class ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential
       :type       => :choice,
       :label      => N_('Privilege Escalation'),
       :help_text  => N_('Privilege escalation method'),
-      :choices    => ['', 'sudo', 'su', 'pbrun', 'pfexec']
+      :choices    => ['', 'sudo', 'su', 'pbrun', 'pfexec', 'doas', 'dzdo', 'pmrun', 'runas', 'enable', 'ksu', 'sesu', 'machinectl']
     },
     :become_username => {
       :type       => :string,
@@ -60,6 +60,8 @@ class ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential
   alias ssh_key_data   auth_key
   alias ssh_key_unlock auth_key_password
 
+  before_validation :ensure_newline_for_ssh_key
+
   def self.display_name(number = 1)
     n_('Credential (Machine)', 'Credentials (Machine)', number)
   end
@@ -67,8 +69,8 @@ class ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential
   def self.params_to_attributes(params)
     attrs = params.dup
 
-    attrs[:auth_key]          = attrs.delete(:ssh_key_data)
-    attrs[:auth_key_password] = attrs.delete(:ssh_key_unlock)
+    attrs[:auth_key]          = attrs.delete(:ssh_key_data)   if attrs.key?(:ssh_key_data)
+    attrs[:auth_key_password] = attrs.delete(:ssh_key_unlock) if attrs.key?(:ssh_key_unlock)
 
     if attrs[:become_method]
       attrs[:options] = { :become_method => attrs.delete(:become_method) }

@@ -785,6 +785,28 @@ RSpec.describe AuthenticationMixin do
       end
     end
 
+    context "with an unrelated and existing valid authentication" do
+      let(:id_start_point)        { [Host.order(:id).last&.id.to_i, ExtManagementSystem.order(:id).last&.id.to_i].max }
+      let(:host)                  { FactoryBot.create(:host, :id => ext_management_system.id) }
+      let(:ext_management_system) { FactoryBot.create(:ext_management_system, :authtype => "default", :id => id_start_point + 1) }
+
+      before { host }
+
+      it "is nil with sql" do
+        expect(virtual_column_sql_value(Host, "authentication_status")).to be_nil
+      end
+
+      it "is 'None' with pure ruby (via relations)" do
+        expect(host.authentication_status).to eq("None")
+      end
+
+      it "is 'None' when accessed via ruby, but fetched via sql" do
+        fetched_host = Host.select(:id, :authentication_status).first
+        expect(fetched_host.attributes[:authentication_status]).to be_nil
+        expect(fetched_host.authentication_status).to eq("None")
+      end
+    end
+
     context "with a valid authentication" do
       before { valid_auth }
 
@@ -793,7 +815,7 @@ RSpec.describe AuthenticationMixin do
 
         expect do
           expect(h.authentication_status).to eq("Valid")
-        end.to match_query_limit_of(0)
+        end.to_not make_database_queries
         expect(h.association(:authentication_status_severity_level)).not_to be_loaded
       end
 
@@ -813,7 +835,7 @@ RSpec.describe AuthenticationMixin do
 
         expect do
           expect(h.authentication_status).to eq("Invalid")
-        end.to match_query_limit_of(0)
+        end.to_not make_database_queries
         expect(h.association(:authentication_status_severity_level)).not_to be_loaded
       end
 

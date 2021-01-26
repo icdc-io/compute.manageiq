@@ -25,14 +25,7 @@ class EmsEvent < EventStream
   end
 
   def self.add_queue(meth, ems_id, event)
-    unless MiqQueue.messaging_type == "miq_queue"
-      MiqQueue.messaging_client('event_handler')&.publish_topic(
-        :service => "manageiq.ems-events",
-        :sender  => ems_id,
-        :event   => event[:event_type],
-        :payload => event
-      )
-    end
+    publish_event(ems_id, event)
 
     MiqQueue.submit_job(
       :service     => "event",
@@ -167,8 +160,12 @@ class EmsEvent < EventStream
   end
 
   def manager_refresh_targets
-    require "inventory_refresh"
-    ext_management_system.class::EventTargetParser.new(self).parse
+    if ext_management_system.allow_targeted_refresh?
+      require "inventory_refresh"
+      ext_management_system.class::EventTargetParser.new(self).parse
+    else
+      ext_management_system
+    end
   end
 
   def self.display_name(number = 1)
@@ -184,7 +181,7 @@ class EmsEvent < EventStream
 
   def self.create_event(event)
     event.delete_if { |k,| k.to_s.ends_with?("_ems_ref") && !event_allowed_ems_ref_keys.include?(k.to_s) }
-
+    event.delete_if { |k,| ["ems_uid", "ems_type"].include?(k.to_s) }
     new_event = EmsEvent.create(event) unless EmsEvent.exists?(
       :event_type  => event[:event_type],
       :timestamp   => event[:timestamp],
@@ -257,6 +254,26 @@ class EmsEvent < EventStream
   end
 
   private_class_method :create_completed_event
+
+  def self.publish_event(ems_id, event)
+    return if MiqQueue.messaging_type == "miq_queue"
+
+    ems = ExtManagementSystem.find(ems_id)
+    event[:ems_uid]  = ems&.uid_ems
+    event[:ems_type] = ems&.class&.ems_type
+
+    MiqQueue.messaging_client('event_handler')&.publish_topic(
+      :service => "manageiq.ems-events",
+      :sender  => ems_id,
+      :event   => event[:event_type],
+      :payload => event
+    )
+  rescue => err
+    _log.warn("Failed to publish event [#{ems_id}] [#{event[:event_type]}]: #{err}")
+    _log.log_backtrace(err)
+  end
+
+  private_class_method :publish_event
 
   def get_refresh_target(target_type)
     m = "#{target_type}_refresh_target"

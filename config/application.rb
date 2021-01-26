@@ -70,6 +70,9 @@ module Vmdb
     # like if you have constraints or database-specific column types
     # config.active_record.schema_format = :sql
 
+    # Fix for tools/radar/rollup_radar_mixin.rb which uses SQLite3 for it's purposes
+    config.active_record.sqlite3.represent_boolean_as_integer = true
+
     # Enable the asset pipeline
     config.assets.enabled = true
 
@@ -156,10 +159,6 @@ module Vmdb
     initializer :load_vmdb_settings, :before => :load_config_initializers do
       Vmdb::Settings.init
       Vmdb::Loggers.apply_config(::Settings.log)
-    end
-
-    initializer :prepare_productization, :after => :append_asset_paths do
-      Vmdb::Productization.new.prepare
     end
 
     config.after_initialize do

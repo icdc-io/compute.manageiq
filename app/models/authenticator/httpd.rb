@@ -1,18 +1,28 @@
 module Authenticator
   class Httpd < Base
-    include Oauth2
-
     def self.proper_name
       'External httpd'
     end
 
     def authorize_queue(username, request, options, *_args)
+      log_auth_debug("authorize_queue(username=#{username}, options=#{options})")
+
       user_attrs, membership_list =
         if options[:authorize_only]
-          user_details_from_external_directory(username)
+          if options[:authorize_with_system_token].present?
+            user_details_from_system_token(username, options[:authorize_with_system_token])
+          else
+            user_details_from_external_directory(username)
+          end
         else
           user_details_from_headers(username, request)
         end
+
+      if debug_auth?
+        log_auth_debug("authorize_queue user details:")
+        user_attrs.each { |k, v| log_auth_debug("  %-12{key} = %{val}" % {:key => k, :val => v}) }
+        log_auth_debug("  %-12{key} = %{val}" % {:key => "groups", :val => membership_list.join(', ')})
+      end
 
       super(username, request, {}, user_attrs, membership_list)
     end
@@ -27,19 +37,13 @@ module Authenticator
       true
     end
 
-    def _authenticate(username, password, request)
-      return false if request.blank?
-      return true if request.headers['X-REMOTE-USER'].present? # Provided by Apache auth modules
+    def user_authorizable_with_system_token?
+      ext_auth_is_oidc? || ext_auth_is_saml?
+    end
 
-      if oidc_configured?
-        if username.present?
-          oauth2_basic_authenticate(username, password, request)
-        else
-          oauth2_token_authenticate(request)
-        end
-      end
-
-      request.headers['X-REMOTE-USER'].present?
+    def _authenticate(_username, _password, request)
+      request.present? &&
+        request.headers['X-REMOTE-USER'].present?
     end
 
     def failure_reason(_username, request)
@@ -126,6 +130,15 @@ module Authenticator
     end
 
     def user_details_from_headers(username, request)
+      if debug_auth?
+        log_auth_debug("user_details_from_headers(username=#{username})")
+
+        remote_user_headers = %w[X-REMOTE-USER X-REMOTE-USER-FIRSTNAME X-REMOTE-USER-LASTNAME X-REMOTE-USER-FULLNAME X-REMOTE-USER-EMAIL X-REMOTE-USER-DOMAIN X-REMOTE-USER-GROUPS]
+        logged_headers = remote_user_headers.map { |rh| "  %-24{key} = \"%{val}\"" % {:key => rh, :val => request.headers[rh]} }
+
+        log_auth_debug("External-Auth remote user request.headers:")
+        log_auth_debug(logged_headers)
+      end
       user_attrs = {:username  => username,
                     :fullname  => request.headers['X-REMOTE-USER-FULLNAME'],
                     :firstname => request.headers['X-REMOTE-USER-FIRSTNAME'],
@@ -133,6 +146,18 @@ module Authenticator
                     :email     => request.headers['X-REMOTE-USER-EMAIL'],
                     :domain    => request.headers['X-REMOTE-USER-DOMAIN']}
       [user_attrs, (CGI.unescape(request.headers['X-REMOTE-USER-GROUPS'] || '')).split(/[;:,]/)]
+    end
+
+    def user_details_from_system_token(username, user_metadata)
+      return [{}, []] if username != user_metadata[:userid]
+
+      user_attrs = {:username  => user_metadata[:userid],
+                    :fullname  => user_metadata[:name],
+                    :firstname => user_metadata[:first_name],
+                    :lastname  => user_metadata[:last_name],
+                    :email     => user_metadata[:email],
+                    :domain    => nil}
+      [user_attrs, Array(user_metadata[:group_names])]
     end
 
     def user_attrs_from_external_directory(username)
@@ -168,6 +193,16 @@ module Authenticator
       require_dependency "httpd_dbus_api"
 
       HttpdDBusApi.new.user_attrs(username, ATTRS_NEEDED)
+    end
+
+    def ext_auth_is_oidc?
+      auth_config = Settings.authentication
+      auth_config.mode == "httpd" && auth_config.oidc_enabled && auth_config.provider_type == "oidc"
+    end
+
+    def ext_auth_is_saml?
+      auth_config = Settings.authentication
+      auth_config.mode == "httpd" && auth_config.saml_enabled && auth_config.provider_type == "saml"
     end
   end
 end

@@ -42,6 +42,7 @@ class MiqReport < ApplicationRecord
 
   virtual_column  :human_expression, :type => :string
   virtual_column  :based_on, :type => :string
+  virtual_column :col_format_with_defaults, :type => :string_set
 
   alias_attribute :menu_name, :name
   attr_accessor :ext_options
@@ -49,9 +50,9 @@ class MiqReport < ApplicationRecord
                            :extras, :record_id, :tl_times, :user_categories, :trend_data, :performance, :include_for_find,
                            :report_run_time, :chart
 
-  attr_accessor_that_yamls :reserved # For legacy imports
+  attr_accessor_that_yamls :reserved, :skip_references # For legacy imports
 
-  GROUPINGS = [[:min, "Minimum"], [:avg, "Average"], [:max, "Maximum"], [:total, "Total"]]
+  GROUPINGS = [[:min, N_("Minimum")], [:avg, N_("Average")], [:max, N_("Maximum")], [:total, N_("Total")]].freeze
   PIVOTS    = [[:min, "Minimum"], [:avg, "Average"], [:max, "Maximum"], [:total, "Total"]]
   IMPORT_CLASS_NAMES = %w(MiqReport).freeze
 
@@ -87,6 +88,22 @@ class MiqReport < ApplicationRecord
     end
 
     q
+  end
+
+  def col_format_with_defaults
+    return [] unless cols.present?
+
+    cols.each_with_index.map do |column, index|
+      column_format = col_formats.try(:[], index)
+      if column_format
+        column_format
+      else
+        column = Chargeback.default_column_for_format(column.to_s) if Chargeback.db_is_chargeback?(db)
+        expression_col = col_to_expression_col(column)
+        column_type = MiqExpression.parse_field_or_tag(expression_col).try(:column_type)&.to_sym
+        MiqReport::Formats.default_format_for_path(expression_col, column_type)
+      end
+    end
   end
 
   # NOTE: this can by dynamically manipulated
@@ -278,7 +295,7 @@ class MiqReport < ApplicationRecord
 
   def validate_columns(sorting_columns)
     Array(sorting_columns).collect do |attr|
-      if col_order&.include?(attr)
+      if cols_for_report.include?(attr)
         attr
       else
         raise ArgumentError, N_("%{attribute} is not a valid attribute for %{name}") % {:attribute => attr, :name => name}

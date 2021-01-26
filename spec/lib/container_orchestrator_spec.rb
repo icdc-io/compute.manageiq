@@ -56,6 +56,34 @@ RSpec.describe ContainerOrchestrator do
     end
   end
 
+  describe "#default_environment (private)" do
+    it "doesn't include messaging env vars when MESSAGING_TYPE is not set" do
+      env = subject.send(:default_environment)
+      expect(env).not_to include(hash_including(:name => "MESSAGING_TYPE"))
+      expect(env).not_to include(hash_including(:name => "MESSAGING_PORT"))
+      expect(env).not_to include(hash_including(:name => "MESSAGING_HOSTNAME"))
+      expect(env).not_to include(hash_including(:name => "MESSAGING_PASSWORD"))
+      expect(env).not_to include(hash_including(:name => "MESSAGING_USERNAME"))
+    end
+
+    context "when MESSAGING_TYPE is set" do
+      before { stub_const("ENV", ENV.to_h.merge("MESSAGING_TYPE" => "kafka", "MESSAGING_PORT" => "9092")) }
+
+      it "sets the messaging env vars" do
+        expect(subject.send(:default_environment)).to include(
+          {:name => "MESSAGING_PORT", :value => "9092"},
+          {:name => "MESSAGING_TYPE", :value => "kafka"},
+          {:name      => "MESSAGING_HOSTNAME",
+           :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "hostname"}}},
+          {:name      => "MESSAGING_PASSWORD",
+           :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "password"}}},
+          {:name      => "MESSAGING_USERNAME",
+           :valueFrom => {:secretKeyRef=>{:name => "kafka-secrets", :key => "username"}}}
+        )
+      end
+    end
+  end
+
   context "with stub connections" do
     let(:apps_connection_stub) { double("AppsConnection") }
     let(:kube_connection_stub) { double("KubeConnection") }
@@ -157,6 +185,41 @@ RSpec.describe ContainerOrchestrator do
         expect(subject).to receive(:scale).with("deploy_name", 0)
 
         subject.delete_deployment("deploy_name")
+      end
+    end
+
+    describe "initial pods and updates" do
+      let(:orchestrator_pod_name) { "orchestrator-9f99d8cb9" }
+      let(:app_name) { "manageiq" }
+
+      before do
+        allow(subject).to receive(:app_name).and_return(app_name)
+        allow(subject).to receive(:pod_name).and_return(orchestrator_pod_name)
+      end
+
+      describe "#get_pods" do
+        it "sets namespace and label_selector" do
+          expect(subject).to receive(:app_name).and_return("manageiq")
+          expect(kube_connection_stub).to receive(:get_pods).with(hash_including(:namespace => namespace, :label_selector => "app=#{app_name},#{app_name}-orchestrated-by=#{orchestrator_pod_name}"))
+          subject.get_pods
+        end
+      end
+
+      describe "#watch_pods" do
+        it "sets namespace and label_selector" do
+          expect(kube_connection_stub).to receive(:watch_pods).with(hash_including(:namespace => namespace, :resource_version => 0, :label_selector => "app=#{app_name},#{app_name}-orchestrated-by=#{orchestrator_pod_name}")).and_return([])
+          subject.watch_pods(0)
+        end
+
+        it "defaults resource_version" do
+          expect(kube_connection_stub).to receive(:watch_pods).with(hash_including(:resource_version => nil)).and_return([])
+          subject.watch_pods
+        end
+
+        it "accepts provided resource_version" do
+          expect(kube_connection_stub).to receive(:watch_pods).with(hash_including(:resource_version => 100)).and_return([])
+          subject.watch_pods(100)
+        end
       end
     end
   end

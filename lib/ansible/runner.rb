@@ -202,7 +202,6 @@ module Ansible
         command_line_hash = tags.present? ? {:tags => tags} : {}
         if become_enabled
           command_line_hash[:become] = nil
-          command_line_hash[:ask_become_pass] = nil
         end
         command_line_hash.merge!(cred_command_line)
 
@@ -218,6 +217,7 @@ module Ansible
         begin
           fetch_galaxy_roles(playbook_or_role_args)
           result = AwesomeSpawn.run("ansible-runner", :env => env_vars_hash, :params => params)
+          wait_for(File.join(base_dir, "artifacts"))
           res = response(base_dir, ansible_runner_method, result)
         ensure
           # Clean up the tmp dir for the sync method, for async we will clean it up after the job is finished and we've
@@ -367,6 +367,7 @@ module Ansible
       PYTHON3_MODULE_PATHS = %w[
         /usr/lib64/python3.6/site-packages
         /var/lib/awx/venv/ansible/lib/python3.6/site-packages
+        /var/lib/manageiq/venv/lib/python3.6/site-packages
       ].freeze
       def python3_modules_path
         @python3_modules_path ||= begin
@@ -376,6 +377,16 @@ module Ansible
 
       def determine_existing_python_paths_for(*paths)
         paths.select { |path| File.exist?(path) }
+      end
+
+      def wait_for(dir)
+        100.times do |i|
+          break if Dir.exist?(dir)
+
+          raise "Timed out waiting for #{dir}" if i >= 99
+
+          sleep(0.1)
+        end
       end
     end
   end

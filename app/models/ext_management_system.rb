@@ -17,22 +17,17 @@ class ExtManagementSystem < ApplicationRecord
     supported_subclasses.collect(&:ems_type)
   end
 
-  def self.leaf_subclasses
-    descendants.select { |d| d.subclasses.empty? }
+  def self.supported_subclasses
+    leaf_subclasses.select(&:permitted?)
   end
 
-  def self.supported_subclasses
-    subclasses.flat_map do |s|
-      s.subclasses.empty? ? s : s.supported_subclasses
-    end
+  def self.permitted?
+    Vmdb::PermissionStores.instance.supported_ems_type?(ems_type)
   end
+  delegate :permitted?, :to => :class
 
   def self.supported_types_and_descriptions_hash
-    supported_subclasses.each_with_object({}) do |klass, hash|
-      if Vmdb::PermissionStores.instance.supported_ems_type?(klass.ems_type)
-        hash[klass.ems_type] = klass.description
-      end
-    end
+    supported_subclasses.each_with_object({}) { |klass, hash| hash[klass.ems_type] = klass.description }
   end
 
   def self.api_allowed_attributes
@@ -40,7 +35,11 @@ class ExtManagementSystem < ApplicationRecord
   end
 
   def self.supported_types_for_create
-    leaf_subclasses.select(&:supported_for_create?)
+    supported_subclasses.select(&:supported_for_create?)
+  end
+
+  def self.supported_types_for_catalog
+    supported_subclasses.select(&:supported_for_catalog?)
   end
 
   def self.supported_types_for_catalog
@@ -133,6 +132,12 @@ class ExtManagementSystem < ApplicationRecord
 
   supports :refresh_ems
   supports_not :assume_role
+
+  supports :create_security_group do
+    unless SecurityGroup.class_by_ems(self).supports_create?
+      unsupported_reason_add(:create_security_group, _('Security Group creation is not supported'))
+    end
+  end
 
   def hostname_uniqueness_valid?
     return unless hostname_required?
@@ -234,6 +239,7 @@ class ExtManagementSystem < ApplicationRecord
   virtual_column :supports_cloud_object_store_container_create, :type => :boolean
   virtual_column :supports_cinder_volume_types, :type => :boolean
   virtual_column :supports_volume_availability_zones, :type => :boolean
+  virtual_column :supports_create_security_group, :type => :boolean
 
   virtual_aggregate :total_vcpus, :hosts, :sum, :total_vcpus
   virtual_aggregate :total_memory, :hosts, :sum, :ram_size
@@ -584,11 +590,33 @@ class ExtManagementSystem < ApplicationRecord
     task.id
   end
 
+  def ems_workers
+    MiqWorker.find_alive.where(:queue_name => queue_name)
+  end
+
+  def wait_for_ems_workers_removal
+    return if Rails.env.test?
+
+    quiesce_loop_timeout = ::Settings.server.worker_monitor.quiesce_loop_timeout || 5.minutes
+    worker_monitor_poll  = (::Settings.server.worker_monitor.poll || 1.second).to_i_with_method
+    kill_ems_workers_started_on = Time.now.utc
+
+    loop do
+      # killed workers will have their row removed, so we wait for this
+      break unless ems_workers.exists?
+      break if (Time.now.utc - kill_ems_workers_started_on) > quiesce_loop_timeout
+
+      sleep worker_monitor_poll
+    end
+  end
+
   def destroy(task_id = nil)
     disable!(:validate => false) if enabled?
 
-    # kill workers
-    MiqWorker.find_alive.where(:queue_name => queue_name).each(&:kill)
+    # Async kill each ems worker and wait until their row is removed before we delete
+    # the ems/managers to ensure a worker doesn't recreate the ems/manager.
+    ems_workers.each(&:kill_async)
+    wait_for_ems_workers_removal
 
     _log.info("Destroying #{child_managers.count} child_managers")
     child_managers.destroy_all
@@ -717,6 +745,10 @@ class ExtManagementSystem < ApplicationRecord
     available_storages = storages.find_tagged_with(:any => type, :ns => '*')
     raise _("There is no avaliable storage") if available_storages.empty?
     return available_storages.max_by(&:v_free_space_percent_of_total)
+  end
+  
+  def supports_create_security_group
+    supports_create_security_group?
   end
 
   def get_reserve(field)

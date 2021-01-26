@@ -130,7 +130,10 @@ RSpec.describe EmsEvent do
             :service => "manageiq.ems-events",
             :sender  => ems.id,
             :event   => event_hash[:event_type],
-            :payload => event_hash,
+            :payload => event_hash.merge(
+              :ems_type => ems.class.ems_type,
+              :ems_uid  => ems.uid_ems
+            )
           }
 
           expect(messaging_client).to receive(:publish_topic).with(expected_queue_payload)
@@ -150,7 +153,10 @@ RSpec.describe EmsEvent do
             :service => "manageiq.ems-events",
             :sender  => ems.id,
             :event   => event_hash[:event_type],
-            :payload => event_hash,
+            :payload => event_hash.merge(
+              :ems_type => ems.class.ems_type,
+              :ems_uid  => ems.uid_ems
+            )
           }
 
           expect(messaging_client).to receive(:publish_topic).with(expected_queue_payload)
@@ -430,6 +436,46 @@ RSpec.describe EmsEvent do
         event = FactoryBot.create(:ems_event, :vm_or_template_id => 123, :host => host1, :dest_host => host2)
         expect(event.get_target("src_vm_or_dest_host_refresh_target")).to eq(host2)
       end
+    end
+  end
+
+  context 'manager refresh' do
+    let(:ems_cloud) { FactoryBot.create(:ems_cloud) }
+    let(:ems_event_cloud) {
+      FactoryBot.create(
+        :ems_event,
+        :ext_management_system => ems_cloud,
+        :event_type => "CloneVM_Task",
+        :full_data  => {"info" => {"task" => "task-5324"}}
+      )
+    }
+
+    let(:ems_infra) { FactoryBot.create(:ems_infra) }
+    let(:ems_event_infra) {
+      FactoryBot.create(
+        :ems_event,
+        :ext_management_system => ems_infra,
+        :event_type => "CloneVM_Task",
+        :full_data  => {"info" => {"task" => "task-5324"}}
+      )
+    }
+
+    it 'performs a targeted refresh if supported' do
+      klass = ems_cloud.class.const_get('EventTargetParser')
+      target_parser = klass.new(ems_cloud)
+
+      allow(klass).to receive(:new).and_return(target_parser)
+
+      expect(ems_cloud).to receive(:allow_targeted_refresh?).and_return(true)
+      expect(klass).to receive(:new)
+      expect(target_parser).to receive(:parse)
+
+      ems_event_cloud.manager_refresh_targets
+    end
+
+    it 'returns the ems if targeted refresh is not supported' do
+      expect(ems_infra).to receive(:allow_targeted_refresh?).and_return(false)
+      expect(ems_event_infra.manager_refresh_targets).to eq(ems_infra)
     end
   end
 end
