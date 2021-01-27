@@ -14,7 +14,7 @@ Vmdb::Application.configure do
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
   require "miq_environment"
-  config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present? || !MiqEnvironment::Command.is_production_build?
+  config.public_file_server.enabled = false #ENV['RAILS_SERVE_STATIC_FILES'].present? || !MiqEnvironment::Command.is_production_build?
   puts "** WARN: Rails is serving static assets in production mode" if config.public_file_server.enabled
 
   # Compress JavaScripts and CSS
