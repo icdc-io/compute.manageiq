@@ -98,6 +98,14 @@ module Icdc
         end
       end
 
+      def create_cloud_tenant(name)
+        miq_tenant = Tenant.find_by(:name => name)
+        cloud_tenant = CloudTenant.create(:name => name, :description => miq_tenant.description)
+        miq_tenant.source_type = 'CloudTenant'
+        miq_tenant.source_id = cloud_tenant.id
+        miq_tenant.save!
+      end
+
       private
 
       def create_subnet(opts)
@@ -110,6 +118,7 @@ module Icdc
     class Infrastructure
       def self.build(account_name)
         crd = CRD.new(account_name)
+        crd.create_cloud_tenant(account_name)
         return unless crd.network_service
         resources = crd.config.dig("resources")
         resources.dig("routers").each{ |name| crd.create_router(name) }
