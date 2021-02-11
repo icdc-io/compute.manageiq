@@ -30,6 +30,10 @@ module Icdc
           Tenant.in_my_region.where(:name => "Demo").first
         ].compact
       end
+
+      def self.prefix(user)
+        "#{MiqRegion.my_region.description.downcase}_#{user.current_tenant.name.downcase}_" 
+      end
     end
 
     class Lotus
