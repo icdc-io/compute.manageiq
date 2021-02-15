@@ -62,7 +62,7 @@ module Icdc
           cost += vm['total_cost'].to_f.round(2)
           disk_type << vm['disk_type']
           uptime << vm['uptime']
-          h[:vms] << {:name => vm['vm_name'], :cpu => vm['cpu_allocated_total'], :mem => vm['memory_allocated_total'], :cost => vm['total_cost'].round(2), :disk_type => vm['disk_type'], :uptime => vm['uptime']}
+          h[:vms] << {:name => vm['vm_name'], :cpu => vm['cpu_allocated_total'], :mem => vm['memory_allocated_total'], :cost => vm['total_cost'].to_f.round(2), :disk_type => vm['disk_type'], :uptime => vm['uptime']}
         end
         h[:cost] = cost
         h[:cpu] = cpu
