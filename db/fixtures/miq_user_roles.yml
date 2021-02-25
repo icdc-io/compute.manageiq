@@ -1407,6 +1407,12 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
 
 - :name: ICDC-member
   :read_only: false
@@ -1462,6 +1468,13 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view 
+  - cloud_subnet_view 
+  - network_router_view
+  - ems_infra_show_list
 
 - :name: ICDC-admin
   :read_only: false
@@ -1524,6 +1537,21 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
+  - security_group_admin
+  - cloud_network_admin
+  - cloud_subnet_admin
+  - network_port_admin
+  - network_router_admin
+  - cloud_network_new
+  - cloud_network_edit
+  - cloud_network_new_delete
+  - ems_infra_show_list
 
 - :name: ICDC-billing
   :read_only: false
@@ -1582,6 +1610,13 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
+  - ems_infra_show_list
 
 - :name: ICDC-project-admin
   :read_only: false
@@ -1637,6 +1672,18 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
+  - security_group_admin
+  - cloud_network_admin
+  - cloud_subnet_admin
+  - network_port_admin
+  - network_router_admin
+  - ems_infra_show_list
 
 - :name: ICDC-project-member
   :read_only: false
@@ -1692,6 +1739,13 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
+  - ems_infra_show_list
 
 - :name: ICDC-project-billing
   :read_only: false
@@ -1750,3 +1804,11 @@
   - user_profiles
   - user_profiles_add_key
   - user_profiles_delete
+  - ems_network_show
+  - security_group_view
+  - cloud_network_view
+  - network_port_view
+  - cloud_subnet_view
+  - network_router_view
+  - ems_infra_show_list
+
