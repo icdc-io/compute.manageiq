@@ -124,7 +124,12 @@ module Rbac
     TENANT_ACCESS_STRATEGY = {
       'CloudSnapshot'          => :descendant_ids,
       'CloudTenant'            => :descendant_ids,
+      'CloudNetwork'           => :descendant_ids,
+      'CloudSubnet'            => :descendant_ids,
       'CloudVolume'            => :descendant_ids,
+      'NetworkRouter'          => :descendant_ids,
+      'SecurityGroup'          => :descendant_ids,
+      'NetworkRouter'          => :descendant_ids,
       'ExtManagementSystem'    => :ancestor_ids,
       'MiqAeNamespace'         => :ancestor_ids,
       'MiqGroup'               => :iba_descendant_ids,

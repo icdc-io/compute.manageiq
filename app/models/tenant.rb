@@ -385,7 +385,7 @@ class Tenant < ApplicationRecord
   def create_users_group
     roles = %w(admin billing member)
     roles.each do |role|
-      group = miq_groups.build(description: "#{name}.#{role}", long_description: 'Default')
+      group = miq_groups.build(description: "#{name.downcase}.#{role}", long_description: 'Default')
       group.save!
       role = "project-#{role}" if self.project?
       group.miq_user_role = MiqUserRole.find_by_name("ICDC-#{role}")
