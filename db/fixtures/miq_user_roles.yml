@@ -1547,6 +1547,9 @@
   - cloud_subnet_admin
   - network_port_admin
   - network_router_admin
+  - cloud_network_new
+  - cloud_network_edit
+  - cloud_network_new_delete
 
 - :name: ICDC-billing
   :read_only: false
