@@ -62,11 +62,10 @@ class CloudNetwork < ApplicationRecord
     raise ArgumentError.new("No arguments match") unless data
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network = network_service.create_network(:name => data["name"])
+    network = network_service.create_network(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}")
     network_id = network[:body]["network"]["id"]
     ext_management_system.refresh_ems
     refresh_wait(network_id)
-    CloudNetwork.find_by(:ems_ref => network_id).add_description({'description' => data["description"]})
     network_id
   end
 
@@ -79,6 +78,8 @@ class CloudNetwork < ApplicationRecord
 
   def self.add_subnet(id, net_id, data)
     ext_management_system = ExtManagementSystem.find_by(:id => id)
+    subnet_name = data.dig("name")
+    data["name"] = "#{Icdc::Account::User.prefix(User.current_user)}#{subnet_name}"
     network_service = ext_management_system.openstack_handle.detect_network_service
     network_service.networks.find_by_id(net_id).subnets.create(data)
     ext_management_system.refresh_ems
@@ -95,7 +96,7 @@ class CloudNetwork < ApplicationRecord
       else
         network.subnets.create(data["subnet"])
       end
-    else
+    elsif !network.subnets.empty?
       network_service.delete_subnet(network.subnets.first.id)
     end
     ext_management_system.refresh_ems
