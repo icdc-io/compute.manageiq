@@ -81,7 +81,9 @@ class CloudNetwork < ApplicationRecord
     subnet_name = data.dig("name")
     data["name"] = "#{Icdc::Account::User.prefix(User.current_user)}#{subnet_name}"
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network_service.networks.find_by_id(net_id).subnets.create(data)
+    subnet_id = network_service.networks.find_by_id(net_id).subnets.create(data)
+    router_id = network_service.routers.select { |router| router.name =~ /#{Icdc::Account::User.prefix(User.current_user)}/ }.first.id 
+    network_service.add_router_interface(router_id, subnet_id)
     ext_management_system.refresh_ems
   end
 
