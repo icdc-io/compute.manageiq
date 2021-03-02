@@ -1552,6 +1552,9 @@
   - cloud_network_edit
   - cloud_network_new_delete
   - ems_infra_show_list
+  - network_router_add_route
+  - network_router_remove_route
+  - network_router_edit_route
 
 - :name: ICDC-billing
   :read_only: false
