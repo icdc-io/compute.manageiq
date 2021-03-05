@@ -64,7 +64,7 @@ class CloudNetwork < ApplicationRecord
     raise ArgumentError.new("No arguments match") unless data
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network = network_service.create_network(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}", :mtu => 1500)
+    network = network_service.create_network(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}", :mtu => '1500')
     network_id = network[:body]["network"]["id"]
     ext_management_system.refresh_ems
     refresh_wait(network_id)
