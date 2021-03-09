@@ -1,5 +1,5 @@
 require 'ipaddr'
-require 'rest_client'
+require 'rest-client'
 
 class CloudNetwork < ApplicationRecord
   include NewWithTypeStiMixin
