@@ -1,4 +1,5 @@
 require 'ipaddr'
+require 'rest_client'
 
 class CloudNetwork < ApplicationRecord
   include NewWithTypeStiMixin
@@ -64,11 +65,30 @@ class CloudNetwork < ApplicationRecord
     raise ArgumentError.new("No arguments match") unless data
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network = network_service.networks.new(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}", :mtu => '1500')
+    network = network_service.networks.new(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}")
     network.save
+    set_mtu(network_service, network.id)
     ext_management_system.refresh_ems
     refresh_wait(network.id)
     network.id
+  end
+
+  def self.set_mtu(network_service, network_id)
+    RestClient::Request.execute(
+      :url => "#{network_service.credentials[:openstack_management_url]}/#{network_service.credentials[:openstack_identity_api_version]}/networks/#{network_id}",
+      :method => :put,
+      :verify_ssl => OpenSSL::SSL::VERIFY_NONE,
+      :headers => {
+        'X-Auth-Token' => network_service.auth_token,
+        'Content-Type' => "application/json",
+        'Content-Length' => 24
+      },
+      :payload => {
+        :network => {
+          :mtu => 1500
+        }
+      }.to_json
+    )
   end
 
   def edit_network(net_id, data = nil)
