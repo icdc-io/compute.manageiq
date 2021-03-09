@@ -65,6 +65,7 @@ class CloudNetwork < ApplicationRecord
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
     network = network_service.networks.new(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}", :mtu => '1500')
+    network.save
     ext_management_system.refresh_ems
     refresh_wait(network.id)
     network.id
