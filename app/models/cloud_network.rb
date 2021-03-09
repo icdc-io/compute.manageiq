@@ -1,3 +1,6 @@
+require 'ipaddr'
+require 'rest-client'
+
 class CloudNetwork < ApplicationRecord
   include NewWithTypeStiMixin
   include SupportsFeatureMixin
@@ -62,11 +65,30 @@ class CloudNetwork < ApplicationRecord
     raise ArgumentError.new("No arguments match") unless data
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network = network_service.create_network(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}")
-    network_id = network[:body]["network"]["id"]
+    network = network_service.networks.new(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}")
+    network.save
+    set_mtu(network_service, network.id)
     ext_management_system.refresh_ems
-    refresh_wait(network_id)
-    network_id
+    refresh_wait(network.id)
+    network.id
+  end
+
+  def self.set_mtu(network_service, network_id)
+    RestClient::Request.execute(
+      :url => "#{network_service.credentials[:openstack_management_url]}#{network_service.credentials[:openstack_identity_api_version]}/networks/#{network_id}",
+      :method => :put,
+      :verify_ssl => OpenSSL::SSL::VERIFY_NONE,
+      :headers => {
+        'X-Auth-Token' => network_service.auth_token,
+        'Content-Type' => "application/json",
+        'Content-Length' => 24
+      },
+      :payload => {
+        :network => {
+          :mtu => 1500
+        }
+      }.to_json
+    )
   end
 
   def edit_network(net_id, data = nil)
@@ -80,8 +102,15 @@ class CloudNetwork < ApplicationRecord
     ext_management_system = ExtManagementSystem.find_by(:id => id)
     subnet_name = data.dig("name")
     data["name"] = "#{Icdc::Account::User.prefix(User.current_user)}#{subnet_name}"
+    data["enable_dhcp"] = true
+    cidr = IPAddr.new(data["cidr"])
+    data["gateway_ip"] = IPAddr.new(cidr.to_i + 1, Socket::AF_INET).to_s
+    data["cidr"] = "#{cidr.to_s}/#{cidr.prefix}"
+    # subnet_id = network_service.create_subnet(opts["network_id"], opts["subnet"]["cidr"], 4, {:name => "#{account_name}_#{opts["type"]}", :enable_dhcp => opts["subnet"]["dhcp"], :gateway_ip => opts["subnet"]["gateway"]}).data.dig(:body, "subnet", "id")
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network_service.networks.find_by_id(net_id).subnets.create(data)
+    subnet = network_service.networks.find_by_id(net_id).subnets.create(data)
+    router = network_service.routers.select { |router| router.name =~ /#{Icdc::Account::User.prefix(User.current_user)}/ }.first
+    network_service.add_router_interface(router.id, subnet.id)
     ext_management_system.refresh_ems
   end
 

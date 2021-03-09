@@ -1,3 +1,4 @@
+require 'rest_client'
 module Icdc
   module Account
 
@@ -92,8 +93,9 @@ module Icdc
 
       def create_network(network_config)
         network_config.map do |type, opts|
-          network = network_service.networks.new(:name => "#{account_name}_#{type}", :mtu => opts['mtu'])
+          network = network_service.networks.new(:name => "#{account_name}_#{type}")
           network.save
+          set_mtu(network.id, opts['mtu'])
           # CloudNetwork.refresh_wait(network.id)
           # CloudNetwork.find_by(:ems_ref => network.id).add_description({'description' => "#{account_name} #{type} network"})
           opts["network_id"] = network.id
@@ -111,6 +113,24 @@ module Icdc
       end
 
       private
+
+      def set_mtu(network_id, mtu)
+        RestClient::Request.execute(
+          :url => "#{network_service.credentials[:openstack_management_url]}#{network_service.credentials[:openstack_identity_api_version]}/networks/#{network_id}",
+          :method => :put,
+          :verify_ssl => OpenSSL::SSL::VERIFY_NONE,
+          :headers => {
+            'X-Auth-Token' => network_service.auth_token,
+            'Content-Type' => "application/json",
+            'Content-Length' => 24
+          },
+          :payload => {
+            :network => {
+              :mtu => mtu
+            }
+          }.to_json
+        )
+      end
 
       def create_subnet(opts)
         subnet_id = network_service.create_subnet(opts["network_id"], opts["subnet"]["cidr"], 4, {:name => "#{account_name}_#{opts["type"]}", :enable_dhcp => opts["subnet"]["dhcp"], :gateway_ip => opts["subnet"]["gateway"]}).data.dig(:body, "subnet", "id")
