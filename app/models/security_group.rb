@@ -82,4 +82,20 @@ class SecurityGroup < ApplicationRecord
                     :serviceName => nic.first.vm&.service&.name 
                   } }
   end
+
+  def add_to_port(data)
+    ns = ext_management_system.openstack_handle.detect_network_service
+    data[:nic_ids].each do |nic_id|
+      ns.update_port(nic_id, {:security_groups => ns.ports.find_by_id(nic_id).security_groups.push(ems_ref)})
+      rescue => e
+        next
+    end
+  end
+
+  def remove_from_port(data)
+    ns = ext_management_system.openstack_handle.detect_network_service
+    nic_id = data[:nic_id]
+    ns.update_port(nic_id, {:security_groups => ns.ports.find_by_id(nic_id).security_groups - [ems_ref]})
+  end
+
 end
