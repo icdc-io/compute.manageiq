@@ -153,9 +153,15 @@ class CloudNetwork < ApplicationRecord
 
   def delete_network
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network_service.delete_network(self.ems_ref)
-    destroy!
-    ext_management_system.refresh_ems
+    begin
+      router = network_routers.first
+      subnet = cloud_subnets.first
+      network_service.remove_router_interface(router.ems_ref, subnet.ems_ref)
+    rescue => e
+      network_service.delete_network(self.ems_ref)
+      destroy!
+      ext_management_system.refresh_ems
+    end
   end
 
   private
