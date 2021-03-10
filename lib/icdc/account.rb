@@ -116,7 +116,7 @@ module Icdc
 
       def set_mtu(network_id, mtu)
         RestClient::Request.execute(
-          :url => "#{network_service.credentials[:openstack_management_url]}/#{network_service.credentials[:openstack_identity_api_version]}/networks/#{network_id}",
+          :url => "#{network_service.credentials[:openstack_management_url]}#{network_service.credentials[:openstack_identity_api_version]}/networks/#{network_id}",
           :method => :put,
           :verify_ssl => OpenSSL::SSL::VERIFY_NONE,
           :headers => {
