@@ -107,13 +107,14 @@ class SecurityGroup < ApplicationRecord
 
   def force_push_new_rule(rule_uid, data)
     direction_mapper = { "ingress" => "inbound", "egress" => "outbound" }
+    sg_id = SecurityGroup.find_by(:ems_ref => data["remote_group_id"])&.id
     fw_rule = FirewallRule.new(:host_protocol => data["protocol"].upcase, 
                                :direction => direction_mapper[data["direction"]],
                                :port => data["port_range_min"],
                                :end_port => data["port_range_max"],
                                :ems_ref => rule_uid,
                                :source_ip_range => data["source_ip_range"],
-                               :source_security_group_id => SecurityGroup.find_by(:ems_ref => data["remote_group_id"]).id,
+                               :source_security_group_id => sg_id, 
                                :resource_id => id,
                                :resource_type => "SecurityGroup",
                                :network_protocol => "IPV4")
