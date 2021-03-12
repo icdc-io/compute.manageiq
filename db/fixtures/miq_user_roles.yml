@@ -1558,6 +1558,8 @@
   - security_group_firewall_add
   - security_group_firewall_edit
   - security_group_firewall_remove
+  - security_group_add_to_port
+  - security_group_remove_from_port
 - :name: ICDC-billing
   :read_only: false
   :settings:

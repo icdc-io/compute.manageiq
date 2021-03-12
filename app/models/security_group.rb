@@ -41,12 +41,15 @@ class SecurityGroup < ApplicationRecord
     network_service = self.ext_management_system.openstack_handle.detect_network_service
     rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
     rule.save
+    force_push_new_rule(rule.id, data)
     self.ext_management_system.refresh_ems
   end
 
   def remove_firewall_rule(data = nil)
     raise ArgumentError.new("No arguments match") unless data
+    _log.info("ahrechushkin debug rm fwr #{data}")
     network_service = self.ext_management_system.openstack_handle.detect_network_service
+    FirewallRule.find_by(:ems_ref => data).destroy!
     rule = network_service.security_groups.get(self.ems_ref).security_group_rules.get(data)
     rule.destroy
     self.ext_management_system.refresh_ems
@@ -81,5 +84,40 @@ class SecurityGroup < ApplicationRecord
                     :vmId => nic.first.vm&.uid_ems, 
                     :serviceName => nic.first.vm&.service&.name 
                   } }
+  end
+
+  def add_to_port(data)
+    ns = ext_management_system.openstack_handle.detect_network_service
+    data["nic_ids"].each do |nic_id|
+      port_id = ns.ports.select{|x| x.device_id == nic_id}.first.id
+      network_ports.push(NetworkPort.find_by(:ems_ref => port_id))
+      ns.update_port(port_id, {:security_groups => ns.ports.find_by_id(port_id).security_groups.push(ems_ref)})
+      rescue RuntimeError => e
+        next
+    end
+  end
+
+  def remove_from_port(data)
+    ns = ext_management_system.openstack_handle.detect_network_service
+    nic_id = data["nic_id"]
+    port_id = ns.ports.select{|x| x.device_id == nic_id}.first.id
+    network_ports.delete(NetworkPort.find_by(:ems_ref => port_id))
+    ns.update_port(port_id, {:security_groups => ns.ports.find_by_id(port_id).security_groups - [ems_ref]})
+  end
+
+  def force_push_new_rule(rule_uid, data)
+    direction_mapper = { "ingress" => "inbound", "egress" => "outbound" }
+    sg_id = SecurityGroup.find_by(:ems_ref => data["remote_group_id"])&.id
+    fw_rule = FirewallRule.new(:host_protocol => data["protocol"].upcase, 
+                               :direction => direction_mapper[data["direction"]],
+                               :port => data["port_range_min"],
+                               :end_port => data["port_range_max"],
+                               :ems_ref => rule_uid,
+                               :source_ip_range => data["source_ip_range"],
+                               :source_security_group_id => sg_id, 
+                               :resource_id => id,
+                               :resource_type => "SecurityGroup",
+                               :network_protocol => "IPV4")
+    fw_rule.save   
   end
 end
