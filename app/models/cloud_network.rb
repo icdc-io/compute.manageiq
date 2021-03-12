@@ -61,15 +61,15 @@ class CloudNetwork < ApplicationRecord
     ["((tenants.id IN (?) OR cloud_networks.shared IS TRUE OR cloud_networks.external_facing IS TRUE) AND ext_management_systems.tenant_mapping_enabled IS TRUE) OR ext_management_systems.tenant_mapping_enabled IS FALSE OR ext_management_systems.tenant_mapping_enabled IS NULL", tenant_ids]
   end
 
-  def self.create_network(id, data = nil)
+  def self.create_network(provider_id, data = nil)
     raise ArgumentError.new("No arguments match") unless data
-    ext_management_system = ExtManagementSystem.find_by(:id => id)
+    ext_management_system = ExtManagementSystem.find_by(:id => provider_id)
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network = network_service.networks.new(:name => "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}")
+    data["name"] = "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}"
+    network = network_service.networks.new(:name => data["name"])
     network.save
+    force_push_new_network(network.id, ext_management_system, data)
     set_mtu(network_service, network.id)
-    ext_management_system.refresh_ems
-    refresh_wait(network.id)
     network.id
   end
 
@@ -106,9 +106,9 @@ class CloudNetwork < ApplicationRecord
     cidr = IPAddr.new(data["cidr"])
     data["gateway_ip"] = IPAddr.new(cidr.to_i + 1, Socket::AF_INET).to_s
     data["cidr"] = "#{cidr.to_s}/#{cidr.prefix}"
-    # subnet_id = network_service.create_subnet(opts["network_id"], opts["subnet"]["cidr"], 4, {:name => "#{account_name}_#{opts["type"]}", :enable_dhcp => opts["subnet"]["dhcp"], :gateway_ip => opts["subnet"]["gateway"]}).data.dig(:body, "subnet", "id")
     network_service = ext_management_system.openstack_handle.detect_network_service
     subnet = network_service.networks.find_by_id(net_id).subnets.create(data)
+    force_push_new_subnet(subnet.id, ext_management_system, data)
     router = network_service.routers.select { |router| router.name =~ /#{Icdc::Account::User.prefix(User.current_user)}/ }.first
     network_service.add_router_interface(router.id, subnet.id)
     ext_management_system.refresh_ems
@@ -131,20 +131,6 @@ class CloudNetwork < ApplicationRecord
     ext_management_system.refresh_ems
   end
 
-  def self.refresh_wait(network_id)
-    CloudNetwork.uncached do
-      30.times do
-        network = CloudNetwork.find_by(:ems_ref => network_id)
-        if network
-          break
-        else
-          sleep 2
-          next
-        end
-      end
-    end
-  end
-
   def add_description(data)
     ALLOWED_CUSTOM_ATTRIBUTES.each{|attr| self.miq_custom_set(attr, data[attr])}
   rescue => e
@@ -153,9 +139,31 @@ class CloudNetwork < ApplicationRecord
 
   def delete_network
     network_service = ext_management_system.openstack_handle.detect_network_service
-    network_service.delete_network(self.ems_ref)
-    destroy!
-    ext_management_system.refresh_ems
+    begin
+      router = network_routers.first
+      subnet = cloud_subnets.first
+      network_service.remove_router_interface(router.ems_ref, subnet.ems_ref)
+    rescue => e
+      network_service.delete_network(self.ems_ref)
+      destroy!
+      ext_management_system.refresh_ems
+    end
+  end
+
+  def self.force_push_new_network(network_uid, ems, data)
+    network = CloudNetwork.new(:name => data["name"], :ems_ref => network_uid)
+    network.cloud_tenant = User.current_user.current_tenant.source
+    network.ext_management_system = ems
+    network.save
+  end
+
+  def self.force_push_new_subnet(subnet_uid, ems, data)
+    network = CloudNetwork.find_by(:name => data["name"])
+    subnet = CloudSubnet.new(:name => data["name"], :ems_ref => subnet_uid, :cidr => data["cidr"], :gateway => data["gateway_ip"], :dns_nameservers => data["dns_nameservers"], :network_protocol => "ipv4")
+    subnet.cloud_network = network
+    subnet.cloud_tenant = User.current_user.current_tenant.source
+    subnet.ext_management_system = ems
+    subnet.save
   end
 
   private
