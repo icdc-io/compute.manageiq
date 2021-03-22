@@ -21,7 +21,7 @@ module Icdc
         end
       when "last"
         reports.each do |report| 
-          result.push(report.miq_report_results.select{|x| x.created_on <= Date.today.last_month.end_of_month}.sort_by(&:created_on).last.result_set)
+          result.push(report.miq_report_results.select{ |x| x.created_on <= Date.today.last_month.end_of_month + 1.day }.sort_by(&:created_on).last.result_set)
         end
       end
       final_result = []
