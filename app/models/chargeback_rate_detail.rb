@@ -254,11 +254,21 @@ class ChargebackRateDetail < ApplicationRecord
   def metric_and_cost_by(consumption, options)
     metric_value = chargeable_field.measure(consumption, options, sub_metric)
     hourly_cost = hourly_cost(metric_value, consumption)
-
     _log.debug("Consumption interval: #{consumption.consumption_start} -  #{consumption.consumption_end}")
     _log.debug("Consumed hours: #{consumption.consumed_hours_in_interval}")
-    cost = chargeable_field.metering? ? hourly_cost : hourly_cost * consumption.consumed_hours_in_interval
+    cost = chargeable_field.metering? ? hourly_cost : hourly_cost * consumed_interval(consumption)
     [metric_value, cost]
+  end
+
+  # ahrechushkin: we calculating consumed interval only for allocated compute metrics use this way:
+  # check cpu_usage metric in rollup array (fourth element). If vm was powered off or have unresponding status
+  # cpu_usage metric was nil, in other case metric will be > 0.
+  # Alse we use cpu_usage metric as valus to calculating uptime.
+  # Finally: Chargeback formula is => (max(cpu_allocated_metrics) + max(mem_allocated_metrics)) * consumed_interval(when vm was powered_on) + vm_allocated_disk_storage * full_consumed_interval
+  # FYI: It can't fix problem with sutuation when vm was reconfigured in consumption period
+  def consumed_interval(consumption)
+    return consumption.consumed_hours_in_interval unless chargeable_field.method('allocated?').call && metric != 'derived_vm_allocated_disk_storage'
+    JSON.parse(consumption.to_json)['rollup_array'].collect(&:fourth).compact.count
   end
 
   def first_tier?(tier,tiers)
