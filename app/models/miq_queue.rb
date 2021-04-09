@@ -42,7 +42,7 @@ class MiqQueue < ApplicationRecord
 
     @messaging_client[client_ref] ||= begin
       require "manageiq-messaging"
-      ManageIQ::Messaging.logger = _log
+#      ManageIQ::Messaging.logger = _log
 
       # caching the client works, even if the connection becomes unavailable
       # internally the client will track the state of the connection and re-open it,
@@ -649,7 +649,7 @@ class MiqQueue < ApplicationRecord
     (messaging_options_from_env || messaging_options_from_file)&.merge(
       :encoding => "json",
       :protocol => messaging_protocol,
-    )&.tap { |h| h[:password] = MiqPassword.try_decrypt(h.delete(:password)) }
+    )&.tap { |h| h[:"sasl.password"] = ENV["MESSAGING_PASSWORD"] }#MiqPassword.try_decrypt(h.delete(:password)) }
   end
   private_class_method :messaging_client_options
 
@@ -669,8 +669,12 @@ class MiqQueue < ApplicationRecord
     {
       :host     => ENV["MESSAGING_HOSTNAME"],
       :port     => ENV["MESSAGING_PORT"].to_i,
-      :username => ENV["MESSAGING_USERNAME"],
-      :password => ENV["MESSAGING_PASSWORD"],
+#      :username => ENV["MESSAGING_USERNAME"],
+#      :password => ENV["MESSAGING_PASSWORD"],
+#      :"sasl.protocol" => "SASL_PLAINTEXT",
+#      :"sasl.mechanism" => "PLAIN",
+      :"sasl.username" => ENV["MESSAGING_USERNAME"],
+      :"sasl.password" => ENV["MESSAGING_PASSWORD"]
     }
   end
 
