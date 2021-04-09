@@ -53,8 +53,9 @@ gem "manageiq-messaging",             "~>1.0",       :require => false
 gem "manageiq-password",              "~>0.3",         :require => false
 gem "manageiq-postgres_ha_admin",     "~>3.1",         :require => false
 gem "memoist",                        "~>0.15.0",      :require => false
-#gem "mime-types",                     "~>3.0",         :path => File.expand_path("mime-types-redirector", __dir__)
-gem "mime-types"
+# Custom gem that replaces mime-types in order to redirect mime-types calls to mini_mime
+#   Source is located at https://github.com/ManageIQ/mime-types-redirector
+gem "mime-types",                     "~>3.0",         :require => false, :source => "https://rubygems.manageiq.org"
 gem "money",                          "~>6.13.5",      :require => false
 gem "more_core_extensions",           "~>3.7"
 gem "net-ldap",                       "~>0.16.1",      :require => false
