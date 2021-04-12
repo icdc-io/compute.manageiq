@@ -103,6 +103,18 @@ class Chargeback
       end
     end
 
+    def dynamic_allocated_value(metric, sub_metric = nil)
+      uptime_index = ChargeableField.col_index('cpu_usage_rate_average') 
+      case metric
+      when 'derived_vm_numvcpus', 'derived_memory_available'
+        @rollup_array.map do |rollup|
+          rollup[uptime_index].nil? ? 0.0 : rollup[ChargeableField.col_index(metric)]
+        end.compact.sum / consumed_hours_in_interval
+      else
+        avg(metric, sub_metric)
+      end
+    end
+
     def none?(metric, sub_metric)
       values(metric, sub_metric).empty?
     end

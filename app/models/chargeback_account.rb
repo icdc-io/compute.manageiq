@@ -73,7 +73,7 @@ class ChargebackAccount < Chargeback
     @report_user = User.find_by(:userid => options[:userid])
 
     @vm_owners = @vms = nil
-    _log.info("DBG options #{options}")
+    options[:method_for_allocated_metrics] = :dynamic_allocated_value
     build_results_for_report_chargeback(options)
   end
 

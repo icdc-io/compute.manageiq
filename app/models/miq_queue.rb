@@ -42,7 +42,7 @@ class MiqQueue < ApplicationRecord
 
     @messaging_client[client_ref] ||= begin
       require "manageiq-messaging"
-      ManageIQ::Messaging.logger = _log
+#      ManageIQ::Messaging.logger = _log
 
       # caching the client works, even if the connection becomes unavailable
       # internally the client will track the state of the connection and re-open it,
@@ -646,10 +646,11 @@ class MiqQueue < ApplicationRecord
   private_class_method :optional_values
 
   def self.messaging_client_options
-    (messaging_options_from_env || messaging_options_from_file)&.merge(
-      :encoding => "json",
-      :protocol => messaging_protocol,
-    )&.tap { |h| h[:password] = MiqPassword.try_decrypt(h.delete(:password)) }
+    opts = messaging_options_from_env || messaging_options_from_file
+    return if opts.nil?
+
+    opts.transform_values! { |v| v.kind_of?(String) ? ManageIQ::Password.try_decrypt(v) : v }
+    opts.merge(:encoding => "json", :protocol => messaging_protocol)
   end
   private_class_method :messaging_client_options
 
@@ -670,7 +671,7 @@ class MiqQueue < ApplicationRecord
       :host     => ENV["MESSAGING_HOSTNAME"],
       :port     => ENV["MESSAGING_PORT"].to_i,
       :username => ENV["MESSAGING_USERNAME"],
-      :password => ENV["MESSAGING_PASSWORD"],
+      :password => ENV["MESSAGING_PASSWORD"]
     }
   end
 
