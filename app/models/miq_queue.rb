@@ -42,7 +42,7 @@ class MiqQueue < ApplicationRecord
 
     @messaging_client[client_ref] ||= begin
       require "manageiq-messaging"
-      ManageIQ::Messaging.logger = _log
+#      ManageIQ::Messaging.logger = _log
 
       # caching the client works, even if the connection becomes unavailable
       # internally the client will track the state of the connection and re-open it,
