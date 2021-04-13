@@ -668,10 +668,10 @@ class MiqQueue < ApplicationRecord
     return unless ENV["MESSAGING_HOSTNAME"] && ENV["MESSAGING_PORT"] && ENV["MESSAGING_USERNAME"] && ENV["MESSAGING_PASSWORD"]
 
     {
-      :host     => ENV["MESSAGING_HOSTNAME"],
-      :port     => ENV["MESSAGING_PORT"].to_i,
-      :username => ENV["MESSAGING_USERNAME"],
-      :password => ENV["MESSAGING_PASSWORD"]
+      :host            => ENV["MESSAGING_HOSTNAME"],
+      :port            => ENV["MESSAGING_PORT"].to_i,
+      :'sasl.username' => ENV["MESSAGING_USERNAME"],
+      :'sasl.password' => ENV["MESSAGING_PASSWORD"]
     }
   end
 
