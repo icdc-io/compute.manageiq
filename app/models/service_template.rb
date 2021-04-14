@@ -52,12 +52,6 @@ class ServiceTemplate < ApplicationRecord
   include_concern 'Copy'
 
   validates :name, :presence => true
-  include ReservedMixin
-  reserve_attribute :deleted_on, :datetime
-
-  scope :archived, -> { includes(:reserved_rec).reject { |st| st.deleted_on.nil? } }
-  scope :active,   -> { includes(:reserved_rec).select { |st| st.deleted_on.nil? } }
-
   belongs_to :tenant
 
   has_many   :service_templates, :through => :service_resources, :source => :resource, :source_type => 'ServiceTemplate'
@@ -78,16 +72,13 @@ class ServiceTemplate < ApplicationRecord
   has_many   :miq_requests, :as => :source, :dependent => :nullify
   has_many   :active_requests, -> { where(:request_state => MiqRequest::ACTIVE_STATES) }, :as => :source, :class_name => "MiqRequest"
 
-  has_many   :miq_requests, :as => :source, :dependent => :nullify
-  has_many   :active_requests, -> { where(:request_state => %w(active queued)) }, :as => :source, :class_name => "MiqRequest"
+  virtual_has_many :custom_attributes
 
   virtual_column   :type_display,                 :type => :string
   virtual_column   :template_valid,               :type => :boolean
   virtual_column   :template_valid_error_message, :type => :string
   virtual_column   :archived,                     :type => :boolean
   virtual_column   :active,                       :type => :boolean
-
-  virtual_has_many   :custom_attributes
 
   default_value_for :internal, false
   default_value_for :service_type, SERVICE_TYPE_ATOMIC
@@ -107,8 +98,6 @@ class ServiceTemplate < ApplicationRecord
   end
   alias orderable?     supports_order?
   alias validate_order supports_order?
-
-
   def self.with_tenant(tenant_id)
     tenant = Tenant.find(tenant_id)
     where(:tenant_id => tenant.ancestor_ids + [tenant_id])
@@ -117,7 +106,6 @@ class ServiceTemplate < ApplicationRecord
   def self.with_additional_tenants
     references(table_name, :tenants).includes(:service_template_tenants => :tenant)
   end
-  scope :public_service_templates,                  ->         { where.not(:id => Reserve.where(:resource_type => "ServiceTemplate").all.collect { |r| r.resource_id if r.reserved[:internal] }.compact) }
 
   def self.group_templates(templates, limit, offset)
     grouped_by_version = templates.group_by{|t| t.name.split(':')[0]}
