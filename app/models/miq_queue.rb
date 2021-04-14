@@ -646,10 +646,11 @@ class MiqQueue < ApplicationRecord
   private_class_method :optional_values
 
   def self.messaging_client_options
-    (messaging_options_from_env || messaging_options_from_file)&.merge(
-      :encoding => "json",
-      :protocol => messaging_protocol,
-    )&.tap { |h| h[:"sasl.password"] = ENV["MESSAGING_PASSWORD"] }#MiqPassword.try_decrypt(h.delete(:password)) }
+    opts = messaging_options_from_env || messaging_options_from_file
+    return if opts.nil?
+
+    opts.transform_values! { |v| v.kind_of?(String) ? ManageIQ::Password.try_decrypt(v) : v }
+    opts.merge(:encoding => "json", :protocol => messaging_protocol)
   end
   private_class_method :messaging_client_options
 
@@ -667,14 +668,10 @@ class MiqQueue < ApplicationRecord
     return unless ENV["MESSAGING_HOSTNAME"] && ENV["MESSAGING_PORT"] && ENV["MESSAGING_USERNAME"] && ENV["MESSAGING_PASSWORD"]
 
     {
-      :host     => ENV["MESSAGING_HOSTNAME"],
-      :port     => ENV["MESSAGING_PORT"].to_i,
-#      :username => ENV["MESSAGING_USERNAME"],
-#      :password => ENV["MESSAGING_PASSWORD"],
-#      :"sasl.protocol" => "SASL_PLAINTEXT",
-#      :"sasl.mechanism" => "PLAIN",
-      :"sasl.username" => ENV["MESSAGING_USERNAME"],
-      :"sasl.password" => ENV["MESSAGING_PASSWORD"]
+      :host            => ENV["MESSAGING_HOSTNAME"],
+      :port            => ENV["MESSAGING_PORT"].to_i,
+      :'sasl.username' => ENV["MESSAGING_USERNAME"],
+      :'sasl.password' => ENV["MESSAGING_PASSWORD"]
     }
   end
 

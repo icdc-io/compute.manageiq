@@ -6,6 +6,7 @@ module Rbac
     # Classes should be added to this list ONLY after:
     # 1. Tagging has been enabled in the UI
     # 2. Class contains acts_as_miq_taggable
+    # ICDC ahrechushkin: we remove Service from CLASSES_THAT_PARTICIPATE_IN_RBAC cause it's logic doesn't have sense for our application
     CLASSES_THAT_PARTICIPATE_IN_RBAC = %w(
       Authentication
       AvailabilityZone
@@ -139,7 +140,7 @@ module Rbac
       'OrchestrationStack'     => nil,
       'Provider'               => :ancestor_ids,
       'Service'                => :icdc_sibling_ids,
-      'ServiceTemplate'        => :iba_ancestor_ids,
+      'ServiceTemplate'        => nil,
       'ServiceTemplateCatalog' => :iba_ancestor_ids,
       'Tenant'                 => :icdc_sibling_ids,
       'User'                   => :iba_descendant_ids,
@@ -604,14 +605,18 @@ module Rbac
       # Results are scoped by tenant if the TenancyMixin is included in the class,
       # with a few manual exceptions (User, Tenant). Note that the classes in
       # TENANT_ACCESS_STRATEGY are a consolidated list of them.
+
       if klass.respond_to?(:scope_by_tenant?) && klass.scope_by_tenant?
+        scope = scope.with_additional_tenants if scope_to_additional_tenants?(klass) # for eager load
         shared = scope_to_shared(klass, scope, user, miq_group) if [Service, Vm, VmOrTemplate].include?(klass) && include_shared
+        tenant_scope = scope_to_tenant(scope, user, miq_group)
+
         scope = if shared
                   shared
                 elsif scope_to_additional_tenants?(klass)
-                  scope.with_additional_tenants
+                  tenant_scope.or(scope_to_additional_tenants(scope, user, miq_group))
                 else
-                  scope_to_tenant(scope, user, miq_group)
+                  tenant_scope
                 end
 
       elsif klass.respond_to?(:scope_by_cloud_tenant?) && klass.scope_by_cloud_tenant?
