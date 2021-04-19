@@ -51,16 +51,21 @@ module IcdcTenantMixin
     alias_method :get_account_users, :account_users
 
     def available_networks
+
       # OVN Networks
       nets = CloudSubnet.all.select{ |subnet|
         subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account.name.downcase}_")
       }.map{ |subnet|
-        { :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize() }
+	{
+	  :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize(), 
+	  :ip_range =>  subnet.extra_attributes[:allocation_pools][0] 
+	}
       }
       # Foreman Networks
       foreman_tenant = Icdc::Foreman::Organization.new(:region => MiqRegion.my_region.region, :tenant_name => account.name)
       nets += foreman_tenant.subnets.map{ |subnet| {:subnet => subnet.name, :description => subnet.description} } if foreman_tenant.ready?
-      nets 
+      nets
+      
     end
 
     def project_users
