@@ -82,8 +82,8 @@ class Chargeback < ActsAsArModel
     end
 
     _log.info("Calculating chargeback costs...Complete")
-
-    [data.values]
+    data_with_backup_costs = charge_backups(data.values)
+    [data_with_backup_costs]
   end
 
   def self.report_row_key(consumption)
@@ -295,10 +295,42 @@ class Chargeback < ActsAsArModel
     return 0 unless service.is_a?(Service)
     begin
       service.backups.select{ |b| !b.error && !b.terminated }.collect{ |x| x.template.first.allocated_disk_storage.to_i / 1.gigabyte }.sum
-    rescue => e
-      _log.info("AHR reports can't find backup template for service #{service.id}")
+    rescue => e 
       0
     end
+  end
+
+  def self.charge_backups(values)
+    # start_date, end_date <- consumption period, backup_disk
+    values.map do |value|
+      if value.backup_disk == 0
+        value
+      else
+        value.backup_disk_cost = calculate_backups_cost(value.entity.id, value.start_date, value.end_date)
+        value.total_cost = value.total_cost + value.backup_disk_cost 
+        value
+      end
+    end
+  end
+
+  def self.calculate_backups_cost(resource_id, start_date, end_date)
+    backups = VmOrTemplate.find_by(:id => resource_id).service.backups.select{|x| !x.error && x.created_at >= start_date}
+    end_date = DateTime.now if end_date > DateTime.now
+    backups.map do |backup|
+      start_date = backup.created_at if backup.created_at > start_date
+      lifetime = (end_date.to_time - start_date.to_time) / 3600
+      if backup.terminated
+        backup.updated_at > end_date ? lifetime = (end_date.to_time - start_date.to_time) / 3600 : lifetime = (backup.updated_at.to_time - start_date.to_time) / 3600
+      end
+      price = backup_price(backup.template[0].disks[0])
+      { :lifetime => lifetime.round, :disk_size => backup.template.first.disks.sum(&:size) / 1024 ** 3, :disk_cost => price }.values.inject(:*)
+    end.sum
+  end
+
+  def self.backup_price(disk)
+    ChargebackRate.get_assigned_for_target(disk.storage)
+      .select{|x| x.rate_type == "Storage"}[0]
+        .chargeback_rate_details.find_by(:description => "Allocated Disk Storage").chargeback_tiers[0].variable_rate
   end
 
   def self.report_cb_model(model)
