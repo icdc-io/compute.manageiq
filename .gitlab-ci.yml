@@ -1,11 +1,11 @@
-image: "docker-registry.default.svc:5000/miq-build/ruby-psql:latest"
+image: "ahrechushkin/ruby-postgresql"
 
 variables:
   POSTGRES_DB: vmdb_test
   POSTGRES_USER: postgres
   #POSTGRES_PASSWORD: ""
   POSTGRES_HOST_AUTH_METHOD: trust
-  GIT_CRED: gitlab-ci-token:${CI_JOB_TOKEN}@git.icdc.io
+  GIT_CRED: os-deploy:${CI_JOB_TOKEN}@git.zby.icdc.io
   RAILS_ENV: test
   RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 300000
   RUBY_GC_HEAP_INIT_SLOTS: 600000
@@ -13,28 +13,27 @@ variables:
   PARALLEL_TEST_PROCESSORS: 2
 
 services:
-  - postgres:9.5
-
-before_script:
-  - source ${CI_PROJECT_DIR}/tools/ci/before_install.sh
-  - bundle install 
-
+  - postgres
   
+before_script:
+  - bundle update && bundle install 
+
 stages:
-  - test
+  - rubocop
 
 rubocop:
-  stage: test
-  tags: [icdc-j]
+  stage: rubocop
+  tags: [icdc_j]
   script:
-    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | xargs bundle exec rubocop
+    - gem install rubocop
+    - (git diff HEAD --name-only --diff-filter=MA  & git diff HEAD~1 --name-only --diff-filter=MA;) | sort | uniq | sed -e '/Gemfile/d' -e '/gitlab-ci/d' -e 'rubocop' | xargs rubocop
 
-brakeman:
-  stage: test
-  tags: [icdc-j]
-  script:
-    - bundle exec rake test:brakeman:setup
-    - bundle exec rake test:brakeman
+#brakeman:
+#  stage: test
+#  tags: [icdc_j]
+#  script:
+#    - bundle exec rake test:brakeman:setup
+#    - bundle exec rake test:brakeman
 
 #vmdb:
 #  stage: test

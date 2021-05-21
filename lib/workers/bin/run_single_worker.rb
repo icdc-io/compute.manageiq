@@ -115,6 +115,7 @@ unless options[:dry_run]
                wrkr.update(update_options)
              end
            else
+             worker_class.find_by(:guid => create_options[:guid])&.destroy!
              worker_class.create_worker_record(create_options)
            end
 

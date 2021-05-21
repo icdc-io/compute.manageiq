@@ -27,7 +27,7 @@ module IcdcServiceScheduleMixin
       :towhat       => self.class.name,
       :run_at       => { :interval => {unit: params['interval_unit'], value: '1'}, :start_time => params['start_time'] },
       :prod_default => "system",
-      :userid       => evm_owner.userid
+      :userid       => 'admin' # Basic Auth doesn't work sinse updating to Jansa
     )
   end
 
@@ -49,7 +49,7 @@ module IcdcServiceScheduleMixin
       :towhat       => self.class.name,
       :run_at       => { :interval => { :unit => params['interval_unit'], :value => '1' }, :start_time => params['start_time'] },
       :prod_default => "system",
-      :userid       => evm_owner.userid
+      :userid       => 'admin' # Basic Auth doesn't work sinse updating to Jansa
     )
     self.backup_retention_period = "quarter"  if incorrect_term?(self.backup_retention_period)
   end
