@@ -94,7 +94,6 @@ module IcdcTenantMixin
     def project_details
       raise "Unable to show details, #{self.name} isn't a project" unless self.project?
       {
-        :available_roles => self.available_roles,
         :project_users   => self.project_users,
         :available_users => self.available_users,
         :admins          => self.admins,

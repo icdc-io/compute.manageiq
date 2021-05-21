@@ -61,7 +61,7 @@ module InterRegionApiMethodRelay
       raise "Failed to establish API connection to region #{region_number}"
     end
 
-    user ||= 'admin'
+    user = 'admin'
     ManageIQ::API::Client.new(
       :url      => url,
       :miqtoken => region.api_system_auth_token(user),
