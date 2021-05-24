@@ -10,6 +10,7 @@ module IcdcServiceMixin
     virtual_column :networks,          :type => :string
     virtual_column :available_networks, :type => :string
     virtual_column :subnets,           :type => :string # Legacy
+    virtual_column :proxy_server,      :type => :string
 
     api_relay_method :share do |options|
       options
@@ -56,8 +57,12 @@ module IcdcServiceMixin
 
   def domains
     # rubocop:disable Rails/DynamicFindBy, it's static method in Classification class
-    Classification.where(:parent_id => Classification.lookup_by_name('domain', region_number)&.id).map(&:description)
+    (Classification.where(:parent_id => Classification.lookup_by_name('domain', 26)) & Service.last.tenant.tags.collect(&:classification)).collect(&:description)
     # rubocop:enable Rails/DynamicFindBy
+  end
+
+  def proxy_server
+    HaproxyCluster.get_proxy_server self
   end
 
   def invoke_custom_button(data)
