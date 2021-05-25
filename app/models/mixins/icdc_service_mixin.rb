@@ -57,7 +57,7 @@ module IcdcServiceMixin
 
   def domains
     # rubocop:disable Rails/DynamicFindBy, it's static method in Classification class
-    (Classification.where(:parent_id => Classification.lookup_by_name('domain', 26)) & Service.last.tenant.tags.collect(&:classification)).collect(&:description)
+    (Classification.where(:parent_id => Classification.lookup_by_name('domain', region_number)) & tenant.tags.collect(&:classification)).collect(&:description)
     # rubocop:enable Rails/DynamicFindBy
   end
 
