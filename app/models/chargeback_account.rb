@@ -57,6 +57,7 @@ class ChargebackAccount < Chargeback
     :cpu_allocated_total      => :float,
     :memory_allocated_total   => :float,
     :uptime                   => :string,
+    :lifetime                 => :string,
     :disk_type                => :string,
     :fast_disk                => :string,
     :fast_disk_cost	      => :float,
@@ -139,6 +140,7 @@ class ChargebackAccount < Chargeback
       "cpu_allocated_total"      => {:grouping => [:total]},
       "memory_allocated_total"   => {:grouping => [:total]},
       "uptime"                   => {:grouping => [:total]},
+      "lifetime"                 => {:grouping => [:total]},
       "disk_type"                => {:grouping => [:total]},
       "fast_disk"                => {:grouping => [:total]},
       "medium_disk"              => {:grouping => [:total]},
@@ -232,6 +234,7 @@ class ChargebackAccount < Chargeback
     self.account       = consumption.resource.tenant.account.description
     self.tenant        = consumption.resource.tenant.id
     self.uptime        = calculate_uptime(consumption)
+    self.lifetime      = consumption.consumed_hours_in_interval
     self.cpu_allocated_total     = consumption.resource.cpu_total_cores
     self.memory_allocated_total  = consumption.resource.try(:ram_size) / 1.kilobyte 
     self.disk_type     = get_disk_type(consumption)

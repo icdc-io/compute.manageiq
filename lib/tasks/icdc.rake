@@ -1,5 +1,47 @@
 namespace :icdc do
 
+task :metrics_fill_gap, [:year, :month, :day] => :environment do |_, args| 
+  year = args[:year].to_i
+  month = args[:month].to_i
+  day = args[:day].to_i
+  ems = ExtManagementSystem.find_by(:name => "ovirt-#{MiqRegion.my_region.description.downcase}")
+  username, password = ems.auth_user_pwd(:metrics)
+  conn_info = {
+        :host     => ems.hostname,
+        :database => ems.history_database_name,
+        :username => username,
+        :password => password
+      }
+  require 'ovirt_metrics'
+  OvirtMetrics.establish_connection(conn_info)
+
+  resource_ids = Vm.ids
+  resource_ids.each do |resource_id|
+    puts "Working with #{resource_id}"
+    puts args
+    metrics = MetricRollup.where(:resource_id => resource_id).select{|x| x.timestamp >= DateTime.new(year, month, day)}
+    metrics_with_gap = metrics.select{|x| !x.cpu_usage_rate_average}
+    next if metrics_with_gap.empty?
+    ovirt_metrics = OvirtMetrics::VmHourlyHistory.where(:vm_id => Vm.find(resource_id).uid_ems)
+    derived_memory = metrics.collect(&:derived_memory_available).uniq.compact.max
+    derived_cpu = metrics.collect(&:derived_vm_numvcpus).uniq.compact.max
+    puts "Working with #{resource_id}"
+    metrics_with_gap.each do |metric|
+      # ahrechushkin: we've some trics below 
+      metric.derived_memory_available = derived_memory
+      metric.derived_vm_numvcpus = derived_cpu
+      ovirt_metric = ovirt_metrics.where(:history_datetime => metric.timestamp)[0]
+      next unless ovirt_metric
+      if ovirt_metric.vm_status == 1
+        metric.cpu_usage_rate_average = ovirt_metric.cpu_usage_percent.to_f
+        metric.mem_usage_absolute_average = metric.derived_memory_reserved.to_f * ovirt_metric.memory_usage_percent/100.0
+      end
+      metric.save!
+    end
+  end
+  puts "Completed"
+end
+
 task :dialog_assignment => :environment do
   reserved_templates = ["LoadBalancer", "LoadBalancer.Route", "Clone Service #{MiqRegion.my_region.description.upcase}", "AIX:7.2:SBG"]
   dialog_id = Dialog.where(name: 'Service Provisioning').first.id

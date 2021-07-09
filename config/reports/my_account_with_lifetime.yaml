@@ -1,0 +1,244 @@
+---
+- MiqReport:
+    title: Yulia Mikulich monthly report 
+    rpt_group: Custom
+    rpt_type: Custom
+    priority:
+    db: ChargebackAccount
+    cols:
+    - start_date
+    - display_range
+    - service_id
+    - service_name
+    - vm_name
+    - account 
+    - owner_name
+    - cpu_allocated_total
+    - memory_allocated_total
+    - disk_type
+    - backup_disk
+    - uptime
+    - lifetime
+    - total_cost
+    include: {}
+    col_order:
+    - service_id
+    - service_name
+    - vm_name
+    - display_range
+    - account 
+    - owner_name
+    - cpu_allocated_total
+    - memory_allocated_total
+    - disk_type
+    - backup_disk
+    - uptime
+    - lifetime
+    - total_cost
+    headers:
+    - Service ID
+    - Service Name
+    - VM Name
+    - Date Range
+    - Account 
+    - Owner
+    - Cpu Allocated Total
+    - Memory Allocated Total
+    - Disk Type
+    - Backups Size
+    - Uptime
+    - Lifetime
+    - Total Cost
+    conditions:
+    order: Ascending
+    sortby:
+    - service_id
+    - service_name
+    - vm_name
+    - start_date
+    group: y
+    graph:
+    dims:
+    filename:
+    file_mtime:
+    categories: []
+    timeline:
+    template_type: report
+    where_clause:
+    db_options:
+      :rpt_type: ChargebackAccount
+      :options:
+        :interval: monthly
+        :interval_size: 1
+        :end_interval_offset: 0
+        :account_id: 0
+        :method_for_allocated_metrics: :max
+        :include_metrics: true
+        :cumulative_rate_calculation: false
+        :groupby: service_id
+        :groupby_tag:
+        :groupby_label:
+    generate_cols:
+    generate_rows:
+    col_formats:
+    -
+    -
+    -
+    -
+    -
+    -
+    -
+    -
+    -
+    -
+    -
+    tz: Minsk
+    time_profile_id:
+    display_filter:
+    col_options:
+      cpu_allocated_cost:
+        :grouping:
+        - :total
+      cpu_allocated_metric:
+        :grouping:
+        - :total
+      cpu_cost:
+        :grouping:
+        - :total
+      cpu_metric:
+        :grouping:
+        - :total
+      cpu_used_cost:
+        :grouping:
+        - :total
+      cpu_used_metric:
+        :grouping:
+        - :total
+      disk_io_cost:
+        :grouping:
+        - :total
+      disk_io_metric:
+        :grouping:
+        - :total
+      disk_io_used_cost:
+        :grouping:
+        - :total
+      disk_io_used_metric:
+        :grouping:
+        - :total
+      fixed_compute_metric:
+        :grouping:
+        - :total
+      fixed_compute_1_cost:
+        :grouping:
+        - :total
+      fixed_compute_2_cost:
+        :grouping:
+        - :total
+      fixed_cost:
+        :grouping:
+        - :total
+      fixed_storage_1_cost:
+        :grouping:
+        - :total
+      fixed_storage_2_cost:
+        :grouping:
+        - :total
+      memory_allocated_cost:
+        :grouping:
+        - :total
+      memory_allocated_metric:
+        :grouping:
+        - :total
+      memory_cost:
+        :grouping:
+        - :total
+      memory_metric:
+        :grouping:
+        - :total
+      memory_used_cost:
+        :grouping:
+        - :total
+      memory_used_metric:
+        :grouping:
+        - :total
+      net_io_cost:
+        :grouping:
+        - :total
+      net_io_metric:
+        :grouping:
+        - :total
+      net_io_used_cost:
+        :grouping:
+        - :total
+      net_io_used_metric:
+        :grouping:
+        - :total
+      storage_allocated_cost:
+        :grouping:
+        - :total
+      storage_allocated_metric:
+        :grouping:
+        - :total
+      storage_cost:
+        :grouping:
+        - :total
+      backup_disk_total:
+        :grouping:
+        - :total:
+      backup_disk_cost:
+        :grouping:
+        - :total:
+      storage_metric:
+        :grouping:
+        - :total
+      storage_used_cost:
+        :grouping:
+        - :total
+      storage_used_metric:
+        :grouping:
+        - :total
+      total_cost:
+        :grouping:
+        - :total
+      license_cost:
+        :grouping:
+        - :total
+      license_type:
+        :grouping:
+        - :total
+      cpu_allocated_total:
+        :grouping:
+        - :total
+      memory_allocated_total:
+        :grouping:
+        - :total
+      uptime:
+        :grouping:
+        - :total
+      lifetime:
+        :grouping:
+        - :total
+      disk_type:
+        :grouping:
+        - :total
+      fast_disk:
+        :grouping:
+        - :total
+      medium_disk:
+        :grouping:
+        - :total
+      slow_disk:
+        :grouping:
+        - :total
+    rpt_options:
+      :pdf:
+        :page_size: A4 - 210mm x 297mm (default)
+      :queue_timeout:
+      :summary:
+        :hide_detail_rows: false
+    miq_group_id: 26000000000005
+    user_id: 26000000000001
+    menu_name: Yulia Mikulich monthly report 
+    userid: admin
+    group_description: EvmGroup-super_administrator
