@@ -1455,14 +1455,15 @@
   - sui_language
   - sui_notifications
   - sui_services
-  - sui_reports_view
+  - service_report_view
   - sui_reports_services_show
+  - sui_reports_resources_view
+  - sui_reports_resources_show
   - sui_vm
-  - sui_svc_catalog
+  - sui_svc_catalog 
   - sui_cart
   - sui_tags
   - service_report
-  - service_report_view
   - storage_view
   - storage_show
   - user_profiles
@@ -1489,6 +1490,7 @@
   - service_retire
   - service_create
   - service_retire_now
+  - service_report_chargeback
   - my_settings_visuals
   - my_settings_default_views
   - provider_foreman_explorer
@@ -1529,6 +1531,7 @@
   - sui_cart
   - sui_projects
   - sui_tags
+  - sui_users_view
   - service_report
   - sui_services_change_tenant
   - storage_view
@@ -1610,7 +1613,7 @@
   - sui_users_view
   - service_report_view
   - service_report_chargeback
-  - sui_services_change_tenant
+  #- sui_services_change_tenant
   - storage_view
   - storage_show
   - user_profiles
