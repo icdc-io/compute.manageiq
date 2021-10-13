@@ -34,15 +34,36 @@ class SecurityGroup < ApplicationRecord
     ext_management_system && ext_management_system.class::SecurityGroup
   end
 
+  def self.force_push(ems_id, group_name)
+    ems = ExtManagementSystem.find_by(:id => ems_id)
+    network_service = ems&.openstack_handle.detect_network_service
+    raise RunTimeError.new("Network service didn't detected") unless network_service
+    ovn_groups_ids = network_service.security_groups.select { |group| group.name == group_name }.collect(&:id)
+    new_group_id = ovn_groups_ids.reject{ |id| !SecurityGroup.find_by(:ems_ref => id).nil? }[0]
+    return unless new_group_id
+    SecurityGroup.create(:name => group_name, :cloud_tenant => User.current_user.current_tenant.source, :ems_ref => new_group_id, :type => SecurityGroup.class_by_ems(ems).to_s, :ems_id => ems.id)
+    ems&.refresh_ems
+  end
+
   def add_firewall_rule(data = nil)
     %i[direction security_group_id].each do |param|
       raise "Required parameter '#{param}' was not found" unless data[param.to_s]
     end
+    ethertype_mapper = {"ipv4" => "IPv4", "ipv6" => "IPv6", nil => "", "" => ""}
+    ethertype = ethertype_mapper[data["network_protocol"]&.downcase]
+    # ahrechushkin:  cause we have different terms in OVN and fog
+    data.merge!({"ethertype" => ethertype, "remote_ip_prefix" => data["source_ip_range"]})
     network_service = self.ext_management_system.openstack_handle.detect_network_service
-    rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
-    rule.save
+    begin 
+      rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
+      rule.save 
+    rescue => e
+      err_msg = JSON.parse(e.response.body).dig("error", "message")
+      return {:success => 'false', :message => "#{error_parser(err_msg)}"}
+    end
     force_push_new_rule(rule.id, data)
     self.ext_management_system.refresh_ems
+    return {:success => 'true', :message => 'Rule was added successfully'}
   end
 
   def remove_firewall_rule(data = nil)
@@ -108,7 +129,7 @@ class SecurityGroup < ApplicationRecord
   def force_push_new_rule(rule_uid, data)
     direction_mapper = { "ingress" => "inbound", "egress" => "outbound" }
     sg_id = SecurityGroup.find_by(:ems_ref => data["remote_group_id"])&.id
-    fw_rule = FirewallRule.new(:host_protocol => data["protocol"].upcase, 
+    fw_rule = FirewallRule.new(:host_protocol => data["protocol"]&.upcase, 
                                :direction => direction_mapper[data["direction"]],
                                :port => data["port_range_min"],
                                :end_port => data["port_range_max"],
@@ -117,7 +138,15 @@ class SecurityGroup < ApplicationRecord
                                :source_security_group_id => sg_id, 
                                :resource_id => id,
                                :resource_type => "SecurityGroup",
-                               :network_protocol => "IPV4")
-    fw_rule.save   
+                               :network_protocol => data["network_protocol"].downcase)
+    fw_rule.save
+  end
+
+  private
+
+  def error_parser(msg)
+    return "Rule already exists" if msg.downcase.match?(/already exists/)
+    return msg if msg.downcase.match?(/only [^\>]* may be provided/)
+    "Something went wrong"
   end
 end

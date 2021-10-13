@@ -17,7 +17,7 @@ elsif ENV["RAILS_ENV"] == "development"
   override_gem 'hmc-sdk-ruby', :path => File.expand_path('/opt/manageiq/hmc-sdk-ruby')
   override_gem 'manageiq-decorators', :path => File.expand_path('/opt/manageiq/manageiq-decorators')
   override_gem 'manageiq-messaging', :path => File.expand_path('/opt/manageiq/manageiq-messaging')
-  gem 'pry'
-  gem 'pry-remote'
-  gem 'pry-nav'
+  #gem 'pry'
+  #gem 'pry-remote'
+  #gem 'pry-nav'
 end

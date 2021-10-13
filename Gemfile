@@ -244,7 +244,6 @@ end
 # The gems listed below do not need to be packaged until we find it necessary or useful.
 # Only add gems here that we do not need on an appliance.
 #
-=begin
 unless ENV["APPLIANCE"]
   group :development do
     gem "foreman"
@@ -275,4 +274,3 @@ unless ENV["APPLIANCE"]
     gem "rspec-rails",                  "~>4.0.1"
   end
 end
-=end
