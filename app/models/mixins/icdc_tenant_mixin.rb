@@ -240,4 +240,12 @@ module IcdcTenantMixin
     Icdc::Account::Infrastructure.build(name)
   end
 
+  def assign_default_templates
+    template_ids = ServiceTemplate.find_tagged_with(:any => 'true', :ns => '/managed/template_default').ids
+    return unless template_ids.count > 0
+    template_ids.each do |template_id|
+      ServiceTemplateTenant.create!(:tenant_id => id, :service_template_id => template_id) if ServiceTemplateTenant.where(:tenant_id => id, :service_template_id => template_id).empty?
+    end
+  end
+
 end
