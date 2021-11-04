@@ -149,8 +149,24 @@ module Icdc
         crd.create_cloud_tenant(account_name)
         return unless crd.network_service
         resources = crd.config.dig("resources")
+
+        location = MiqRegion.my_region.name.downcase
+        zone_name = "#{account_name}.cmp.#{location}.icdc.io"
+        create_dns_zone("etcd.dns.#{location}.icdc.io", zone_name, account_name)
+
         resources.dig("routers").each{ |name| crd.create_router(name) }
         resources.dig("networks").each { |network_config| crd.create_network(network_config) }
+      end
+
+      private
+      def self.create_dns_zone(dns_server, zone_name, account_name)
+        coredns = CoreDns::Etcd.new(dns_server)
+        zones_names = coredns.zone('').list_all.collect { |zone| zone["name"] }
+        return if zones_names.include?(zone_name)
+        _log.info("UN max zone name length (250 symb) reached") && return if zone_name.length > 250
+        CoreDns::Etcd.new(dns_server).zone(zone_name).add( {"name": zone_name, :metadata => {"account": account_name,"owner":""}} )
+      rescue => e
+        _log.error("UN #{e} - in creating dns zone")
       end
 
     end # Class Infrastructure

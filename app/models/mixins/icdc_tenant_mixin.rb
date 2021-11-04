@@ -248,4 +248,10 @@ module IcdcTenantMixin
     end
   end
 
+  def delete_dns_zone
+    location = MiqRegion.my_region.name.downcase
+    zone_name = "#{self.name}.cmp.#{location}.icdc.io"
+    coredns = CoreDns::Etcd.new("etcd.dns.#{location}.icdc.io")
+    coredns.zone(zone_name).delete
+  end
 end
