@@ -63,6 +63,7 @@ class CloudNetwork < ApplicationRecord
 
   def self.create_network(provider_id, data = nil)
     raise ArgumentError.new("No arguments match") unless data
+    raise RuntimeError.new("Network already exists") if duplicated_network?(data["subnet"])
     ext_management_system = ExtManagementSystem.find_by(:id => provider_id)
     network_service = ext_management_system.openstack_handle.detect_network_service
     data["name"] = "#{Icdc::Account::User.prefix(User.current_user)}#{data["name"]}"
@@ -71,6 +72,12 @@ class CloudNetwork < ApplicationRecord
     force_push_new_network(network.id, ext_management_system, data)
     set_mtu(network_service, network.id)
     network.id
+  end
+
+  def self.duplicated_network?(data)
+    cidr = IPAddr.new(data["cidr"])
+    data["cidr"] = "#{cidr.to_s}/#{cidr.prefix}"
+    User.current_user.current_tenant.source.cloud_subnets.collect(&:cidr).include?(data["cidr"])
   end
 
   def self.set_mtu(network_service, network_id)
