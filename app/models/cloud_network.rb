@@ -75,6 +75,7 @@ class CloudNetwork < ApplicationRecord
   end
 
   def self.duplicated_network?(data)
+    return false unless data
     cidr = IPAddr.new(data["cidr"])
     data["cidr"] = "#{cidr.to_s}/#{cidr.prefix}"
     User.current_user.current_tenant.source.cloud_subnets.collect(&:cidr).include?(data["cidr"])
