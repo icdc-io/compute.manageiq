@@ -2,7 +2,7 @@ class ContainerOrchestrator
   module ObjectDefinition
     private
 
-    def deployment_definition(name)
+     def deployment_definition(name)
       {
         :metadata => {
           :name            => name,
@@ -10,28 +10,37 @@ class ContainerOrchestrator
           :namespace       => my_namespace,
           :ownerReferences => owner_references
         },
-        :spec     => {
+        :spec     => { 
           :selector => {:matchLabels => {:name => name}},
-          :template => {
+          :template => { 
             :metadata => {:name => name, :labels => common_labels.merge(:name => name)},
             :spec     => {
               :serviceAccountName => ENV["WORKER_SERVICE_ACCOUNT"],
-	      :volumes            => [{
-	        :name          => "filebeat",
-		:configMap     => {
-		  :name      => "filebeat"
-		}
-	      }],
+              :volumes            => [{
+                :name          => "filebeat",
+                :configMap     => {
+                  :name      => "filebeat"
+                }
+              },
+              {
+                :name => "ssh-volume",
+                :emptyDir => {}
+              }],
               :containers         => [{
                 :name          => name,
                 :env           => default_environment,
                 :imagePullPolicy => "Always",
                 :livenessProbe => liveness_probe,
-		:volumeMounts  => [{
-		  :name      => "filebeat",
-		  :mountPath => "/etc/filebeat",
-		  :readOnly  => true
-		}]
+                :volumeMounts  => [{
+                  :name      => "filebeat",
+                  :mountPath => "/etc/filebeat",
+                  :readOnly  => true
+                },
+                {
+                  :name      => "ssh-volume",
+                  :mountPath => "/.ssh",
+                  :readOnly  => false
+                }]
               }]
             }
           }
@@ -145,7 +154,11 @@ class ContainerOrchestrator
     end
 
     def common_labels
-      app_name_label.merge(orchestrated_by_label)
+      app_name_label.merge(orchestrated_by_label, resource_group_label)
+    end
+
+    def resource_group_label
+      {:"app.kubernetes.io/part-of" => app_name}
     end
 
     def orchestrated_by_label
