@@ -26,8 +26,6 @@ class Tenant < ApplicationRecord
   default_value_for :divisible,   true
   default_value_for :use_config_for_attributes, false
 
-  before_destroy :ensure_can_be_destroyed
-
   has_ancestry(:orphan_strategy => :restrict)
 
   has_many :providers
@@ -80,8 +78,8 @@ class Tenant < ApplicationRecord
   virtual_column :combined_quotas, :type => :string
 
   before_save :nil_blanks
-  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group, :build_account_infrastructure
-  before_destroy :ensure_can_be_destroyed
+  after_create :create_tenant_group, :create_miq_product_features_for_tenant_nodes, :create_users_group, :build_account_infrastructure, :assign_default_templates
+  before_destroy :ensure_can_be_destroyed, :delete_dns_zone
 
   api_relay_method :set_quotas do |options|
     options

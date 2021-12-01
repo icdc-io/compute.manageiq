@@ -1,5 +1,5 @@
 raise "Ruby versions < 2.5.3 are unsupported!" if RUBY_VERSION < "2.5.3"
-raise "Ruby versions >= 2.7.0 are unsupported!" if RUBY_VERSION >= "2.7.0"
+raise "Ruby versions >= 2.7.0 are unsupported!" if RUBY_VERSION >= "2.7.5"
 
 source 'http://rubygems.org'
 
@@ -83,10 +83,12 @@ gem "terminal",                                        :require => false
 #ICDC Gems
 gem "zabbixapi",                      "=3.2.1",                       :git => "https://#{ENV['GIT_CRED']}/icdc/compute/zabbixapi.git", :branch => "icdc_j"
 gem "manageiq-providers-power_systems",                               :git => "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", :branch => "master"
+gem 'coredns',                                                        :git => "https://#{ENV['GIT_CRED']}/icdc/compute/coredns.git", :branch => 'master'
 gem "hmc-sdk-ruby",                                                   :git => "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", :branch => "master"
 gem 'activeresource'
 # Modified gems (forked on Github)
-gem "rugged",                         "=0.28.2.2", :source => "https://rubygems.manageiq.org", :require => false
+#gem "rugged",                         "=0.28.2.2", :source => "https://rubygems.manageiq.org", :require => false
+gem "rugged",                           "~>1.1",             :require => false
 gem "ruport",                         "=1.7.0.3",  :source => "https://rubygems.manageiq.org"
 
 # In 1.9.3: Time.parse uses british version dd/mm/yyyy instead of american version mm/dd/yyyy
@@ -148,7 +150,7 @@ group :qpid_proton, :optional => true do
   gem "qpid_proton",                    "~>0.30.0",      :require => false
 end
 
-group :systemd, :optional => true do
+group :systemd do #, :optional => true do
   gem "dbus-systemd",    "~>1.1.0", :require => false
   gem "systemd-journal", "~>1.4.0", :require => false
 end

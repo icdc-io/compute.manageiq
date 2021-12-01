@@ -51,6 +51,7 @@ class NetworkRouter < ApplicationRecord
   end
 
   def assign_route(data = nil)
+   raise RuntimeError.new("You can't create identical routes") unless routes.select { |route| route["nexthop"] == data["nexthop"] && route["destination"] == data["destination"] }.empty?
    raise ArgumentError.new("No arguments match") unless data
    network_service = self.ext_management_system.openstack_handle.detect_network_service
    ns_routes = network_service.get_router(self.ems_ref)[:body]["router"]["routes"]
