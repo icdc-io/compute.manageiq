@@ -88,8 +88,9 @@ class ContainerOrchestrator
         {:name => "WORKER_HEARTBEAT_FILE",   :value => Rails.root.join("tmp", "worker.hb").to_s},
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
         {:name => "RAILS_ENV",               :value => ENV["WORKERS_ENV"]},
-	{:name => "HELPDESK_TOKEN",          :value => helpdesk_creds[:HELPDESK_TOKEN]},
-	{:name => "HELPDESK_URL",            :value => helpdesk_creds[:HELPDESK_URL]},
+        {:name => "HELPDESK_TOKEN",          :value => helpdesk_creds[:HELPDESK_TOKEN]},
+        {:name => "HELPDESK_URL",            :value => helpdesk_creds[:HELPDESK_URL]},
+        {:name => "LOC_NUMBER",              :value => ENV["LOC_NUMBER"]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
         {:name      => "DATABASE_NAME",
@@ -154,7 +155,11 @@ class ContainerOrchestrator
     end
 
     def common_labels
-      app_name_label.merge(orchestrated_by_label)
+      app_name_label.merge(orchestrated_by_label, resource_group_label)
+    end
+
+    def resource_group_label
+      {:"app.kubernetes.io/part-of" => app_name}
     end
 
     def orchestrated_by_label

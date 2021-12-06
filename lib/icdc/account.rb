@@ -82,7 +82,8 @@ module Icdc
       end
 
       def load_config
-        YAML.load_file(File.join(Rails.root, "config/account_crd.yml"))
+        config_template = ERB.new File.new("config/account_crd.yml").read
+        YAML.load config_template.result(binding)
       rescue Errno::ENOENT => e
         raise "File config/ovn_crd doesn't exist."
       end
