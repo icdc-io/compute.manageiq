@@ -146,6 +146,7 @@ module Icdc
 
     class Infrastructure
       def self.build(account_name)
+        return unless ::Settings.build_network_infrastructure
         crd = CRD.new(account_name)
         crd.create_cloud_tenant(account_name)
         return unless crd.network_service
@@ -160,6 +161,7 @@ module Icdc
       end
 
       private
+
       def self.create_dns_zone(dns_server, zone_name, account_name)
         coredns = CoreDns::Etcd.new(dns_server)
         zones_names = coredns.zone('').list_all.collect { |zone| zone["name"] }
