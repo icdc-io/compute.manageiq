@@ -146,9 +146,9 @@ module Icdc
 
     class Infrastructure
       def self.build(account_name)
-        return unless ::Settings.build_network_infrastructure
         crd = CRD.new(account_name)
         crd.create_cloud_tenant(account_name)
+        return unless ::Settings.build_network_infrastructure
         return unless crd.network_service
         resources = crd.config.dig("resources")
 
