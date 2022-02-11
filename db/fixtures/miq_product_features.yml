@@ -6874,6 +6874,10 @@
     :description: FAQ List
     :feature_type: view
     :identifier: faq_list
+  - :name: Additional nics
+    :description: Add additional nics to vms
+    :feature_type: control
+    :identifier: cloud_subnet_additional_nics
   - :name: Lotus
     :description: lotus api requests
     :feature_type: control
