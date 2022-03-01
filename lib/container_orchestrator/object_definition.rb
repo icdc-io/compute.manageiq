@@ -91,6 +91,8 @@ class ContainerOrchestrator
         {:name => "HELPDESK_TOKEN",          :value => helpdesk_creds[:HELPDESK_TOKEN]},
         {:name => "HELPDESK_URL",            :value => helpdesk_creds[:HELPDESK_URL]},
         {:name => "LOC_NUMBER",              :value => ENV["LOC_NUMBER"]},
+        {:name => "LOC_NAME",                :value => ENV["LOC_NAME"]},
+        {:name => "LOC_DESCRIPTION",         :value => ENV["LOC_DESCRIPTION"]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
         {:name      => "DATABASE_NAME",
