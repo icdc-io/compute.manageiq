@@ -10,6 +10,8 @@ class Vm < VmOrTemplate
   include ExternalUrlMixin
   include AuthenticationMixin
 
+  include IcdcVmMixin
+
   include_concern 'Operations'
 
   def self.base_model
