@@ -1455,8 +1455,7 @@
   - sui_language
   - sui_notifications
   - sui_services
-  - service_report_view
-  - sui_reports_services_show
+  - service_report_view 
   - sui_reports_resources_view
   - sui_reports_resources_show
   - sui_vm
@@ -1523,15 +1522,15 @@
   - rbac_invite_users
   - rbac_exclude_users
   - sui_language
+  - sui_svc_catalog
   - sui_notifications
   - sui_reports_resources_show
-  - sui_reports_services_show
   - sui_services
   - sui_vm
   - sui_cart
   - sui_projects
   - sui_tags
-  - sui_users_view
+  - sui_users
   - service_report
   - sui_services_change_tenant
   - storage_view
@@ -1563,6 +1562,7 @@
   - security_group_add_to_port
   - security_group_remove_from_port
   - cloud_subnet_additional_nics
+
 - :name: ICDC-billing
   :read_only: false
   :settings:
@@ -1603,9 +1603,12 @@
   - icdc_features
   - rbac_group_view
   - rbac_tenant_view
+  - sui_svc_catalog
   - sui_language
   - sui_notifications
-  - sui_reports
+  - sui_reports_resources_view
+  - sui_reports_resources_show
+  - sui_reports_operations
   - sui_services
   - sui_vm
   - sui_cart
@@ -1668,8 +1671,8 @@
   - rbac_exclude_users
   - sui_language
   - sui_notifications
-  - sui_reports_view
-  - sui_reports_services_show
+  - sui_reports_resources_view
+  - sui_reports_resources_show
   - sui_services
   - sui_tags
   - sui_vm
@@ -1736,9 +1739,9 @@
   - sui_language
   - sui_notifications
   - sui_services
-  - sui_reports_view
-  - sui_reports_services_show
   - sui_vm
+  - sui_reports_resources_view
+  - sui_reports_resources_show
   - sui_svc_catalog
   - sui_tags
   - sui_cart
@@ -1799,7 +1802,8 @@
   - rbac_tenant_view
   - sui_language
   - sui_notifications
-  - sui_reports
+  - sui_reports_resources_view
+  - sui_reports_resources_show
   - sui_services
   - sui_vm
   - sui_cart
