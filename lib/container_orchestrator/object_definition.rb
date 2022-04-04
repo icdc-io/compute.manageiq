@@ -142,7 +142,7 @@ class ContainerOrchestrator
     end
 
     def helpdesk_creds
-      config = YAML.load_file(File.join(Rails.root, "config/helpdesk.yml"))
+      config = YAML.load ERB.new(File.new('config/helpdesk.yml.erb').read).result(binding) 
       {:HELPDESK_TOKEN => config[MiqRegion.my_region.description.downcase].dig(:token), :HELPDESK_URL => config[MiqRegion.my_region.description.downcase].dig(:url)}
     rescue Errno::ENOENT => e
       {:HELPDESK_TOKEN => "", :HELPDESK_URL => ""} unless config

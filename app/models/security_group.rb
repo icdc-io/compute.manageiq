@@ -52,7 +52,9 @@ class SecurityGroup < ApplicationRecord
     ethertype_mapper = {"ipv4" => "IPv4", "ipv6" => "IPv6", nil => "", "" => ""}
     ethertype = ethertype_mapper[data["network_protocol"]&.downcase]
     # ahrechushkin:  cause we have different terms in OVN and fog
-    data.merge!({"ethertype" => ethertype, "remote_ip_prefix" => data["source_ip_range"]})
+    source_ip_range = IPAddr.new(data["source_ip_range"])
+    remote_ip_prefix = "#{source_ip_range.to_s}/#{source_ip_range.prefix}"
+    data.merge!({"ethertype" => ethertype, "remote_ip_prefix" => remote_ip_prefix})
     network_service = self.ext_management_system.openstack_handle.detect_network_service
     begin 
       rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
