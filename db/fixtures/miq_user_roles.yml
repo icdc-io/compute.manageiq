@@ -1479,6 +1479,9 @@
   - ems_infra_show_list
   - metrics_view
   - event_streams_view
+  - port_forwardings_show_list
+  - port_forwardings_create
+  - port_forwardings_destroy
 
 - :name: ICDC-admin
   :read_only: false
@@ -1568,6 +1571,9 @@
   - cloud_subnet_additional_nics
   - metrics_view
   - event_streams_view
+  - port_forwardings_show_list
+  - port_forwardings_create
+  - port_forwardings_destroy
 
 - :name: ICDC-billing
   :read_only: false
