@@ -98,9 +98,7 @@ class SecurityGroup < ApplicationRecord
   end
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect { |port| port.device&.vm }
-                  .map { |vm| vm.nics }.flatten
-                  .map { |nic| {
+    network_ports.where(:device_type => "GuestDevice").collect(&:device).map { |nic| {
                     :nic => nic.name,
                     :nicId => nic.uid_ems,
                     :ipv4 => nic.network&.ipaddress,
@@ -109,7 +107,7 @@ class SecurityGroup < ApplicationRecord
                     :vmName => nic.vm&.name,
                     :vmId => nic.vm&.uid_ems,
                     :serviceName => nic.vm&.service&.name
-                  } }.uniq
+                  }  }.compact.uniq
   end
 
   def add_to_port(data)
