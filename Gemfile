@@ -83,7 +83,7 @@ gem "terminal",                                        :require => false
 #ICDC Gems
 gem "zabbixapi",                      "=3.2.1",                       :git => "https://#{ENV['GIT_CRED']}/icdc/compute/zabbixapi.git", :branch => "icdc_j"
 gem "manageiq-providers-power_systems",                               :git => "https://#{ENV['GIT_CRED']}/icdc/compute/miq/manageiq-providers-power_systems.git", :branch => "master"
-gem 'coredns',                                                        :git => "https://#{ENV['GIT_CRED']}/icdc/compute/coredns.git", :branch => 'master'
+gem 'coredns'
 gem "hmc-sdk-ruby",                                                   :git => "https://#{ENV['GIT_CRED']}/icdc/compute/miq/hmc-sdk-ruby.git", :branch => "master"
 gem 'activeresource'
 # Modified gems (forked on Github)
