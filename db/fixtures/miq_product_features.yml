@@ -6932,4 +6932,4 @@
     - :name: Destroy Port Forwardings
       :description: Destroy Port Forwardings
       :feature_type: control
-      :identifier: port_forwardings_destroy
+      :identifier: port_forwardings_delete
