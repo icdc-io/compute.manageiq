@@ -9,6 +9,7 @@ class MiqWorker
 
       orchestrator.create_deployment(worker_deployment_name) do |definition|
         configure_worker_deployment(definition)
+        configure_hosts(definition)
 
         definition[:spec][:template][:metadata][:labels].merge!(service_label)
         container = definition[:spec][:template][:spec][:containers].first
@@ -52,5 +53,9 @@ class MiqWorker
       (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-webserver-worker" + (ENV["DEV_ENVIRONMENT"] || '')
     end
 
+    # Can be overriden in subclasses
+    def configure_hosts(definition)
+      nil
+    end
   end
 end

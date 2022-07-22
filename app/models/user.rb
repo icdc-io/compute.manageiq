@@ -16,7 +16,7 @@ class User < ApplicationRecord
   include ProcessTasksMixin
   include TagsEmailsMixin
   include ResourceConsumptionMixin
-  include ZabbixAlertMixin
+#  include ZabbixAlertMixin
   extend InterRegionApiMethodRelay
   include IcdcUserMixin
 

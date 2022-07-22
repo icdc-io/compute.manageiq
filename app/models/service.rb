@@ -1,6 +1,6 @@
 require 'ancestry'
 require 'ancestry_patch'
-require 'zabbixapi'
+#require 'zabbixapi'
 
 class Service < ApplicationRecord
   DEFAULT_PROCESS_DELAY_BETWEEN_GROUPS = 120
@@ -91,7 +91,7 @@ class Service < ApplicationRecord
   include SupportsFeatureMixin
   include Metric::CiMixin
   include IcdcServiceScheduleMixin
-  include ZabbixAlertMixin
+#  include ZabbixAlertMixin
   include IcdcServiceMixin
 
   extend InterRegionApiMethodRelay
