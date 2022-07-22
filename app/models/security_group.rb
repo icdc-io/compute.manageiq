@@ -98,18 +98,16 @@ class SecurityGroup < ApplicationRecord
   end
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect { |port| port.device&.vm }
-                  .map { |vm| vm.nics }
-                  .map { |nic| { 
-                    :nic => nic.first.name, 
-                    :nicId => nic.first.uid_ems, 
-                    :ipv4 => nic.first.network&.ipaddress, 
-                    :ipv6 => nic.first.network&.ipv6address, 
-                    :mac => nic.first.address, 
-                    :vmName => nic.first.vm&.name, 
-                    :vmId => nic.first.vm&.uid_ems, 
-                    :serviceName => nic.first.vm&.service&.name 
-                  } }
+    network_ports.where(:device_type => "GuestDevice").collect(&:device).map { |nic| {
+                    :nic => nic.name,
+                    :nicId => nic.uid_ems,
+                    :ipv4 => nic.network&.ipaddress,
+                    :ipv6 => nic.network&.ipv6address,
+                    :mac => nic.address,
+                    :vmName => nic.vm&.name,
+                    :vmId => nic.vm&.uid_ems,
+                    :serviceName => nic.vm&.service&.name
+                  }  }.compact.uniq
   end
 
   def add_to_port(data)

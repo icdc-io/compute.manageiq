@@ -56,7 +56,7 @@ class CloudSubnet < ApplicationRecord
                     :vmName => nic.vm&.name,
                     :vmId => nic.vm&.uid_ems,
                     :serviceName => nic.vm&.service&.name
-                  } }
+                  } }.uniq
   end
 
   def dns_nameservers_show

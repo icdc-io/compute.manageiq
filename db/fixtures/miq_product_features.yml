@@ -6916,3 +6916,20 @@
  #   :description: User Profile
  #   :feature_type: view
  #   :identifier: user_profiles
+  - :name: Port Forwardings
+    :description: Port Forwardings
+    :feature_type: control
+    :identifier: port_forwardings
+    :children:
+    - :name: View
+      :description: Show Port Forwardings
+      :feature_type: view
+      :identifier: port_forwardings_show_list
+    - :name: Create Port Forwardings
+      :description: Create Port Forwardings
+      :feature_type: control
+      :identifier: port_forwardings_create
+    - :name: Destroy Port Forwardings
+      :description: Destroy Port Forwardings
+      :feature_type: control
+      :identifier: port_forwardings_delete

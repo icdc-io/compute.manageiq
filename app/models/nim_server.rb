@@ -1,4 +1,4 @@
-require 'hmc/sdk'
+#require 'hmc/sdk'
 class NimServer < PxeServer
   virtual_has_one :ems
 

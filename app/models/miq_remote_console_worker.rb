@@ -20,4 +20,10 @@ class MiqRemoteConsoleWorker < MiqWorker
   def self.kill_priority
     MiqWorkerType::KILL_PRIORITY_REMOTE_CONSOLE_WORKERS
   end
+
+  def configure_hosts(definition)
+    definition[:spec][:template][:spec][:hostAliases] = [
+      { :hostnames => [ENV["DISPLAY_NETWORK_HOSTNAME"]], :ip => ENV["DISPLAY_NETWORK_IP"] }
+    ]
+  end
 end
