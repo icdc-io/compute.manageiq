@@ -88,8 +88,6 @@ class ContainerOrchestrator
         {:name => "WORKER_HEARTBEAT_FILE",   :value => Rails.root.join("tmp", "worker.hb").to_s},
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
         {:name => "RAILS_ENV",               :value => ENV["WORKERS_ENV"]},
-        {:name => "HELPDESK_TOKEN",          :value => helpdesk_creds[:HELPDESK_TOKEN]},
-        {:name => "HELPDESK_URL",            :value => helpdesk_creds[:HELPDESK_URL]},
         {:name => "LOC_NUMBER",              :value => ENV["LOC_NUMBER"]},
         {:name => "LOC_NAME",                :value => ENV["LOC_NAME"]},
         {:name => "LOC_DESCRIPTION",         :value => ENV["LOC_DESCRIPTION"]},
@@ -140,14 +138,7 @@ class ContainerOrchestrator
     def app_name
       ENV["APP_NAME"]
     end
-
-    def helpdesk_creds
-      config = YAML.load ERB.new(File.new('config/helpdesk.yml.erb').read).result(binding) 
-      {:HELPDESK_TOKEN => config[MiqRegion.my_region.description.downcase].dig(:token), :HELPDESK_URL => config[MiqRegion.my_region.description.downcase].dig(:url)}
-    rescue Errno::ENOENT => e
-      {:HELPDESK_TOKEN => "", :HELPDESK_URL => ""} unless config
-    end
-    
+ 
     def app_name_label
       {:app => app_name}
     end
