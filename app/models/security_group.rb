@@ -53,7 +53,7 @@ class SecurityGroup < ApplicationRecord
     ethertype = ethertype_mapper[data["network_protocol"]&.downcase]
     # ahrechushkin:  cause we have different terms in OVN and fog
     remote_ip_prefix = nil
-    if data["source_ip_range"]
+    if data["source_ip_range"] && data["source_ip_range"] != ""
       source_ip_range = IPAddr.new(data["source_ip_range"])
       remote_ip_prefix = "#{source_ip_range.to_s}/#{source_ip_range.prefix}"
     end
