@@ -45,7 +45,7 @@ class CloudSubnet < ApplicationRecord
 
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect(&:device).map { |nic| {
+    network_ports.where(:device_type => "GuestDevice").collect(&:device).compact.map { |nic| {
                     :nic => nic.name,
                     :nicId => nic.uid_ems,
                     :ipv4 => nic.network&.ipaddress,
