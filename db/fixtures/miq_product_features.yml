@@ -6878,6 +6878,10 @@
     :description: Add additional nics to vms
     :feature_type: control
     :identifier: cloud_subnet_additional_nics
+  - :name: Remove additional nics
+    :description: Remove additional nics
+    :feature_type: control
+    :identifier: cloud_subnet_remove_nics
   - :name: Lotus
     :description: lotus api requests
     :feature_type: control
