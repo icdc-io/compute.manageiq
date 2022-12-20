@@ -5526,6 +5526,14 @@
         :description: Download VV console file (Ovirt, RHV)
         :feature_type: control
         :identifier: vm_console_file
+      - :name: Enable nested virtualization for VM
+        :description: Enable nested virtualization
+        :feature_type: control
+        :identifier: nested_virtualization_on
+      - :name: Disable nested virtualization for VM
+        :description: Disable nested virtualization
+        :feature_type: control
+        :identifier: nested_virtualization_off
       - :name: Console using VMRC
         :description: Open a VMRC console for VMs
         :feature_type: control

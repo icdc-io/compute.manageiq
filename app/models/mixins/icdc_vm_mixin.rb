@@ -5,6 +5,21 @@ module IcdcVmMixin
     add_nic(nic_name, vnic_profile_id) if vnic_profile_id
   end
 
+  def enable_nested_virtualization
+    raise RuntimeError.new('Nested virtualization already enabled') if nested_virtualization_enabled?
+    add_custom_property({name: 'cpuflags', value: '+vmx'})
+    add_affinity_label('nested_virtualization')
+    refresh_ems
+  end
+
+  def disable_nested_virtualization
+    railse RuntimeError.new('Nested virtualization already disabled') unless nested_virtualization_enabled?
+    
+    delete_custom_property('cpuflags')
+    delete_affinity_label('nested_virtualization')
+    refresh_ems
+  end
+
   private
 
   def find_vnic_profile_id(lan_name)
@@ -17,5 +32,9 @@ module IcdcVmMixin
     (1..nics.count+1).each {|i| nic_range.append("nic#{i}")}
     available_nics = nic_range - nic_in_use
     available_nics[0]
+  end
+
+  def nested_virtualization_enabled?
+    custom_attributes.collect(&:name).include?('cpuflags')
   end
 end

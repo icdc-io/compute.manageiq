@@ -1415,6 +1415,8 @@
   - network_router_view
   - metrics_view
   - event_streams_view
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-member
   :read_only: false
@@ -1482,6 +1484,8 @@
   - port_forwardings_show_list
   - port_forwardings_create
   - port_forwardings_delete
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-admin
   :read_only: false
@@ -1575,6 +1579,8 @@
   - port_forwardings_show_list
   - port_forwardings_create
   - port_forwardings_destroy
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-billing
   :read_only: false
@@ -1645,6 +1651,8 @@
   - ems_infra_show_list
   - metrics_view
   - event_streams_view
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-project-admin
   :read_only: false
@@ -1714,6 +1722,8 @@
   - ems_infra_show_list
   - metrics_view
   - event_streams_view
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-project-member
   :read_only: false
@@ -1778,6 +1788,8 @@
   - ems_infra_show_list
   - metrics_view
   - event_streams_view
+  - nested_virtualization_on
+  - nested_virtualization_off
 
 - :name: ICDC-project-billing
   :read_only: false
@@ -1846,4 +1858,6 @@
   - ems_infra_show_list
   - metrics_view
   - event_streams_view
+  - nested_virtualization_on
+  - nested_virtualization_off
 
