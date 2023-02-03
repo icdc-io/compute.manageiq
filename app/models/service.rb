@@ -111,6 +111,7 @@ class Service < ApplicationRecord
   virtual_column :location,                                 :type => :string
   virtual_column :license_type,                             :type => :string
   virtual_column :license_cost,                             :type => :integer
+  attribute :ipaddresses,                                   :type => :string
 
   validates :name, :presence => true
 
@@ -179,6 +180,10 @@ class Service < ApplicationRecord
   def license_cost
     request = service_resources.where(:resource_type => 'MiqRequest').first
     MiqRequest.find_by_id(request.resource_id).options[:license_cost] if request
+  end
+
+  def ipaddresses
+    vms.collect(&:ipaddresses).flatten.join(',')
   end
 
   def service_id
