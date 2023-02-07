@@ -15,14 +15,14 @@ module ServiceMixin
   end
 
   def vm_events
-    {:vm_events => self.available_events}
+    self.available_events
   end
  
   def available_events
      vms = self.vms
      result = {}
      vms.each do |vm|
-       result[vm.name.to_sym] = vm.ems_events.collect { |e| [e.event_type => e.message] }
+       result[vm.name.to_sym] = vm.ems_events.map { |e| { :timestamp => e.timestamp, :id => e.id, :message => e.message } }
      end
      result
   end
