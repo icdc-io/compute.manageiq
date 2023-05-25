@@ -29,7 +29,7 @@ class ContainerOrchestrator
               :containers         => [{
                 :name          => name,
                 :env           => default_environment,
-                :imagePullPolicy => "Always",
+                :imagePullPolicy => "IfNotPresent",
                 :livenessProbe => liveness_probe,
                 :volumeMounts  => [{
                   :name      => "filebeat",
