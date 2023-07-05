@@ -4,13 +4,14 @@ module IcdcServiceMixin
   included do
     extend InterRegionApiMethodRelay
 
-    virtual_column :domains,           :type => :string
-    virtual_column :shared_users,      :type => :string
-    virtual_column :miq_request_state, :type => :string
-    virtual_column :networks,          :type => :string
+    virtual_column :domains,            :type => :string
+    virtual_column :shared_users,       :type => :string
+    virtual_column :miq_request_state,  :type => :string
+    virtual_column :networks,           :type => :string
     virtual_column :available_networks, :type => :string
-    virtual_column :subnets,           :type => :string # Legacy
-    virtual_column :proxy_server,      :type => :string
+    virtual_column :subnets,            :type => :string # Legacy
+    virtual_column :proxy_server,       :type => :string
+    virtual_column :vms_count,          :type => :integer
 
     api_relay_method :share do |options|
       options
@@ -119,6 +120,10 @@ module IcdcServiceMixin
     raise RuntimeError, "Haproxy cluster doesn't found" unless proxy_server
     routes_ids = proxy_server.get_service_routes(self).collect{ |route| route["id"] }
     routes_ids.each { |route_id| proxy_server.delete_service_routes(self, {:route_id => route_id}) }
+  end
+
+  def vms_count
+    all_vms.count
   end
 
   private
