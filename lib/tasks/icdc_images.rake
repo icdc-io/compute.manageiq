@@ -6,13 +6,12 @@ namespace :icdc do
     task :sync_desc => :environment do
       page_urls = []
       dir_urls = Queue.new
-      dir_urls << "https://help.icdc.io/compute/en/Service_Catalog/Distributions/"
+      dir_urls << "https://help.icdc.io/compute/en/Service_Catalog/"
       until dir_urls.empty? # Recursive dir walk-through
         dir_url = dir_urls.pop
         doc = Nokogiri::HTML(URI.parse(dir_url).open)
         doc.xpath("//a").map do |link|
-          next if link['href'].starts_with?("/")
-          next if link['href'].starts_with?("..")
+          next unless link['href'].include?("/Service_Catalog/")
 
           page_urls << dir_url + Pathname.new(link['href']).cleanpath.to_s if link['href'].ends_with?(".html")
           dir_urls << dir_url + Pathname.new(link['href']).cleanpath.to_s + "/" if link['href'].ends_with?("/")
@@ -24,19 +23,6 @@ namespace :icdc do
         name, version, _location = st.name.split(":", 3)
         version = "" if version == "default"
         next unless st.service_template_catalog
-
-        begin
-          set1 = ["VDI Windows 7", "Metrics", "for IBM"].to_set
-          set2 = ["Windows"].to_set
-          st.miq_custom_set("adm_account", "Administrator") if set2.any? { |x| st.name.include?(x)} && !set1.any? { |x| st.name.include?(x)}
-          st.miq_custom_set("adm_account", "root/admin") unless set1.any? { |x| st.name.include?(x)} || set2.any? { |x| st.name.include?(x)}
-          st.miq_custom_set("adm_account", "user") if set1.any? { |x| st.name.include?(x)}
-        rescue StandardError => e
-          open('/var/www/miq/vmdb/log/catalog.log', 'a+'){ |f|   
-          f.puts "----------------------------------------------------------"
-          f.puts "cannot set custom attribute for #{st.name}:#{e.message}"         
-          }
-        end
 
         catalog = st.service_template_catalog.name
         image_help_url = {}
@@ -69,7 +55,7 @@ namespace :icdc do
           data[lang] = {}
           begin
             doc = Nokogiri::HTML(URI.parse(url).open)
-            desc[lang] = doc.at("h3[@id='page_section_1'] ~ *")&.text
+            desc[lang] = doc.at("div[@class='s-content']").at("h3 ~ *")&.text
             table_keys.each do |key, i10n_keys|
               data[lang][key] = doc.at("td[text()='#{i10n_keys[lang]}'] ~ *")&.text
             end
