@@ -147,18 +147,19 @@ class DialogImportService
       new_or_existing_dialog = Dialog.where(:label => dialog["label"]).first_or_create
       dialog['id'] = new_or_existing_dialog.id
       new_associations = build_association_list(dialog)
-      new_or_existing_dialog.update(
-        dialog.except('export_version').merge(
-          "dialog_tabs"      => build_dialog_tabs(dialog, dialog['export_version'] || DEFAULT_DIALOG_VERSION)
-          # ahrechushkin: Dialog has two types of resource_actions:
-          # 1. resource_actions related to a dynamic fields
-          # 2. resource_action which provide relation between ServiceTemplate and Dialog
-          # In Dialog YAML we don't have the second type of resource_action
-          # and the first type of resource_action placed more deeper than on the top lvl of yaml.
-          # thats why i commented the next line
-          #"resource_actions" => build_resource_actions(dialog)
-        )
+      dialog_obj = dialog.except('export_version').merge(
+        "dialog_tabs"      => build_dialog_tabs(dialog, dialog['export_version'] || DEFAULT_DIALOG_VERSION)
+        # ahrechushkin: Dialog has two types of resource_actions:
+        # 1. resource_actions related to a dynamic fields
+        # 2. resource_action which provide relation between ServiceTemplate and Dialog
+        # In Dialog YAML we don't have the second type of resource_action
+        # and the first type of resource_action placed more deeper than on the top lvl of yaml.
+        # thats why i commented the next line
+        # "resource_actions" => build_resource_actions(dialog)
       )
+      dialog_resource_actions = build_resource_actions(dialog)
+      dialog_obj.merge!("resource_actions" => dialog_resource_actions) unless dialog_resource_actions.empty?
+      new_or_existing_dialog.update(dialog_obj)
       association_list = new_associations.reject(&:blank?).present? ? new_associations : build_old_association_list(new_or_existing_dialog.dialog_fields).flatten
       build_associations(new_or_existing_dialog, association_list.reject(&:blank?))
     end
