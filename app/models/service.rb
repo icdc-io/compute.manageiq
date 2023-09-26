@@ -44,6 +44,7 @@ class Service < ApplicationRecord
   virtual_has_many   :all_vms
   virtual_has_many   :direct_service_children
   virtual_has_many   :generic_objects
+  virtual_has_many   :direct_generic_objects
   virtual_has_many   :orchestration_stacks
   virtual_has_many   :power_states, :uses => :all_vms
   virtual_has_many   :vms
@@ -308,8 +309,21 @@ class Service < ApplicationRecord
     service_resources.where(:resource_type => 'OrchestrationStack').includes(:resource).collect(&:resource)
   end
 
+  def indirect_generic_objects
+    MiqPreloader.preload_and_map(indirect_service_children, :direct_generic_objects)
+  end
+  Vmdb::Deprecation.deprecate_methods(self, :indirect_generic_objects)
+
+  def direct_generic_objects
+    service_resources.where(:resource_type => 'GenericObject').includes(:resource).collect(&:resource).compact
+  end
+
+  def all_generic_objects
+    MiqPreloader.preload_and_map(subtree, :direct_generic_objects)
+  end
+
   def generic_objects
-    service_resources.where(:resource_type => 'GenericObject').includes(:resource).collect(&:resource)
+    all_generic_objects
   end
 
   def group_resource_actions(action_name)
