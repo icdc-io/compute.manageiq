@@ -1539,7 +1539,7 @@
   - sui_services
   - sui_vm
   - sui_cart
-  - sui_projects
+  # - sui_projects
   - sui_tags
   - sui_users
   - service_report
@@ -1631,7 +1631,7 @@
   - sui_services
   - sui_vm
   - sui_cart
-  - sui_projects_view
+  # - sui_projects_view
   - sui_tags
   - sui_users_view
   - service_report_view
