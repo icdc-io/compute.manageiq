@@ -58,6 +58,7 @@ gem "memoist",                        "~>0.15.0",      :require => false
 gem "mime-types",                     "~>3.0",         :require => false, :source => "https://rubygems.manageiq.org"
 gem "money",                          "~>6.13.5",      :require => false
 gem "more_core_extensions",           "~>3.7"
+gem "net-smtp",                       "=0.3.3"
 gem "net-ldap",                       "~>0.16.1",      :require => false
 gem "net-ping",                       "~>1.7.4",       :require => false
 gem "openscap",                       "~>0.4.8",       :require => false
