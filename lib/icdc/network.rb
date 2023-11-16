@@ -17,7 +17,9 @@ module Icdc
             :type, # virtual or nic
             :vm_id, # allocation assigned to VM
             :vm_name,
-            :service_id # allocation assigned to VM
+            :service_id, # allocation assigned to VM
+            :nic_id,
+            :nic_name
           ]
         )
       )
@@ -132,7 +134,9 @@ module Icdc
             :subnet => network_port&.cloud_subnets&.first&.name,
             :hostname => (network_port&.device&.hardware&.hostnames&.first || 'N/A'),
             :vm_id => network_port&.device&.vm&.id,
-            :vm_name => network_port&.device&.vm&.name
+            :vm_name => network_port&.device&.vm&.name,
+            :nic_id => network_port&.device&.id,
+            :nic_name => network_port&.device&.name
           )
         end
         network
