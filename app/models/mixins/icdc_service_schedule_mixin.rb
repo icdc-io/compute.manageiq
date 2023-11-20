@@ -44,7 +44,7 @@ module IcdcServiceScheduleMixin
     miq_schedules.create(
       :name         => "service #{name} backup scheduled at #{params["start_time"]}",
       :description  => "backup",
-      :sched_action => { :method => "service_backup", :options => {} },
+      :sched_action => { :method => "service_backup", :options => { :vm_id => params['vm_id'] } },
       :filter       => MiqExpression.new("=" => {"field" => "Service-id", "value" => id}),
       :towhat       => self.class.name,
       :run_at       => { :interval => { :unit => params['interval_unit'], :value => '1' }, :start_time => params['start_time'] },
