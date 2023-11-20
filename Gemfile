@@ -99,6 +99,8 @@ gem "dry-configurable", "~>1.0"
 # See miq_expression_spec Date/Time Support examples.
 # https://github.com/jeremyevans/ruby-american_date
 gem "american_date"
+gem "typhoeus", "=1.4.0"
+
 
 # Make sure to tag your new bundler group with the manageiq_default group in addition to your specific bundler group name.
 # This default is used to automatically require all of our gems in processes that don't specify which bundler groups they want.
