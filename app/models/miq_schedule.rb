@@ -262,8 +262,7 @@ class MiqSchedule < ApplicationRecord
     vm_id = sched_action.dig(:options, :vm_id) # vm_id can be 'all' or id or nil
     vm_name = vm_id == 'all' ? vm_id : Vm.find_by(id: vm_id)&.name
 
-    options = { "service_id" => "#{schedulable_id}", "backup_name" => "Scheduled backup for #{vm_name} VM",
-                "vm_id" => "#{vm_id}" }
+    options = { "service_id" => "#{schedulable_id}", "backup_name" => "Scheduled backup", "vm_id" => "#{vm_id}" }
     user = User.find_by(userid: userid)
     AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })    
   end
