@@ -98,20 +98,21 @@ class SecurityGroup < ApplicationRecord
   end
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect(&:device).map do |nic|
+    network_ports.where(:device_type => "GuestDevice").map do |port|
+      nic = port.device
       network = nic.network
       vm = nic.vm
       service = vm&.service
       {
         :nic         => nic.name,
         :nicId       => nic.uid_ems,
+        :mac         => nic.address,
         :ipv4        => network&.ipaddress,
         :ipv6        => network&.ipv6address,
-        :mac         => nic.address,
         :vmName      => vm&.name,
         :vmId        => vm&.uid_ems,
         :serviceName => service&.name,
-        :email       => service&.user&.email
+        :email       => service&.evm_owner_email
       }
     end
   end
