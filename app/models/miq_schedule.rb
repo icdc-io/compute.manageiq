@@ -257,10 +257,11 @@ class MiqSchedule < ApplicationRecord
   end
 
   def action_service_backup(_obj, at)
-     uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "create" }
-     options = {"service_id" =>"#{schedulable_id}","backup_name"=>"Scheduled backup"}
-     user = User.find_by(userid: userid)
-     AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })
+    uri = { "namespace" => "GenericObject/Methods", "class" => "Redhat", "instance" => "create" }
+    options = { "service_id" => "#{schedulable_id}", "backup_name" => "Scheduled backup",
+                "vm_id" => "#{sched_action.dig(:options, :vm_id)}" }
+    user = User.find_by(userid: userid)
+    AutomationRequest.create_from_ws("1.1", user, uri, options, { 'auto_approve' => true })    
   end
 
   def action_check_compliance(obj, _at)

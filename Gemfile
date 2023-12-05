@@ -58,6 +58,7 @@ gem "memoist",                        "~>0.15.0",      :require => false
 gem "mime-types",                     "~>3.0",         :require => false, :source => "https://rubygems.manageiq.org"
 gem "money",                          "~>6.13.5",      :require => false
 gem "more_core_extensions",           "~>3.7"
+gem "net-smtp",                       "=0.3.3"
 gem "net-ldap",                       "~>0.16.1",      :require => false
 gem "net-ping",                       "~>1.7.4",       :require => false
 gem "openscap",                       "~>0.4.8",       :require => false
@@ -92,11 +93,17 @@ gem "rugged",                           "~>1.1",             :require => false
 gem "ruport",                         "=1.7.0.3",  :source => "https://rubygems.manageiq.org"
 gem "nokogiri", "=1.10.10"
 gem "loofah", "=2.18.0"
+gem "dry-configurable", "~>1.0"
 # In 1.9.3: Time.parse uses british version dd/mm/yyyy instead of american version mm/dd/yyyy
 # american_date fixes this to be compatible with 1.8.7 until all callers can be converted to the 1.9.3 format prior to parsing.
 # See miq_expression_spec Date/Time Support examples.
 # https://github.com/jeremyevans/ruby-american_date
 gem "american_date"
+gem "typhoeus", "=1.4.0"
+
+# ahrechushkin delete line below after release 2.6.1
+# https://github.com/socketry/nio4r/issues/305
+gem "nio4r", "=2.5.9"
 
 # Make sure to tag your new bundler group with the manageiq_default group in addition to your specific bundler group name.
 # This default is used to automatically require all of our gems in processes that don't specify which bundler groups they want.

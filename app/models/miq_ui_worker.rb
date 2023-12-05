@@ -42,7 +42,7 @@ class MiqUiWorker < MiqWorker
     (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker" + (ENV["DEV_ENVIRONMENT"] || '')
   end
 
-  def container_image
-    (ENV["CONTAINER_IMAGE_REGISTRY"] + "/" + ENV["CONTAINER_IMAGE_NAMESPACE"] + "/" + (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker" + ":" + ENV["CONTAINER_IMAGE_TAG"] || default_image)
-  end
+  #def container_image
+  #  (ENV["CONTAINER_IMAGE_REGISTRY"] + "/" + ENV["CONTAINER_IMAGE_NAMESPACE"] + "/" + (ENV["CONTAINER_IMAGE_PRODUCT"] || "manageiq") + "-ui-worker" + ":" + ENV["CONTAINER_IMAGE_TAG"] || default_image)
+  #end
 end

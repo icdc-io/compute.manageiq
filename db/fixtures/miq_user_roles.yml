@@ -1539,11 +1539,11 @@
   - sui_services
   - sui_vm
   - sui_cart
-  - sui_projects
+  # - sui_projects
   - sui_tags
   - sui_users
   - service_report
-  - sui_services_change_tenant
+  # - sui_services_change_tenant
   - storage_view
   - storage_show
   - user_profiles
@@ -1631,12 +1631,12 @@
   - sui_services
   - sui_vm
   - sui_cart
-  - sui_projects_view
+  # - sui_projects_view
   - sui_tags
   - sui_users_view
   - service_report_view
   - service_report_chargeback
-  #- sui_services_change_tenant
+  # - sui_services_change_tenant
   - storage_view
   - storage_show
   - user_profiles

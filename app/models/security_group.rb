@@ -59,9 +59,9 @@ class SecurityGroup < ApplicationRecord
     end
     data.merge!({"ethertype" => ethertype, "remote_ip_prefix" => remote_ip_prefix})
     network_service = self.ext_management_system.openstack_handle.detect_network_service
-    begin 
+    begin
       rule = network_service.security_groups.get(self.ems_ref).security_group_rules.new(data)
-      rule.save 
+      rule.save
     rescue => e
       err_msg = JSON.parse(e.response.body).dig("error", "message")
       return {:success => 'false', :message => "#{error_parser(err_msg)}"}
@@ -91,23 +91,30 @@ class SecurityGroup < ApplicationRecord
 
     duplicates = security_group_rules.find_all { |i| i.attributes.with_indifferent_access === data }
     raise RuntimeError.new("Can not save duplicated rule!") if duplicates.length > 0
-    
+
     newRule.save
     oldRule.destroy
     self.ext_management_system.refresh_ems
   end
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect(&:device).map { |nic| {
-                    :nic => nic.name,
-                    :nicId => nic.uid_ems,
-                    :ipv4 => nic.network&.ipaddress,
-                    :ipv6 => nic.network&.ipv6address,
-                    :mac => nic.address,
-                    :vmName => nic.vm&.name,
-                    :vmId => nic.vm&.uid_ems,
-                    :serviceName => nic.vm&.service&.name
-                  }  }.compact.uniq
+    network_ports.where(:device_type => "GuestDevice").map do |port|
+      nic = port.device
+      network = nic.network
+      vm = nic.vm
+      service = vm&.service
+      {
+        :nic         => nic.name,
+        :nicId       => nic.uid_ems,
+        :mac         => nic.address,
+        :ipv4        => network&.ipaddress,
+        :ipv6        => network&.ipv6address,
+        :vmName      => vm&.name,
+        :vmId        => vm&.uid_ems,
+        :serviceName => service&.name,
+        :email       => service&.evm_owner_email
+      }
+    end
   end
 
   def add_to_port(data)
@@ -132,13 +139,13 @@ class SecurityGroup < ApplicationRecord
   def force_push_new_rule(rule_uid, data)
     direction_mapper = { "ingress" => "inbound", "egress" => "outbound" }
     sg_id = SecurityGroup.find_by(:ems_ref => data["remote_group_id"])&.id
-    fw_rule = FirewallRule.new(:host_protocol => data["protocol"]&.upcase, 
+    fw_rule = FirewallRule.new(:host_protocol => data["protocol"]&.upcase,
                                :direction => direction_mapper[data["direction"]],
                                :port => data["port_range_min"],
                                :end_port => data["port_range_max"],
                                :ems_ref => rule_uid,
                                :source_ip_range => data["source_ip_range"],
-                               :source_security_group_id => sg_id, 
+                               :source_security_group_id => sg_id,
                                :resource_id => id,
                                :resource_type => "SecurityGroup",
                                :network_protocol => data["network_protocol"].downcase)
