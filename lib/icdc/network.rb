@@ -17,7 +17,10 @@ module Icdc
             :type, # virtual or nic
             :vm_id, # allocation assigned to VM
             :vm_name,
-            :service_id # allocation assigned to VM
+            :service_id, # allocation assigned to VM
+            :nic_id,
+            :nic_name,
+            :nicId
           ]
         )
       )
@@ -126,13 +129,18 @@ module Icdc
         network.displayName = (net.split("_")[2..-1]&.join("_") || net).humanize()
         network.allocations = macs.map do |mac|
           network_port = NetworkPort.find_by(:mac_address => mac)
+          nic = network_port&.device
+          vm = nic&.vm
           IpAllocation.new(:mac => mac,
             :type => :nic,
             :ip => network_port&.ipaddresses&.first,
             :subnet => network_port&.cloud_subnets&.first&.name,
-            :hostname => (network_port&.device&.hardware&.hostnames&.first || 'N/A'),
-            :vm_id => network_port&.device&.vm&.id,
-            :vm_name => network_port&.device&.vm&.name
+            :hostname => (nic&.hardware&.hostnames&.first || 'N/A'),
+            :vm_id => vm&.id,
+            :vm_name => vm&.name,
+            :nic_id => nic&.id,
+            :nic_name => nic&.name,
+            :nicId => nic&.uid_ems
           )
         end
         network
@@ -168,7 +176,8 @@ module Icdc
               :type     => :guest,
               :subnet   => net_name,
               :vm_id    => vm.id,
-              :vm_name  => vm.name
+              :vm_name  => vm.name,
+              :nicId    => nic&.uid_ems
             )
             get_or_create(networks, net_name).allocations << alloc
             get_or_create(networks, net_name).displayName = "Local"
