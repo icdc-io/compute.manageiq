@@ -131,16 +131,17 @@ module Icdc
           network_port = NetworkPort.find_by(:mac_address => mac)
           nic = network_port&.device
           vm = nic&.vm
-          IpAllocation.new(:mac => mac,
-            :type => :nic,
-            :ip => network_port&.ipaddresses&.first,
-            :subnet => network_port&.cloud_subnets&.first&.name,
+          IpAllocation.new(
+            :mac      => mac,
+            :type     => :nic,
+            :ip       => network_port&.ipaddresses&.first,
+            :subnet   => network_port&.cloud_subnets&.first&.name,
             :hostname => (nic&.hardware&.hostnames&.first || 'N/A'),
-            :vm_id => vm&.id,
-            :vm_name => vm&.name,
-            :nic_id => nic&.id,
+            :vm_id    => vm&.id,
+            :vm_name  => vm&.name,
+            :nic_id   => nic&.id,
             :nic_name => nic&.name,
-            :nicId => nic&.uid_ems
+            :nicId    => nic&.uid_ems
           )
         end
         network
