@@ -35,7 +35,10 @@ module TaskHelpers
               obj['attributes']['set_data'][:button_order] = nil if order.present?
             end
 
-            klass.create!(obj['attributes']&.except('guid')).tap do |new_obj|
+            object = klass.find_by(name: obj['attributes']['name']) if ["CustomButtonSet", "CustomButton"].include? klass.name
+            object ? object.update!(obj['attributes']&.except('guid')) : object = klass.create!(obj['attributes']&.except('guid'))
+
+            object.tap do |new_obj|
               add_children(obj, new_obj)
               add_associations(obj, new_obj)
               try("#{class_name}_post", new_obj)
