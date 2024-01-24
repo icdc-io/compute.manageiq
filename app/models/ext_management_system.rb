@@ -3,6 +3,7 @@ class ExtManagementSystem < ApplicationRecord
   include SupportsFeatureMixin
   include ExternalUrlMixin
   include VerifyCredentialsMixin
+  include IcdcExtManagementSystemMixin
 
   def self.with_tenant(tenant_id)
     tenant = Tenant.find(tenant_id)
