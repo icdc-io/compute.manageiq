@@ -3,6 +3,7 @@ module TaskHelpers
     class CustomButtons
       def import(options)
         return unless options[:source]
+
         glob = File.file?(options[:source]) ? options[:source] : "#{options[:source]}/*.yaml"
         Dir.glob(glob) do |filename|
           $log.info("Importing Custom Buttons from: #{filename}")
@@ -35,13 +36,14 @@ module TaskHelpers
               obj['attributes']['set_data'][:button_order] = nil if order.present?
             end
 
-            object = klass.find_by(name: obj['attributes']['name']) if ["CustomButtonSet", "CustomButton"].include? klass.name
-            object ? object.update!(obj['attributes']&.except('guid')) : object = klass.create!(obj['attributes']&.except('guid'))
+            object = klass.find_by(:name => obj['attributes']['name']) if ["CustomButtonSet", "CustomButton"].include?(klass.name)
+            object&.destroy!
+            object = klass.create!(obj['attributes']&.except('guid', 'dialog_name'))
 
             object.tap do |new_obj|
               add_children(obj, new_obj)
               add_associations(obj, new_obj)
-              try("#{class_name}_post", new_obj)
+              try("#{class_name}_post", new_obj, obj)
             end
           end
         end
@@ -62,13 +64,18 @@ module TaskHelpers
           end
         end
 
-        def custom_button_set_post(new_obj)
+        def custom_button_set_post(new_obj, _obj)
           new_obj.set_data[:button_order] = new_obj.custom_buttons.collect(&:id)
           new_obj.save!
         end
 
-        def custom_button_post(new_obj)
+        def custom_button_post(new_obj, _obj)
           check_user(new_obj)
+        end
+
+        def resource_action_post(new_obj, obj)
+          dialog = Dialog.find_by(:name => obj.dig('attributes', 'dialog_name'))
+          new_obj.update!(:dialog_id => dialog.id) if dialog
         end
 
         def check_user(new_obj)
