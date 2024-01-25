@@ -11,6 +11,7 @@ module TaskHelpers
         opt :keep_spaces, 'Keep spaces in filenames', :type => :boolean, :short => 's', :default => false
         opt :directory, 'Directory to place exported files in', :type => :string, :required => true
         opt :all, 'Export read-only objects', :type => :boolean, :default => false
+        opt :domain, 'Domain', :type => :string
       end
 
       error = validate_directory(options[:directory])
