@@ -45,16 +45,25 @@ class CloudSubnet < ApplicationRecord
 
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").collect(&:device).compact.map { |nic| {
-                    :nic => nic.name,
-                    :nicId => nic.uid_ems,
-                    :ipv4 => nic.network&.ipaddress,
-                    :ipv6 => nic.network&.ipv6address,
-                    :mac => nic.address,
-                    :vmName => nic.vm&.name,
-                    :vmId => nic.vm&.uid_ems,
-                    :serviceName => nic.vm&.service&.name
-                  }  }.compact.uniq
+    network_ports.where(:device_type => "GuestDevice").filter_map do |port|
+      nic = port.device
+      next unless nic
+
+      network = nic.network
+      vm = nic.vm
+      service = vm&.service
+      {
+        :nic         => nic.name,
+        :nicId       => nic.uid_ems,
+        :mac         => nic.address,
+        :ipv4        => network&.ipaddress,
+        :ipv6        => network&.ipv6address,
+        :vmName      => vm&.name,
+        :vmId        => vm&.uid_ems,
+        :serviceName => service&.name,
+        :email       => service&.evm_owner_email
+      }
+    end
   end
 
   def dns_nameservers_show
