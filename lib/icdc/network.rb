@@ -19,7 +19,8 @@ module Icdc
             :vm_name,
             :service_id, # allocation assigned to VM
             :nic_id,
-            :nic_name
+            :nic_name,
+            :uid_ems
           ]
         )
       )
@@ -139,7 +140,8 @@ module Icdc
             :vm_id    => vm&.id,
             :vm_name  => vm&.name,
             :nic_id   => nic&.id,
-            :nic_name => nic&.name
+            :nic_name => nic&.name,
+            :uid_ems  => nic&.uid_ems
           )
         end
         network
@@ -175,7 +177,8 @@ module Icdc
               :type     => :guest,
               :subnet   => net_name,
               :vm_id    => vm.id,
-              :vm_name  => vm.name
+              :vm_name  => vm.name,
+              :uid_ems  => nic&.uid_ems
             )
             get_or_create(networks, net_name).allocations << alloc
             get_or_create(networks, net_name).displayName = "Local"

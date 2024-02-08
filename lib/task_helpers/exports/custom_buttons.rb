@@ -13,7 +13,11 @@ module TaskHelpers
         end
 
         def self.build_attr_list(attrs)
-          attrs&.except(*EXCLUDE_ATTRS)
+          outp = attrs&.except(*EXCLUDE_ATTRS)
+          return outp unless (dialog_id = attrs&.dig('dialog_id'))
+
+          dialog = Dialog.find_by(:id => dialog_id)
+          outp.merge('dialog_name' => dialog.name)
         end
 
         def self.create_association_list(obj, item)
@@ -23,6 +27,7 @@ module TaskHelpers
             associations.each do |assoc|
               assoc.each do |a|
                 next if obj.try(a.first.to_sym).blank?
+
                 export_object(obj.try(a.first.to_sym), (item['associations'] ||= {}))
               end
             end
@@ -35,21 +40,17 @@ module TaskHelpers
       end
 
       def export(options = {})
-        parent_id_list = []
-        objects = CustomButton.where.not(:applies_to_class => %w(ServiceTemplate GenericObject))
-
-        export = objects.each_with_object({}) do |obj, export_hash|
-          if obj.try(:parent).present?
-            next if parent_id_list.include?(obj.parent.id)
-            ExportArInstances.export_object(obj.parent, export_hash)
-            parent_id_list << obj.parent.id
-          else
-            ExportArInstances.export_object(obj, export_hash)
-          end
-        end
-
         export_dir = options[:directory]
-        File.write("#{export_dir}/CustomButtons.yaml", YAML.dump(export))
+        objects = options[:domain] ? CustomButtonSet.where("name LIKE '#{options[:domain]}|%'") : CustomButtonSet.all
+        objects = objects.reject { |cbs| cbs.set_data[:applies_to_class].in?(["ServiceTemplate", "GenericObject", nil]) }
+
+        objects.each do |obj|
+          export_hash = {}
+          $log.info("Exporting Custom Button Set: #{obj.name} (ID: #{obj.id})")
+          ExportArInstances.export_object(obj, export_hash)
+          filename = Exports.safe_filename(obj.name.chop.tr('|', '-'), options[:keep_spaces])
+          File.write("#{export_dir}/#{filename}.yaml", YAML.dump(export_hash))
+        end
       end
     end
   end

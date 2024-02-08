@@ -98,8 +98,10 @@ class SecurityGroup < ApplicationRecord
   end
 
   def assigned_vms
-    network_ports.where(:device_type => "GuestDevice").map do |port|
+    network_ports.where(:device_type => "GuestDevice").filter_map do |port|
       nic = port.device
+      next unless nic
+
       network = nic.network
       vm = nic.vm
       service = vm&.service
