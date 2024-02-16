@@ -62,12 +62,12 @@ module Icdc
         :hardware_id => Hardware.where(
           :vm_or_template_id => service.vms.pluck(:id)
         ).pluck(:id)
-      ).where.not(:lan_id => nil)
+      ).where.not(:lan_id => nil).reject { |nic| nic.lan.nil? }
       # Get VirtualIp objects for this service and all child services
       vips = VirtualIp.where(:service_id => [service.id] + service.services.pluck(:id))
       # Prepare list of MACs in each logical network
       # {"idc_vl_2334" => [00:11:22:33:44:55, 66:77:88:99:00:11], "idc_pvl_2314" => [aa:bb:cc:dd:ee:ff]}
-      net_nics = nics.group_by { |nic| nic.lan.name }
+      net_nics = nics.group_by { |nic| nic&.lan&.name }
       net_macs = net_nics.map { |name, nic_arr| [name, nic_arr.map(&:address)] }.to_h
       vips.group_by(&:subnet).each do |name, vip_arr|
         net_macs[name] = (net_macs[name] || []) + vip_arr.map(&:mac)
