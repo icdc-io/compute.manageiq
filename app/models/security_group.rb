@@ -67,7 +67,6 @@ class SecurityGroup < ApplicationRecord
       err_msg = JSON.parse(e.response.body).dig("error", "message")
       return {:success => 'false', :message => "#{error_parser(err_msg)}"}
     end
-    force_push_new_rule(rule.id, data)
     fw_rule = force_push_new_rule(rule.id, data)
     self.ext_management_system.refresh_ems
     return {:success => 'true', :message => 'Rule was added successfully', :rule => fw_rule}
