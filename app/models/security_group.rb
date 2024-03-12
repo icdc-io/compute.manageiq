@@ -41,8 +41,9 @@ class SecurityGroup < ApplicationRecord
     ovn_groups_ids = network_service.security_groups.select { |group| group.name == group_name }.collect(&:id)
     new_group_id = ovn_groups_ids.reject{ |id| !SecurityGroup.find_by(:ems_ref => id).nil? }[0]
     return unless new_group_id
-    SecurityGroup.create(:name => group_name, :cloud_tenant => User.current_user.current_tenant.source, :ems_ref => new_group_id, :type => SecurityGroup.class_by_ems(ems).to_s, :ems_id => ems.id)
+    security_group = SecurityGroup.create(:name => group_name, :cloud_tenant => User.current_user.current_tenant.source, :ems_ref => new_group_id, :type => SecurityGroup.class_by_ems(ems).to_s, :ems_id => ems.id)
     ems&.refresh_ems
+    security_group
   end
 
   def add_firewall_rule(data = nil)
@@ -66,9 +67,9 @@ class SecurityGroup < ApplicationRecord
       err_msg = JSON.parse(e.response.body).dig("error", "message")
       return {:success => 'false', :message => "#{error_parser(err_msg)}"}
     end
-    force_push_new_rule(rule.id, data)
+    fw_rule = force_push_new_rule(rule.id, data)
     self.ext_management_system.refresh_ems
-    return {:success => 'true', :message => 'Rule was added successfully'}
+    return {:success => 'true', :message => 'Rule was added successfully', :rule => fw_rule}
   end
 
   def remove_firewall_rule(data = nil)
@@ -152,6 +153,7 @@ class SecurityGroup < ApplicationRecord
                                :resource_type => "SecurityGroup",
                                :network_protocol => data["network_protocol"].downcase)
     fw_rule.save
+    fw_rule
   end
 
   private
