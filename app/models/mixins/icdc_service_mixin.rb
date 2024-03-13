@@ -76,6 +76,18 @@ module IcdcServiceMixin
     custom_button.invoke(self)
   end
 
+  def change_network_type(data)
+    vm_id = data.dig('params', 'dialog_vm_id')
+    if vm_id == 'all' # split one automation request on separated ones
+      vms.each do |vm|
+        data['params']['dialog_vm_id'] = vm.id
+        invoke_custom_button(data)
+      end
+    else
+      invoke_custom_button(data)
+    end
+  end
+
   def miq_request_state
     miq_request.nil? ? 'finished' : miq_request.request_state
   end
