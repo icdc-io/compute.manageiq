@@ -80,6 +80,7 @@ class VmOrTemplate < ApplicationRecord
   has_many                  :disks, :through => :hardware
   has_many                  :networks, :through => :hardware
   has_many                  :nics, :through => :hardware
+  has_many                  :vgpus, :through => :hardware
   has_many                  :miq_provisions_from_template, :class_name => "MiqProvision", :as => :source, :dependent => :nullify
   has_many                  :miq_provision_vms, :through => :miq_provisions_from_template, :source => :destination, :source_type => "VmOrTemplate"
   has_many                  :miq_provision_requests, :as => :source
