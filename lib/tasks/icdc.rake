@@ -142,16 +142,18 @@ end
 desc "Create service for new vm"
 task :service_for_new_vm, [:service_name, :user_id, :vm_id] => :environment do | _, args|
   begin
+    vm = VmOrTemplate.find(args[:vm_id]) # raise an error if vm is not found
+    owner = User.find(args[:user_id]) # raise an error if owner is not found
+
     service = Service.new
     service.name = args[:service_name]
-    owner = User.find(args[:user_id])
     service.evm_owner = owner
     service.miq_group = owner.current_group
     service.lifecycle_state = 'provisioned'
     service.save!
-    VmOrTemplate.find(args[:vm_id]).add_to_service(service)
-    VmOrTemplate.find(args[:vm_id]).update!(:evm_owner => owner)
-    VmOrTemplate.find(args[:vm_id]).update!(:miq_group => owner.current_group)
+
+    vm.add_to_service(service)
+    vm.update!(:evm_owner => owner, :miq_group => owner.current_group)
     puts "New service #{service.name} creation finished completed"
   rescue => e
     puts "New service creatin failed with error => #{e.message}"
