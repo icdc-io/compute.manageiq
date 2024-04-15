@@ -1598,6 +1598,11 @@ class VmOrTemplate < ApplicationRecord
     operating_system.save unless operating_system.nil?
   end
 
+  def security_groups
+    ports = NetworkPort.where(device_id: nics.pluck(:id))
+    ports.collect(&:security_groups).flatten
+  end
+
   def ipaddresses
     hardware.nil? ? [] : hardware.ipaddresses
   end
