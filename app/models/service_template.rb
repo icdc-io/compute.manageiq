@@ -461,7 +461,7 @@ class ServiceTemplate < ApplicationRecord
   def provision_request(user, options = nil, request_options = {})
     request_options[:provision_workflow] = true
     result = order(user, options, request_options)
-    raise result[:errors].join(", ") if result[:errors].any?
+    raise result[:errors].join(", ") if result[:errors] && result[:errors].any?
     result[:request]
   end
 
@@ -471,8 +471,6 @@ class ServiceTemplate < ApplicationRecord
     else
       super
     end
-    raise result[:errors].join(", ") if result[:errors] && result[:errors].any?
-    result[:request]
   end
 
   def miq_schedules
