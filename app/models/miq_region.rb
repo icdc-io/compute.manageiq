@@ -24,14 +24,10 @@ class MiqRegion < ApplicationRecord
   acts_as_miq_taggable
   include UuidMixin
   include NamingSequenceMixin
-  include AggregationMixin
   include ConfigurationManagementMixin
-
   include MiqPolicyMixin
   include SupportsFeatureMixin
   include Metric::CiMixin
-
-  alias_method :all_storages,           :storages
 
   PERF_ROLLUP_CHILDREN = [:ext_management_systems, :storages]
 
@@ -50,6 +46,8 @@ class MiqRegion < ApplicationRecord
   def storages
     Storage.in_region(region_number)
   end
+
+  alias_method :all_storages, :storages
 
   def policy_events
     PolicyEvent.in_region(region_number)
@@ -86,6 +84,8 @@ class MiqRegion < ApplicationRecord
   def vms
     Vm.in_region(region_number)
   end
+
+  include AggregationMixin
 
   def perf_rollup_parents(interval_name = nil)
     [MiqEnterprise.my_enterprise].compact unless interval_name == 'realtime'
