@@ -94,6 +94,7 @@ class ContainerOrchestrator
         {:name => "CPV_NAME",                :value => ENV["CPV_NAME"]},
         {:name => "CPV_CLOUD",               :value => ENV["CPV_CLOUD"]},
         {:name => "DNS_SERVER",              :value => ENV["DNS_SERVER"]},
+        {:name => "BUNDLE_PATH",             :value => ENV["BUNDLE_PATH"]},
         {:name => "LOCATION_DOMAIN",         :value => ENV["LOCATION_DOMAIN"]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
