@@ -20,6 +20,7 @@ class Hardware < ApplicationRecord
   has_many    :guest_devices, :dependent => :destroy
   has_many    :storage_adapters, -> { where(:device_type => 'storage') }, :class_name => "GuestDevice", :foreign_key => :hardware_id
   has_many    :nics, -> { where(:device_type => 'ethernet') }, :class_name => "GuestDevice", :foreign_key => :hardware_id
+  has_many    :vgpus, -> { where(:device_type => 'vgpu') }, :class_name => "GuestDevice", :foreign_key => :hardware_id
   has_many    :ports, -> { where.not(:device_type => 'storage') }, :class_name => "GuestDevice", :foreign_key => :hardware_id
   has_many    :physical_ports, -> { where(:device_type => 'physical_port') }, :class_name => "GuestDevice", :foreign_key => :hardware_id
   has_many    :connected_physical_switches, :through => :guest_devices
