@@ -28,7 +28,7 @@ namespace :backup20 do
     new_backup = GenericObjectDefinition.where(:name => "Backup")
       .first
         .create_object(
-          :name          => "bkp_#{vm.id}_#{Time.now.strftime('%Y%m%d-%H%M')}", # rubocop:disable Rails/TimeZone 
+          :name          => "bkp_#{ENV.fetch('LOC_NAME')}_#{vm.id}_#{Time.now.strftime('%Y%m%d-%H%M')}", # rubocop:disable Rails/TimeZone 
           :error         => false,
           :terminated    => false,
           :template_id   => template_id,
