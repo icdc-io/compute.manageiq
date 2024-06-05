@@ -104,7 +104,7 @@ gem "typhoeus", "=1.4.0"
 # ahrechushkin delete line below after release 2.6.1
 # https://github.com/socketry/nio4r/issues/305
 gem "nio4r", "=2.5.9"
-
+gem "ffi", "= 1.16.3"
 # Make sure to tag your new bundler group with the manageiq_default group in addition to your specific bundler group name.
 # This default is used to automatically require all of our gems in processes that don't specify which bundler groups they want.
 #
