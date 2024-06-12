@@ -22,8 +22,10 @@ class MiqRemoteConsoleWorker < MiqWorker
   end
 
   def configure_hosts(definition)
-    definition[:spec][:template][:spec][:hostAliases] = [
-      { :hostnames => [ENV["DISPLAY_NETWORK_HOSTNAME"]], :ip => ENV["DISPLAY_NETWORK_IP"] }
-    ]
+    # NOTE: Not used anymore host aliases, because we use internal DNS zone
+    #definition[:spec][:template][:spec][:hostAliases] = [
+    #  { :hostnames => [ENV["DISPLAY_NETWORK_HOSTNAME"]], :ip => ENV["DISPLAY_NETWORK_IP"] }
+    #]
+    nil
   end
 end
