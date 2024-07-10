@@ -89,7 +89,7 @@ class ContainerOrchestrator
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
         {:name => "RAILS_ENV",               :value => ENV["WORKERS_ENV"]},
         {:name => "LOC_NUMBER",              :value => ENV["LOC_NUMBER"]},
-        {:name => "LOC_NAME",                :value => ENV["LOC_NAME"]},
+        {:name => "LOCATION_NAME",           :value => ENV["LOCATION_NAME"]},
         {:name => "LOC_DESCRIPTION",         :value => ENV["LOC_DESCRIPTION"]},
         {:name => "CPV_NAME",                :value => ENV["CPV_NAME"]},
         {:name => "CPV_DOMAIN",              :value => ENV["CPV_DOMAIN"]},
