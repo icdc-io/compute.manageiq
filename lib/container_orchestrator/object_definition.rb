@@ -88,7 +88,7 @@ class ContainerOrchestrator
         {:name => "WORKER_HEARTBEAT_FILE",   :value => Rails.root.join("tmp", "worker.hb").to_s},
         {:name => "WORKER_HEARTBEAT_METHOD", :value => "file"},
         {:name => "RAILS_ENV",               :value => ENV["WORKERS_ENV"]},
-        {:name => "LOC_NUMBER",              :value => ENV["LOC_NUMBER"]},
+        {:name => "LOCATION_CODE",           :value => ENV["LOCATION_CODE"]},
         {:name => "LOCATION_NAME",           :value => ENV["LOCATION_NAME"]},
         {:name => "LOC_DESCRIPTION",         :value => ENV["LOC_DESCRIPTION"]},
         {:name => "CPV_NAME",                :value => ENV["CPV_NAME"]},

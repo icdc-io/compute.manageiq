@@ -5,7 +5,7 @@ resources:
   - base:
       mtu: 1500
       subnet: 
-        cidr: 10.207.<%= ENV['LOC_NUMBER'] %>.0/24
+        cidr: 10.207.<%= ENV['LOCATION_CODE'] %>.0/24
         dhcp: true
-        gateway: 10.207.<%= ENV['LOC_NUMBER'] %>.1
+        gateway: 10.207.<%= ENV['LOCATION_CODE'] %>.1
         router: default
