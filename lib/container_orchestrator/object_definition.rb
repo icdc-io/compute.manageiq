@@ -97,6 +97,8 @@ class ContainerOrchestrator
         {:name => "DNS_SERVER",              :value => ENV["DNS_SERVER"]},
         #{:name => "BUNDLE_PATH",             :value => ENV["BUNDLE_PATH"]},
         {:name => "LOCATION_DOMAIN",         :value => ENV["LOCATION_DOMAIN"]},
+        {:name => "FILEBEAT_PASSWORD",       :value => ENV["FILEBEAT_PASSWORD"]},
+        {:name => "FILEBEAT_USERNAME",       :value => ENV["FILEBEAT_USERNAME"]},
         {:name      => "DATABASE_HOSTNAME",
          :valueFrom => {:secretKeyRef=>{:name => "postgresql-secrets", :key => "hostname"}}},
         {:name      => "DATABASE_NAME",
