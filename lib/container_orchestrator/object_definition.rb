@@ -94,6 +94,7 @@ class ContainerOrchestrator
         {:name => "CPV_NAME",                :value => ENV["CPV_NAME"]},
         {:name => "CPV_DOMAIN",              :value => ENV["CPV_DOMAIN"]},
         {:name => "CPV_CLOUD",               :value => ENV["CPV_CLOUD"]},
+        {:name => "OPERATOR_HELPDESK",       :value => ENV["OPERATOR_HELPDESK"]},
         {:name => "DNS_SERVER",              :value => ENV["DNS_SERVER"]},
         #{:name => "BUNDLE_PATH",             :value => ENV["BUNDLE_PATH"]},
         {:name => "LOCATION_DOMAIN",         :value => ENV["LOCATION_DOMAIN"]},
