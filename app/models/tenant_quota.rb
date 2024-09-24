@@ -123,7 +123,7 @@ class TenantQuota < ApplicationRecord
 
   def used
     method = "#{name.split("_").first}_used"
-    @used ||= send(method)
+    @used ||= send(method) + active_provisions
   end
 
   def cpu_used
@@ -144,6 +144,57 @@ class TenantQuota < ApplicationRecord
 
   def templates_used
     tenant.miq_templates.count
+  end
+
+  def active_provisions
+    @requested ||= active_provision_requests.sum do |miq_request|
+      method = "#{name.split("_").first}_requested"
+      send(method, miq_request)
+    end
+  end
+
+  def cpu_requested(miq_request)
+    cpu = miq_request.options.dig(:dialog, "dialog_number_of_sockets").to_i * miq_request.options.dig(:dialog, "dialog_cores_per_socket").to_i
+    cpu = miq_request.options.dig(:dialog, "dialog_number_of_cpus").to_i if cpu.zero?
+    cpu = miq_request.options.dig(:dialog, "dialog_cpu").to_i if cpu.zero?
+    cpu * vms_requested(miq_request)
+  end
+
+  def mem_requested(miq_request)
+    memory = miq_request.options.dig(:dialog, "dialog_vm_memory").to_i
+    memory.megabytes * vms_requested(miq_request)
+  end
+
+  def storage_requested(miq_request)
+    storage = ( miq_request.options.dig(:dialog, "dialog_system_disk_size").to_i +
+                miq_request.options.dig(:dialog, "dialog_additional_disk_size").to_i )
+    storage.gigabytes * vms_requested(miq_request)
+  end
+
+  def vms_requested(miq_request)
+    vms_count = miq_request.options.dig(:dialog, "dialog_number_of_vms").to_i  
+    return 1 if vms_count.zero?
+
+    vms_count
+  end
+
+  def templates_requested(_miq_request)
+    0
+  end
+
+  def active_provision_requests
+    MiqRequest.where(
+      :approval_state => "approved",
+      :type => ["MiqProvisionRequest", "ServiceTemplateProvisionRequest"],
+      :request_state => ["active", "queued", "pending"],
+      :status => "Ok",
+      :process => true,
+      :tenant => tenant,
+    ).where(
+      "(source_type IS NULL " \
+      "OR  (source_type = 'VmOrTemplate' AND source_id IN (SELECT id FROM vms)) " \
+      "OR  (source_type = 'ServiceTemplate' AND source_id IN (SELECT id FROM service_templates)))"
+    )
   end
 
   # remove all quotas that are not listed in the keys to keep
