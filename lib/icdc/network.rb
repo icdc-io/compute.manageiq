@@ -77,7 +77,7 @@ module Icdc
         [net_name, nic_arr.group_by(&:address)]
       end.to_h
       # Request authorized networks (CMDB DHCP records) for both: VM nics and service VIPs
-      networks = foreman_networks(service.region_id, net_macs) + ovirt_networks(net_macs)
+      networks = ovirt_networks(net_macs)
       networks.each do |network|
         network.allocations.each do |alloc|
           nic = net_mac_nics.dig(alloc.subnet, alloc.mac)&.first
@@ -97,27 +97,6 @@ module Icdc
         end
       end
       networks
-    end
-
-    def self.foreman_networks(foreman_id, net_macs)
-      client = Icdc::Foreman::Client.new(foreman_id)
-      return [] unless client.ready?
-      subnets = client.subnets(net_macs.keys) # L2 net name == L3 subnet name in foreman for IPv4
-                      .reject { |subnet| subnet.name.nil? } # L2 network has no equalent in Foreman
-                      .reject { |subnet| subnet.dhcp.nil? } # L3 subnet is not managed by Foreman
-                      .group_by(&:name)
-                      .map { |name, subnet_arr| [name, subnet_arr&.first] }.to_h # name is unique
-      subnet_macs_tuples = subnets.values.map do |subnet|
-        {
-          :subnet => subnet,
-          :macs   => net_macs[subnet.name]
-        }
-      end
-      client.ip_allocations(subnet_macs_tuples).group_by(&:subnet).map do |name, allocs|
-        network = new(subnets[name])
-        network.allocations = allocs.map{|alloc| IpAllocation.new(alloc)}
-        network
-      end
     end
 
     def self.ovirt_networks(net_macs)
