@@ -7,7 +7,10 @@ module IcdcVmMixin
 
   def enable_nested_virtualization
     raise RuntimeError.new('Nested virtualization already enabled') if nested_virtualization_enabled?
-    add_custom_property({name: 'cpuflags', value: '+vmx'})
+    cpu_type = ems_cluster.hosts.first.hardware.cpu_type.downcase
+    cpuflags = '+vmx'
+    cpuflags = '+svm' if cpu_type.include?('amd')
+    add_custom_property({name: 'cpuflags', value: cpuflags})
     add_affinity_label('nested_virtualization')
     refresh_ems
   end

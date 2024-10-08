@@ -1,9 +1,10 @@
 window.icdcLocations = icdcLocations = {
-  <%= ENV['LOC_NUMBER'].to_i %>: {
-    name: '<%= ENV['LOC_NAME'] %>',
-    description: '<%= ENV['LOC_DESCRIPTION'] %>',
-    code: '<%= ENV['LOC_NUMBER'] %>',
-    cpv_cloud: '<%= ENV['CPV_CLOUD'] %>'
+  <%= ENV['LOCATION_CODE'].to_i %>: {
+    name: '<%= ENV['LOCATION_NAME'] %>',
+    description: '<%= ENV['LOCATION_TIMEZONE'] %>',
+    code: '<%= ENV['LOCATION_CODE'] %>',
+    cpv_cloud: '<%= ENV['CPV_CLOUD'] %>',
+    operator_helpdesk_url: '<%= ENV['OPERATOR_HELPDESK'] %>'
   }
 }
 

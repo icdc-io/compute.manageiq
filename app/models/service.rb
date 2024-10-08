@@ -644,7 +644,7 @@ class Service < ApplicationRecord
 
   def backups_with_states
     backups = []
-    regexp = /^bkp_#{ENV.fetch('LOC_NAME')}_([0-9_])+/
+    regexp = /^bkp_#{ENV.fetch('LOCATION_NAME')}_([0-9_])+/
     backups.push(self.generic_objects.select{ |b| regexp =~ b.name })
     self.all_service_children.each do |bkp|
       backups.push(bkp.generic_objects.select{ |b| regexp =~ b.name })
