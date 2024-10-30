@@ -381,7 +381,7 @@ class Tenant < ApplicationRecord
   end
 
   def create_users_group
-    roles = %w(admin billing member owner operator)
+    roles = %w(admin billing member owner)
     roles.each do |role|
       group = miq_groups.build(description: "#{name.downcase}.#{role}", long_description: 'Default')
       group.save!
