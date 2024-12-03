@@ -75,6 +75,8 @@ module IcdcTenantMixin
     end
 
     def available_users
+      account = current_user.current_group.description.split(".").first #
+      parent = Tenant.find_by(name: account).parent unless parent # this is used for the operator role to manually specify the parent tenant and avoid an error (because for account.operator groups tenant = 'cloud') 
       [(parent.users - User.find_tagged_with(:any => 'true', :ns => '/managed/system_user')).collect{|x| [ :id => x.id, :email => x.email, :name => x.name, :group => x.current_group]}.uniq].flatten
     end
 
