@@ -52,8 +52,9 @@ module IcdcTenantMixin
 
     def available_networks
       # OVN Networks
+      account_name = parent ? account.name.downcase : current_user.current_group.description.split('.').first # this is used for the operator role to get an account not using tenant, but from a miq group (because for account.operator groups tenant = 'cloud')
       nets = CloudSubnet.all.select{ |subnet|
-        subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account.name.downcase}_")
+        subnet.name.match?("#{MiqRegion.my_region.description.downcase}_#{account_name}_")
       }.map{ |subnet|
         {
           :subnet => subnet.name, :description => (subnet.name.split("_")[2..-1]&.join("_") || subnet.name).humanize(), 
