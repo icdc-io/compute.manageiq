@@ -1847,7 +1847,6 @@
   - generic_object
   - generic_object_definition
   - ae_miq_request
-  - cloud_volume
   - migration
   - monitor_alerts
   - documentation
@@ -1876,6 +1875,8 @@
   - sui_cart
   - sui_tags
   - sui_users
+  - sui_reports_request_quotas
+  - rbac_tenant_manage_quotas
 
 - :name: ICDC-project-admin
   :read_only: false
