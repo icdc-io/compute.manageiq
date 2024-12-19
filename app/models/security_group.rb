@@ -123,9 +123,10 @@ class SecurityGroup < ApplicationRecord
   def add_to_port(data)
     ns = ext_management_system.openstack_handle.detect_network_service
     data["nic_ids"].each do |nic_id|
-      port_id = ns.ports.select{|x| x.device_id == nic_id}.first.id
-      network_ports.push(NetworkPort.find_by(:ems_ref => port_id))
-      ns.update_port(port_id, {:security_groups => ns.ports.find_by_id(port_id).security_groups.push(ems_ref)})
+      np = NetworkPort.find_by(device_ref: nic_id)
+      ovn_port = ns.ports.find_by_id(np.ems_ref)
+      network_ports.push(np)
+      ns.update_port(ovn_port.id, {:security_groups => ovn_port.security_groups.push(ems_ref)})
       rescue RuntimeError => e
         next
     end
@@ -134,9 +135,10 @@ class SecurityGroup < ApplicationRecord
   def remove_from_port(data)
     ns = ext_management_system.openstack_handle.detect_network_service
     nic_id = data["nic_id"]
-    port_id = ns.ports.select{|x| x.device_id == nic_id}.first.id
-    network_ports.delete(NetworkPort.find_by(:ems_ref => port_id))
-    ns.update_port(port_id, {:security_groups => ns.ports.find_by_id(port_id).security_groups - [ems_ref]})
+    np = NetworkPort.find_by(device_ref: nic_id)
+    ovn_port = ns.ports.find_by_id(np.ems_ref)
+    network_ports.delete(np)
+    ns.update_port(ovn_port.id, {:security_groups => ovn_port.security_groups - [ems_ref]})
   end
 
   def force_push_new_rule(rule_uid, data)

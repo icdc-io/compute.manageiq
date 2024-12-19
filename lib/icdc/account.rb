@@ -135,7 +135,8 @@ module Icdc
 
       def create_subnet(opts)
         subnet_id = network_service.create_subnet(opts["network_id"], opts["subnet"]["cidr"], 4, {:name => "#{account_name}_#{opts["type"]}", :enable_dhcp => opts["subnet"]["dhcp"], :gateway_ip => opts["subnet"]["gateway"], :dns_nameservers => [resolve_address("ns.dns.#{MiqRegion.my_region.name.downcase}.icdc.io")]}).data.dig(:body, "subnet", "id")
-        router_id = network_service.routers.select { |router| router.name == "#{account_name}_#{opts["subnet"]["router"]}" }.first.id
+        nr = NetworkRouter.find_by(:name => "#{account_name}_#{opts["subnet"]["router"]}")
+        router_id = network_service.routers.find_by_id(nr.ems_ref).id
         network_service.add_router_interface(router_id, subnet_id)
       end
 
