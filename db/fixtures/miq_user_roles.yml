@@ -1486,6 +1486,7 @@
   - port_forwardings_delete
   - nested_virtualization_on
   - nested_virtualization_off
+  - floating_ip
 
 - :name: ICDC-admin
   :read_only: false
@@ -1581,6 +1582,7 @@
   - port_forwardings_destroy
   - nested_virtualization_on
   - nested_virtualization_off
+  - floating_ip
 
 - :name: ICDC-billing
   :read_only: false
@@ -1653,6 +1655,7 @@
   - event_streams_view
   - nested_virtualization_on
   - nested_virtualization_off
+  - floating_ip
 
 - :name: ICDC-owner
   :read_only: false
@@ -1747,6 +1750,7 @@
   - nested_virtualization_on
   - nested_virtualization_off
   - sui_reports_operations
+  - floating_ip
 
 - :name: ICDC-operator
   :read_only: true
