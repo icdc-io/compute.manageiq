@@ -117,7 +117,8 @@ class CloudNetwork < ApplicationRecord
     network_service = ext_management_system.openstack_handle.detect_network_service
     subnet = network_service.networks.find_by_id(net_id).subnets.create(data)
     force_push_new_subnet(subnet.id, ext_management_system, data)
-    router = network_service.routers.select { |router| router.name =~ /#{Icdc::Account::User.prefix(User.current_user)}/ }.first
+    nr = NetworkRouter.find_by("name LIKE ?", "%#{Icdc::Account::User.prefix(User.current_user)}%")
+    router = network_service.routers.find_by_id(nr.ems_ref)
     network_service.add_router_interface(router.id, subnet.id)
     ext_management_system.refresh_ems
   end
