@@ -6945,3 +6945,21 @@
       :description: Destroy Port Forwardings
       :feature_type: control
       :identifier: port_forwardings_delete
+  - :name: God Floating IPs
+    :description: God Floating IPs
+    :feature_type: control
+    :identifier: god_floating_ip
+    :children:
+    - :name: View
+    :description: View God Floating IPs
+    :feature_type: view
+    :identifier: god_floating_ip_view
+    :children:
+    - :name: List
+      :description: Display Lists of God Floating IPs
+      :feature_type: view
+      :identifier: god_floating_ip_show_list
+    - :name: Show
+      :description: Display Individual God Floating IPs
+      :feature_type: view
+      :identifier: god_floating_ip_show
