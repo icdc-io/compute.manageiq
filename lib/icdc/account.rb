@@ -6,7 +6,7 @@ module Icdc
       def self.register(params)
         user = ::User.new
         user.userid = params[:user_name]
-        user.email = params[:user_name]
+        user.email = params[:user_email]
         user.name = "#{params[:user_firstname]} #{params[:user_lastname]}"
         tenants = default_tenants(user)
         # By default we assign member role for all accounts
