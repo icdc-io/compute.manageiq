@@ -26,7 +26,7 @@ module PlatformVmMixin
   private
 
   def find_vnic_profile_id(lan_name)
-    parent_datacenter.external_distributed_virtual_lans.find { _1.name == lan_name }&.id
+    parent_datacenter.external_distributed_virtual_lans.find { _1.name == lan_name }&.id.to_s
   end
 
   def generate_nic_name
