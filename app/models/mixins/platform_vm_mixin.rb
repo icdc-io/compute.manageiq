@@ -1,4 +1,4 @@
-module IcdcVmMixin
+module PlatformVmMixin
   def add_additional_nic(lan_name)
     vnic_profile_id = find_vnic_profile_id(lan_name)
     nic_name = generate_nic_name
@@ -26,7 +26,7 @@ module IcdcVmMixin
   private
 
   def find_vnic_profile_id(lan_name)
-    Lan.find_by(:name => lan_name).uid_ems
+    parent_datacenter.external_distributed_virtual_lans.find { _1.name == lan_name }&.uid_ems
   end
 
   def generate_nic_name
