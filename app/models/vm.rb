@@ -10,7 +10,7 @@ class Vm < VmOrTemplate
   include ExternalUrlMixin
   include AuthenticationMixin
 
-  include IcdcVmMixin
+  include PlatformVmMixin
 
   include_concern 'Operations'
 
