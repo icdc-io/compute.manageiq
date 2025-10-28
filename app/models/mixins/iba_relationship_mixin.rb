@@ -56,7 +56,7 @@ module IbaRelationshipMixin
        tenants_in_regions_by_ids(master_ids.push(self.id))
     when "ICDC-admin"
       iba_descendant_ids(*args)
-    when "ICDC-billing"
+    when "ICDC-owner"
       master_ids = iba_descendant_ids(*args)
       tenants_in_regions_by_ids(master_ids.push(self.id))
     when "ICDC-project-admin"

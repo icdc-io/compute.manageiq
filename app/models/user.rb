@@ -358,7 +358,7 @@ class User < ApplicationRecord
   end
 
   def self.icdc_manager?(userid)
-    ["ICDC-admin", "ICDC-billing"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
+    ["ICDC-admin", "ICDC-owner"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
   end
 
   def self.missing_user_features(db_user)

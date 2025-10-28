@@ -83,8 +83,8 @@ module IcdcTenantMixin
 
     def available_roles
       [
+        { :id => "owner",:name => "Owner" },
         { :id => "admin", :name => "Admin" },
-        { :id => "billing",:name => "Billing" },
         { :id => "member", :name => "Member" }
       ]
     end
