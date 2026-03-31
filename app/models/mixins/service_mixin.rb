@@ -54,12 +54,12 @@ module ServiceMixin
     service_resources.destroy_all
   end
 
-  def max_group_delay(grp_idx, delay_type)
-    each_group_resource(grp_idx).collect { |r| r[delay_type] || self.class::DEFAULT_PROCESS_DELAY_BETWEEN_GROUPS }.max.to_i
+  def max_group_delay(grp_idx, delay_type, default_delay = nil)
+    each_group_resource(grp_idx).collect { |r| r[delay_type] || default_delay || self.class::DEFAULT_PROCESS_DELAY_BETWEEN_GROUPS }.max.to_i
   end
 
-  def delay_for_action(grp_idx, action)
-    max_group_delay(grp_idx, delay_type(action))
+  def delay_for_action(grp_idx, action, default_delay = nil)
+    max_group_delay(grp_idx, delay_type(action), default_delay)
   end
 
   def combined_group_delay(action)
