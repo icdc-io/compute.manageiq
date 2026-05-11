@@ -265,22 +265,22 @@ class Service < ApplicationRecord
 
   def start
     raise_request_start_event
-    queue_group_action(:start, 0, 1, delay_for_action(0, :start))
+    queue_group_action(:start, 0, 1, delay_for_action(0, :start, 0))
   end
 
   def stop
     raise_request_stop_event
-    queue_group_action(:stop, last_index, -1, delay_for_action(last_index, :stop))
+    queue_group_action(:stop, last_index, -1, delay_for_action(last_index, :stop, 0))
   end
 
   def suspend
     update_progress(:power_status => 'suspending')
-    queue_group_action(:suspend, last_index, -1, delay_for_action(last_index, :stop))
+    queue_group_action(:suspend, last_index, -1, delay_for_action(last_index, :stop, 0))
   end
 
   def shutdown_guest
     raise_request_stop_event
-    queue_group_action(:shutdown_guest, last_index, -1, delay_for_action(last_index, :stop))
+    queue_group_action(:shutdown_guest, last_index, -1, delay_for_action(last_index, :stop, 0))
   end
 
   def power_states_match?(action)

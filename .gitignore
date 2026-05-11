@@ -68,6 +68,7 @@ log/*.gz
 log/*.log
 log/*.txt
 log/call_graph_*.html
+log/apache
 
 # product/
 product/automate
@@ -94,3 +95,8 @@ node_modules/
 # yardoc
 /doc/
 .yardoc
+
+# rhconsulting
+lib/tasks/rhconsulting_*
+bundler.d/*_gems.rb
+.irb_history

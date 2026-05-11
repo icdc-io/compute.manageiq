@@ -91,7 +91,7 @@ class User < ApplicationRecord
     @admin ||= in_my_region.find_by(:userid => 'admin')
   end
 
-  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_ancestor_ids => :ancestors, :iba_managed_descendant_ids => :iba_managed_descendants, :iba_sibling_ids => :iba_siblings, :icdc_sibling_ids => :icdc_siblings}.freeze
+  ACCESSIBLE_STRATEGY_WITHOUT_IDS = {:iba_descendant_ids => :descendants, :iba_managed_descendant_ids => :iba_managed_descendants, :iba_sibling_ids => :iba_siblings, :icdc_sibling_ids => :icdc_siblings}.freeze
 
   def self.tenant_id_clause(user_or_group)
     strategy = Rbac.accessible_tenant_ids_strategy(self)
@@ -358,7 +358,7 @@ class User < ApplicationRecord
   end
 
   def self.icdc_manager?(userid)
-    ["ICDC-admin", "ICDC-billing"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
+    ["ICDC-admin", "ICDC-owner"].include?(User.in_my_region.find_by(:userid => userid).miq_user_role.name)
   end
 
   def self.missing_user_features(db_user)
