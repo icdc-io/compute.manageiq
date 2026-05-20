@@ -1,0 +1,79 @@
+title = "ManageIQ Gitleaks Configuration"
+
+[extend]
+# Extend the default gitleaks ruleset
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# Global allowlist — paths and patterns that are known false positives or
+# intentional test/fixture data. Real secrets in config/ are NOT excluded.
+# ---------------------------------------------------------------------------
+[allowlist]
+description = "Test data, VCR cassettes, locale files, and test certificates"
+
+paths = [
+  # --- Test cassettes / VCR recordings ---
+  # These files contain recorded HTTP responses with tokens that are not real.
+  '''(^|/)spec/''',
+  '''(^|/)gems/pending/spec/''',
+  '''(^|/)vmdb/spec/''',
+
+  # --- Test certificates and private keys ---
+  # Self-signed / test-only TLS certificates and keys.
+  '''(^|/)certs/''',
+  '''(^|/)vmdb/certs/''',
+  '''(^|/)host/[^/]+/certs/''',
+
+  # --- Test key fixtures ---
+  '''(^|/)lib/spec/support/''',
+
+  # --- Locale / translation files ---
+  # Translation strings like "dictionary.column.fixed_compute_1_cost" are
+  # falsely detected as generic-api-key values.
+  '''(^|/)locale/''',
+  '''(^|/)config/locales/''',
+
+  # --- Dictionary string definitions (translation keys, not secrets) ---
+  '''(^|/)config/dictionary_strings\.rb$''',
+
+  # --- Kickstart template with embedded RSA key (upstream test key, not a real secret) ---
+  # Fingerprint: d34d87219092431c22c88a5865f25f9942ebe1ea:build/kickstarts/base.ks.erb:private-key:142
+  '''(^|/)build/kickstarts/base\.ks\.erb$''',
+
+  # --- SPA in manageiq base code, is not valid anymore
+  '''(^|/)spa_ui/self_service/client/app/states/dashboard/dashboard\.state\.spec\.js$''',
+]
+
+regexes = [
+  # Translation dictionary keys falsely detected as generic-api-key
+  # e.g. "key: dictionary.column.fixed_compute_1_cost"
+  '''dictionary\.column\.[a-z0-9_]+''',
+
+  # Ruby ActiveSupport time expressions falsely detected as generic-api-key
+  # e.g. "auth.last_valid_on > 15.minutes.ago"
+  '''\d+\.(seconds|minutes|hours|days|weeks|months|years)\.(ago|from_now)''',
+
+  # Outdated Redmine helpdesk token (config/helpdesk.yml) — rotated, no longer valid
+  '''50e7084bd91976f0f8778f00b30bc71ba785b1d3''',
+
+  # Outdated Redmine helpdesk token (config/helpdesk.yml) — rotated, no longer valid
+  '''96db8225c27f111754b8fa81d49133fe16fabb1e''',
+
+  # Outdated Lotus REST token (config/iba_rest_service.yaml) — REST service sunset, no longer valid
+  '''3cca2091afdc2167782761c325e0bc07''',
+]
+
+# ---------------------------------------------------------------------------
+# NOTE: The following files contain findings that may be REAL secrets and
+# are intentionally NOT excluded. Review and remediate them:
+#
+#   config/redmine_config.yaml — Redmine configuration credentials
+#   config/iba_rest_service.yaml — REST service credentials
+#
+# After rotating/externalising those secrets, add fingerprint-based allowlist
+# entries here using the format:
+#   [[rules]]
+#   id = "<rule-id>"
+#   [rules.allowlist]
+#   commits = ["<commit-sha>"]
+# ---------------------------------------------------------------------------
