@@ -1,75 +1,58 @@
-# ManageIQ
+# Compute ManageIQ
 
-[![Build Status](https://travis-ci.org/ManageIQ/manageiq.svg?branch=jansa)](https://travis-ci.org/ManageIQ/manageiq)
-[![Code Climate](https://codeclimate.com/github/ManageIQ/manageiq/badges/gpa.svg)](https://codeclimate.com/github/ManageIQ/manageiq)
-[![Codacy](https://api.codacy.com/project/badge/grade/9ffce48ccb924020ae8f9e698048e9a4)](https://www.codacy.com/app/ManageIQ/manageiq)
-[![Coverage Status](https://coveralls.io/repos/ManageIQ/manageiq/badge.svg?branch=jansa&service=github)](https://coveralls.io/github/ManageIQ/manageiq?branch=jansa)
-[![Security](https://hakiri.io/github/ManageIQ/manageiq/jansa.svg)](https://hakiri.io/github/ManageIQ/manageiq/jansa)
-[![Open Source Helpers](https://www.codetriage.com/manageiq/manageiq/badges/users.svg)](https://www.codetriage.com/manageiq/manageiq)
+**Compute ManageIQ** is the cloud compute management component of the [ICDC Platform](https://github.com/icdc-io). It is a customized fork of [ManageIQ](https://github.com/ManageIQ/manageiq), adapted and extended by the ICDC team since 2019 to serve as the compute orchestration and infrastructure management layer of the platform.
 
-[![Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ManageIQ/manageiq?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Translate](https://img.shields.io/badge/translate-transifex-blue.svg)](https://www.transifex.com/manageiq/manageiq/dashboard/)
-[![License](http://img.shields.io/badge/license-APACHE2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+## Overview
 
+This component provides hybrid IT management capabilities including discovery, monitoring, provisioning, policy enforcement, and automation across virtual machines, containers, networks, and storage — all integrated within the ICDC platform architecture.
 
-[![Build history for master branch](https://buildstats.info/travisci/chart/ManageIQ/manageiq?branch=jansa&includeBuildsFromPullRequest=false&buildCount=50)](https://travis-ci.org/ManageIQ/manageiq/branches)
+**Feature areas:**
 
-## Discover, Optimize, and Control your Hybrid IT
+- **Insight** — Discovery, monitoring, utilization, performance reporting, analytics, chargeback, and trending
+- **Control** — Security, compliance, alerting, and policy-based resource and configuration management
+- **Automate** — IT process, task and event automation, provisioning, workload management, and orchestration
+- **Integrate** — Systems management, event consoles, CMDB, RBA, and web services
 
-### Manage containers, virtual machines, networks, and storage from a single platform
+## ICDC Platform Context
 
-ManageIQ is an open-source Management Platform that delivers the insight, control, and
-automation that enterprises need to address the challenges of managing hybrid
-IT environments.  It has the following feature sets:
+Compute ManageIQ is one of several components that together form the ICDC Platform. It exposes APIs and internal interfaces consumed by other platform services and is not intended to be deployed standalone in an ICDC environment.
 
-* **Insight**: Discovery, Monitoring, Utilization, Performance, Reporting, Analytics, Chargeback, and Trending.
-* **Control**: Security, Compliance, Alerting, Policy-Based Resource and Configuration Management.
-* **Automate**: IT Process, Task and Event, Provisioning, Workload Management and Orchestration.
-* **Integrate**: Systems Management, Tools and Processes, Event Consoles, CMDB, RBA, and Web Services.
+For platform-level documentation and deployment guides, refer to the main ICDC Platform repository.
 
-## Get Started
+## Getting Started
 
-*  [**Download community builds** for your platform](http://manageiq.org/download/)
-*  [**Fork the source** to contribute](https://github.com/ManageIQ/manageiq)
-*  [**Learn** to use ManageIQ](https://www.youtube.com/user/ManageIQVideo)
+### Prerequisites
 
-## Learn more
+- Ruby 2.7+
+- PostgreSQL 13+
+- Node.js 14+
 
-*  [**Read** developer guides](https://github.com/ManageiQ/guides)
-*  [**Chat** with contributors on Gitter](https://gitter.im/ManageIQ/manageiq)
-*  [**File or view bug reports and feature requests** using Issues on Github](https://github.com/ManageIQ/manageiq/issues?state=open)
-*  [**Ask** questions of ManageIQ experts](http://talk.manageiq.org/)
-*  [**Discuss** ManageIQ with developers and power users](http://talk.manageiq.org/)
+### Development Setup
 
-We respectfully ask that you do not directly email any manageiq committers with
-questions or problems. The community is best served when discussions are held in
-public.
+```bash
+git clone https://github.com/icdc-io/compute-manageiq.git
+cd compute-manageiq
+bin/setup
+```
 
-## Licensing
+Refer to the [ManageIQ developer documentation](https://github.com/ManageIQ/guides) for detailed setup instructions — the upstream guides apply to this fork unless otherwise noted in this repository.
 
-See [LICENSE.txt](LICENSE.txt).
+## Contributing
 
-Except where otherwise noted, all ManageIQ source files are covered by
-the following copyright and license notice:
+Issues and pull requests are welcome. Please open an issue before submitting a large change so the approach can be discussed first.
 
-Copyright 2014-2019 ManageIQ Authors.
- 
-## Export Notice
+## Upstream
 
-By downloading ManageIQ software, you acknowledge that you understand all of the
-following: ManageIQ software and technical information may be subject to the
-U.S. Export Administration Regulations (the "EAR") and other U.S. and foreign
-laws and may not be exported, re-exported or transferred (a) to any country
-listed in Country Group E:1 in Supplement No. 1 to part 740 of the EAR
-(currently, Cuba, Iran, North Korea, Sudan & Syria); (b) to any prohibited
-destination or to any end user who has been prohibited from participating in
-U.S. export transactions by any federal agency of the U.S. government; or (c)
-for use in connection with the design, development or production of nuclear,
-chemical or biological weapons, or rocket systems, space launch vehicles, or
-sounding rockets, or unmanned air vehicle systems. You may not download ManageIQ
-software or technical information if you are located in one of these countries
-or otherwise subject to these restrictions. You may not provide ManageIQ
-software or technical information to individuals or entities located in one of
-these countries or otherwise subject to these restrictions. You are also
-responsible for compliance with foreign law requirements applicable to the
-import, export and use of ManageIQ software and technical information.
+This repository is a fork of [ManageIQ](https://github.com/ManageIQ/manageiq), an open-source management platform originally created and maintained by the ManageIQ Authors. The ICDC team began maintaining this fork in 2019. We gratefully acknowledge the upstream contributors.
+
+- Upstream project: https://github.com/ManageIQ/manageiq
+- Upstream documentation: https://www.manageiq.org
+- Upstream community: https://gitter.im/ManageIQ/manageiq
+
+## License
+
+ICDC-specific modifications and extensions are Copyright 2019–2026 IBA Group a.s. and are licensed under the [Apache License, Version 2.0](LICENSE.txt).
+
+The original ManageIQ source is Copyright 2014–2019 ManageIQ Authors and is also licensed under the Apache License, Version 2.0.
+
+See [LICENSE.txt](LICENSE.txt) for the full license text.
