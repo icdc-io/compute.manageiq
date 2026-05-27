@@ -23,6 +23,7 @@ module Rbac
       any     = options[:any]
 
       tenant_identifier = MiqProductFeature.current_tenant_identifier(identifier)
+      _log.debug("[Platform] Auth user '#{user.userid}',  role '#{user.miq_user_role.try(:name)}', tenant_identifier '#{tenant_identifier}', options: #{options}")
 
       auth = if any.present?
                user_role_allows_any?(user, :identifiers => (identifiers || [identifier]))
@@ -39,11 +40,13 @@ module Rbac
     private
 
     def user_role_allows?(user, options = {})
+      _log.debug("[Platform] Auth user '#{user.userid}',  role '#{user.miq_user_role.try(:name)}', options '#{options}'")
       return false if user.miq_user_role.nil?
       return true if user.miq_user_role.allows?(options)
 
       ident = options[:identifier]
       parent = MiqProductFeature.feature_parent(ident)
+      _log.debug("[Platform] Auth user '#{user.userid}',  role '#{user.miq_user_role.try(:name)}', parent feature '#{parent}'")
       return false if parent.nil?
 
       if MiqProductFeature.feature_hidden(ident)
