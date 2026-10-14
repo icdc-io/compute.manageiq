@@ -235,4 +235,83 @@ RSpec.describe ServiceRetireTask do
       service_retire_task.deliver_to_automate
     end
   end
+
+  describe "subtask delivery" do
+    let(:miq_request) { FactoryBot.create(:service_retire_request, :requester => user, :source => service, :options => {:src_ids => [service.id]}) }
+    let(:child_service) { FactoryBot.create(:service, :lifecycle_state => 'provisioned') }
+    let(:vm1) { FactoryBot.create(:vm_openstack) }
+    let(:vm2) { FactoryBot.create(:vm_openstack) }
+
+    before do
+      MiqRegion.seed
+      allow(MiqServer).to receive(:my_zone).and_return(Zone.seed.name)
+      miq_request.approve(approver, reason)
+      service.add_resource!(vm1)
+      service.add_resource!(child_service)
+      child_service.add_resource!(vm2)
+    end
+
+    def queued_task_ids
+      MiqQueue.where(:class_name => "MiqAeEngine", :method_name => "deliver").order(:id).map { |q| q.args.first[:object_id] }
+    end
+
+    it "creates subtasks without queuing them" do
+      service_retire_task.after_request_task_create
+
+      subtasks = MiqRequestTask.where.not(:id => service_retire_task.id)
+      expect(subtasks.count).to eq(3)
+      expect(subtasks.pluck(:state, :message)).to all(eq(["pending", nil]))
+      expect(queued_task_ids).to be_empty
+    end
+
+    it "queues the parent before its subtasks, recursively" do
+      service_retire_task.after_request_task_create
+      service_retire_task.deliver_to_automate
+
+      child_task = ServiceRetireTask.find_by(:source_id => child_service.id)
+      vm1_task   = VmRetireTask.find_by(:source_id => vm1.id)
+      vm2_task   = VmRetireTask.find_by(:source_id => vm2.id)
+      queued     = queued_task_ids
+
+      expect(queued).to match_array([service_retire_task.id, vm1_task.id, child_task.id, vm2_task.id])
+      expect(queued.first).to eq(service_retire_task.id)
+      expect(queued.index(child_task.id)).to be < queued.index(vm2_task.id)
+    end
+
+    it "delivers the parent when a subtask is picked up by automate right away" do
+      allow(miq_request).to receive(:automate_event_failed?).and_return(false)
+      allow_any_instance_of(VmRetireTask).to receive(:deliver_to_automate).and_wrap_original do |m, *args|
+        m.call(*args)
+        m.receiver.update_and_notify_parent(:state => "active", :status => "Ok", :message => "In Process")
+      end
+
+      miq_request.create_request_tasks
+
+      parent_task = miq_request.miq_request_tasks.find_by(:miq_request_task_id => nil)
+      expect(miq_request.reload).to have_attributes(:request_state => "active", :status => "Ok")
+      expect(queued_task_ids.first).to eq(parent_task.id)
+      expect(queued_task_ids.size).to eq(4)
+    end
+
+    it "doesn't deliver subtasks which are no longer pending" do
+      service_retire_task.after_request_task_create
+      vm1_task = VmRetireTask.find_by(:source_id => vm1.id)
+      vm1_task.update!(:state => "finished", :status => "Ok")
+
+      expect { service_retire_task.deliver_to_automate }.not_to raise_error
+
+      expect(queued_task_ids).not_to include(vm1_task.id)
+      expect(vm1_task.reload.state).to eq("finished")
+    end
+
+    it "marks a subtask which fails to be delivered as finished with error" do
+      service_retire_task.after_request_task_create
+      allow_any_instance_of(VmRetireTask).to receive(:deliver_to_automate).and_raise("boom")
+
+      expect { service_retire_task.deliver_to_automate }.not_to raise_error
+
+      expect(queued_task_ids).to include(service_retire_task.id)
+      expect(VmRetireTask.pluck(:state, :status, :message)).to all(eq(["finished", "Error", "Error: boom"]))
+    end
+  end
 end

@@ -50,8 +50,13 @@ class ServiceRetireTask < MiqRetireTask
       new_task = create_task(svc_rsc, parent_service, nh, parent_task)
       new_task.after_request_task_create
       miq_request.miq_request_tasks << new_task
-      new_task.tap(&:deliver_to_automate)
+      new_task
     end.compact!
+  end
+
+  def deliver_to_automate(req_type = request_type, zone = nil)
+    super
+    deliver_subtasks_to_automate
   end
 
   def create_task(svc_rsc, parent_service, nh, parent_task)
@@ -71,6 +76,22 @@ class ServiceRetireTask < MiqRetireTask
   end
 
   private
+
+  # Subtasks are delivered after the parent (as ServiceTemplateProvisionTask#do_request does):
+  # once automate picks up a subtask the parent's aggregated state becomes "active"
+  # and task_check_on_delivery would reject the parent.
+  def deliver_subtasks_to_automate
+    miq_request_tasks.reload.each do |task|
+      next unless task.state == "pending"
+
+      begin
+        task.deliver_to_automate
+      rescue => err
+        _log.log_backtrace(err)
+        task.update_and_notify_parent(:state => "finished", :status => "Error", :message => "Error: #{err.message}")
+      end
+    end
+  end
 
   def create_subtasks?(parent_svc)
     !parent_svc.try(:retain_resources_on_retirement?)
