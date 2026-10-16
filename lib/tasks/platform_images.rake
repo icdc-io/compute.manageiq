@@ -208,8 +208,9 @@ module Platform
       end
 
       def build_description(parsed)
-        blocks = parsed.keys.sort.map { |lang| language_block(lang, parsed[lang]) }
-        body = "# Docs [#{config[:languages].first}]\n\n#{blocks.compact.join("\n----\n\n")}\n"
+        languages = config[:languages].select { |lang| parsed.key?(lang) }
+        blocks = languages.map { |lang| "# Docs [#{lang}]\n\n#{language_block(lang, parsed[lang])}" }
+        body = "#{blocks.join("\n\n----\n\n")}\n"
 
         # For Compute v3 dedicated UI compatibility: a plain text summary followed by 40 spaces
         lang = config[:languages].first
@@ -325,8 +326,8 @@ module Platform
         width = rows.map(&:size).max
         rows  = rows.map { |row| row + Array.new(width - row.size, '') }
         head  = rows.shift
-        [md_table_row(head), "|#{Array.new(width, '---').join('|')}|"] +
-          rows.map { |row| md_table_row(row) }
+        ([md_table_row(head), "|#{Array.new(width, '---').join('|')}|"] +
+          rows.map { |row| md_table_row(row) }).join("\n")
       end
 
       def md_table_row(cells)
