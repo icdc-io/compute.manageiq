@@ -212,11 +212,11 @@ module Platform
         blocks = languages.map { |lang| "# Docs [#{lang}]\n\n#{language_block(lang, parsed[lang])}" }
         body = "#{blocks.join("\n\n----\n\n")}\n"
 
-        # For Compute v3 dedicated UI compatibility: a plain text summary followed by 40 spaces
+        # For Compute v3 dedicated UI compatibility: a plain text summary followed by spaces
         lang = config[:languages].first
         summary = section_markdown(parsed[lang][:sections]['description'])
         summary = parsed[lang][:title].to_s if summary.empty?
-        "#{summary}#{' ' * 40}\n\n#{body}"
+        "#{summary.ljust(500)}\n\n#{body}"
       end
 
       def language_block(lang, page)
