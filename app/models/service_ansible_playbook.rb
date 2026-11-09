@@ -37,8 +37,8 @@ class ServiceAnsiblePlaybook < ServiceGeneric
     }
 
     task_id = MiqTask.generic_action_with_callback(task_opts, queue_opts)
-    task = MiqTask.wait_for_taskid(task_id)
-    raise task.message unless task.status_ok?
+    options[:"#{action.downcase}_launch_task_id"] = task_id
+    save!
   end
 
   def launch_ansible_job(action)
@@ -66,6 +66,11 @@ class ServiceAnsiblePlaybook < ServiceGeneric
   end
 
   def check_completed(action)
+    if (t = MiqTask.find_by(:id => options[:"#{action.downcase}_launch_task_id"]))
+      return [false, nil] if t.state != MiqTask::STATE_FINISHED
+      return [true, t.message] unless t.status_ok?
+    end
+
     status, reason = job(action).raw_status.normalized_status
     done    = status != 'transient'
     message = status == 'create_complete' ? nil : reason
