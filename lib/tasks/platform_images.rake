@@ -268,7 +268,10 @@ module Platform
         case node.name
         when 'p'      then md_inline(node, base_url)
         when 'ul', 'ol' then md_list(node, base_url)
-        when 'table'  then md_table(node, base_url)
+        when 'pre'    then md_code_block(node)
+        when 'table'
+          # Pygments puts code with line numbers into a table: <td class="linenos"> + <td class="code">
+          node['class'].to_s.split.include?('highlighttable') ? md_code_block(node.at_css('td.code pre')) : md_table(node, base_url)
         when 'img'    then md_image(node, base_url)
         when 'div'    then node.element_children.map { |child| md_block(child, base_url) }.reject(&:empty?).join("\n\n")
         else               md_inline(node, base_url)
@@ -286,7 +289,7 @@ module Platform
           label = md_inline(node, base_url)
           href  = absolute_url(node['href'].to_s, base_url)
           href.empty? || label.empty? ? label : "[#{label}](#{href})"
-        when 'code'            then "`#{node.text.strip}`"
+        when 'code'            then md_code_span(node.text)
         when 'strong', 'b'     then "**#{md_inline(node, base_url)}**"
         when 'em', 'i'         then "*#{md_inline(node, base_url)}*"
         when 'br'              then "  \n"
@@ -294,6 +297,41 @@ module Platform
         when 'script', 'style' then ''
         else md_inline(node, base_url)
         end
+      end
+
+      # Inline code: the backtick fence is longer than any backtick run inside the code.
+      def md_code_span(text)
+        text = text.gsub(/\s+/, ' ').strip
+        return '' if text.empty?
+
+        ticks = '`' * (longest_backtick_run(text) + 1)
+        pad   = text.start_with?('`') || text.end_with?('`') ? ' ' : ''
+        "#{ticks}#{pad}#{text}#{pad}#{ticks}"
+      end
+
+      # Fenced code block from a <pre> (mkdocs: div.language-xxx.highlight > pre > code).
+      def md_code_block(pre)
+        return '' if pre.nil?
+
+        code  = pre.at_css('code') || pre
+        text  = code.text.sub(/\n+\z/, '')
+        return '' if text.strip.empty?
+
+        fence = '`' * [3, longest_backtick_run(text) + 1].max
+        "#{fence}#{code_language(pre, code)}\n#{text}\n#{fence}"
+      end
+
+      def code_language(pre, code)
+        [code, pre, *pre.ancestors].each do |node|
+          next unless node.respond_to?(:[])
+          lang = node['class'].to_s[/(?:^|\s)language-([\w+#.-]+)/, 1]
+          return lang if lang
+        end
+        ''
+      end
+
+      def longest_backtick_run(text)
+        text.scan(/`+/).map(&:size).max || 0
       end
 
       def md_image(node, base_url)
@@ -306,14 +344,32 @@ module Platform
         index   = 0
         node.element_children.select { |child| child.name == 'li' }.map do |item|
           index += 1
-          sublists = item.element_children.select { |child| %w[ul ol].include?(child.name) }
-          content  = item.children.reject { |child| child.element? && %w[ul ol].include?(child.name) }
-                       .map { |child| child.text? ? child.text.gsub(/\s+/, ' ').strip : md_inline(child, base_url) }
-                       .join.strip
-          line = "#{indent}#{ordered ? "#{index}." : '-'} #{content}".rstrip
-          line += "\n#{sublists.map { |sub| md_list(sub, base_url, "#{indent}  ") }.join("\n")}" if sublists.any?
+          marker  = ordered ? "#{index}." : '-'
+          nested  = item.element_children.select { |child| list_block?(child) }
+          content = item.children.reject { |child| list_block?(child) }
+                        .map { |child| md_inline_node(child, base_url) }
+                        .join.gsub(/[ \t]+/, ' ').strip
+          line = "#{indent}#{marker} #{content}".rstrip
+          nested.each do |child|
+            line += "\n" + if %w[ul ol].include?(child.name)
+                              md_list(child, base_url, "#{indent}  ")
+                            else
+                              # a code block belongs to the item when indented by the marker width
+                              indent_lines(md_block(child, base_url), indent + ' ' * (marker.size + 1))
+                            end
+          end
           line
         end.join("\n")
+      end
+
+      # Children of <li> rendered as blocks below the item text: sublists and code blocks.
+      def list_block?(node)
+        return false unless node.element?
+        %w[ul ol pre].include?(node.name) || (node.name == 'div' && !node.at_css('pre').nil?)
+      end
+
+      def indent_lines(text, indent)
+        text.lines.map { |line| line.strip.empty? ? line : "#{indent}#{line}" }.join
       end
 
       def md_table(node, base_url)
